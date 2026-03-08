@@ -41,7 +41,8 @@ opm install oneunit
 /
 ├── .github/
 │   ├── workflows/
-│   │   └── copilot-setup-steps.yml  # GitHub Actions setup workflow
+│   │   ├── copilot-setup-steps.yml  # GitHub Actions setup workflow
+│   │   └── test.yml                 # CI testing via autumn-library/workflows
 │   └── copilot-instructions.md      # This file
 ├── .vscode/                         # VS Code configuration
 ├── src/
@@ -64,7 +65,8 @@ opm install oneunit
 │   │   ├── ОтелHttpТранспорт.os     # OTLP HTTP transport
 │   │   ├── ОтелHttpЭкспортерСпанов.os # Span exporter (OTLP HTTP)
 │   │   ├── ОтелHttpЭкспортерЛогов.os # Log exporter (OTLP HTTP)
-│   │   └── ОтелHttpЭкспортерМетрик.os # Metric exporter (OTLP HTTP)
+│   │   ├── ОтелHttpЭкспортерМетрик.os # Metric exporter (OTLP HTTP)
+│   │   └── ОтелАппендерLogos.os     # Appender for logos logging library
 │   └── Модули/                      # Modules directory
 │       ├── ОтелВидСпана.os          # SpanKind enum constants
 │       ├── ОтелКодСтатуса.os        # StatusCode enum constants
@@ -143,7 +145,7 @@ The SDK follows OpenTelemetry SDK Specification, modeled after Java SDK:
 ```
 
 ### Dependencies
-- **Runtime**: None (zero external dependencies)
+- **Runtime**: logos 1.7.1+ (logging library for appender integration)
 - **Development**: oneunit 0.2.4+ (testing), asserts 1.5.0+ (assertions)
 - **OneScript**: 2.0.0+
 
@@ -171,5 +173,5 @@ oneunit execute
 - Files use Cyrillic characters and must be properly encoded
 - Package uses Russian method names in packagedef
 
-### No External Runtime Dependencies
-The library has zero runtime dependencies - it only uses built-in OneScript capabilities (HTTP connections, JSON, UUID generation). Development dependencies (oneunit, asserts) are only needed for running tests.
+### Runtime Dependencies
+The library depends on logos 1.7.1+ for the logos appender integration. Other functionality uses only built-in OneScript capabilities (HTTP connections, JSON, UUID generation). Development dependencies (oneunit, asserts) are only needed for running tests.
