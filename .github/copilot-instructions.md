@@ -145,7 +145,7 @@ The SDK follows OpenTelemetry SDK Specification, modeled after Java SDK:
 ```
 
 ### Dependencies
-- **Runtime**: logos 1.7.1+ (logging library for appender integration)
+- **Runtime**: logos 1.7.1+ (logging library for appender integration), 1connector 2.2.1+ (HTTP client)
 - **Development**: oneunit 0.2.4+ (testing), asserts 1.5.0+ (assertions)
 - **OneScript**: 2.0.0+
 
@@ -174,4 +174,4 @@ oneunit execute
 - Package uses Russian method names in packagedef
 
 ### Runtime Dependencies
-The library depends on logos 1.7.1+ for the logos appender integration. Other functionality uses only built-in OneScript capabilities (HTTP connections, JSON, UUID generation). Development dependencies (oneunit, asserts) are only needed for running tests.
+The library depends on logos 1.7.1+ for the logos appender integration and 1connector 2.2.1+ for HTTP requests. Development dependencies (oneunit, asserts) are only needed for running tests.
