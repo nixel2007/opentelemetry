@@ -59,7 +59,7 @@ opm install oneunit
 │   │   ├── ОтелЛоггер.os            # Logger
 │   │   ├── ОтелЗаписьЛога.os        # LogRecord
 │   │   ├── ОтелПровайдерМетрик.os   # MeterProvider
-│   │   ├── ОтелМетрика.os           # Meter
+│   │   ├── ОтелМетр.os           # Meter
 │   │   ├── ОтелСчетчик.os           # Counter
 │   │   ├── ОтелГистограмма.os       # Histogram
 │   │   ├── ОтелHttpТранспорт.os     # OTLP HTTP transport
