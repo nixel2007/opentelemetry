@@ -1,4 +1,4 @@
-// Класс OpenTelemetry SDK — единая точка входа в телеметрию.
+// Класс OpenTelemetry SDK - единая точка входа в телеметрию.
 // Аналог Java SDK: OpenTelemetrySdk
 //
 // Агрегирует TracerProvider, LoggerProvider, MeterProvider и ContextPropagators.
