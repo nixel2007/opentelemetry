@@ -63,9 +63,9 @@ opm install oneunit
 │   │   ├── ОтелСчетчик.os           # Counter
 │   │   ├── ОтелГистограмма.os       # Histogram
 │   │   ├── ОтелHttpТранспорт.os     # OTLP HTTP transport
-│   │   ├── ОтелHttpЭкспортерСпанов.os # Span exporter (OTLP HTTP)
-│   │   ├── ОтелHttpЭкспортерЛогов.os # Log exporter (OTLP HTTP)
-│   │   ├── ОтелHttpЭкспортерМетрик.os # Metric exporter (OTLP HTTP)
+│   │   ├── ОтелЭкспортерСпанов.os   # Span exporter (any transport)
+│   │   ├── ОтелЭкспортерЛогов.os    # Log exporter (any transport)
+│   │   ├── ОтелЭкспортерМетрик.os   # Metric exporter (any transport)
 │   │   └── ОтелАппендерLogos.os     # Appender for logos logging library
 │   └── Модули/                      # Modules directory
 │       ├── ОтелВидСпана.os          # SpanKind enum constants
