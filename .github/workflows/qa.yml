@@ -10,11 +10,12 @@ permissions:
 
 jobs:
   qa:
-    uses: autumn-library/workflows/.github/workflows/sonar.yml@main
+    uses: autumn-library/workflows/.github/workflows/sonar.yml@copilot/add-recursive-flag-for-tests
     with:
       github_repository: ${{ github.repository }}
       oscript_version: 2.0.0
       test_engine: oneunit
+      test_recursive: true
       coveralls: true
       sonarqube: true
     secrets:
