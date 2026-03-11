@@ -1,4 +1,4 @@
-name: Тестирование
+name: Контроль качества
 
 on:
   push:
@@ -9,10 +9,14 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    uses: autumn-library/workflows/.github/workflows/test.yml@main
+  qa:
+    uses: autumn-library/workflows/.github/workflows/sonar.yml@main
     with:
+      github_repository: ${{ github.repository }}
       oscript_version: 2.0.0
       test_engine: oneunit
-      os_versions: '["ubuntu-latest"]'
       additional_oscript_packages: testcontainers
+      coveralls: true
+      sonarqube: true
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
