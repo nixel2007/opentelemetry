@@ -3,20 +3,39 @@
 // Читает стандартные переменные окружения OTel (OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT и т.д.)
 // через менеджер параметров configor.
 //
-// Переменные окружения (с префиксом OTEL_):
-//   OTEL_SERVICE_NAME → service.name
-//   OTEL_EXPORTER_OTLP_ENDPOINT → exporter.otlp.endpoint
-//   OTEL_EXPORTER_OTLP_PROTOCOL → exporter.otlp.protocol (http/protobuf, http/json, grpc)
-//   OTEL_TRACES_EXPORTER → traces.exporter (otlp, none)
-//   OTEL_LOGS_EXPORTER → logs.exporter (otlp, none)
-//   OTEL_METRICS_EXPORTER → metrics.exporter (otlp, none)
-//   OTEL_TRACES_SAMPLER → traces.sampler (always_on, always_off, traceidratio, parentbased_always_on, etc.)
-//   OTEL_TRACES_SAMPLER_ARG → traces.sampler.arg
-//   OTEL_BSP_MAX_QUEUE_SIZE → bsp.max.queue.size
-//   OTEL_BSP_SCHEDULE_DELAY → bsp.schedule.delay
-//   OTEL_BSP_MAX_EXPORT_BATCH_SIZE → bsp.max.export.batch.size
-//   OTEL_EXPORTER_OTLP_TIMEOUT → exporter.otlp.timeout
-//   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE → exporter.otlp.metrics.temporality.preference (cumulative, delta, lowmemory)
+// Переменные окружения (OTEL_*), преобразуются в ключи с префиксом otel.:
+//   OTEL_SERVICE_NAME → otel.service.name
+//   OTEL_EXPORTER_OTLP_ENDPOINT → otel.exporter.otlp.endpoint
+//   OTEL_EXPORTER_OTLP_PROTOCOL → otel.exporter.otlp.protocol (http/protobuf, http/json, grpc)
+//   OTEL_TRACES_EXPORTER → otel.traces.exporter (otlp, none)
+//   OTEL_LOGS_EXPORTER → otel.logs.exporter (otlp, none)
+//   OTEL_METRICS_EXPORTER → otel.metrics.exporter (otlp, none)
+//   OTEL_TRACES_SAMPLER → otel.traces.sampler (always_on, always_off, traceidratio, parentbased_always_on, etc.)
+//   OTEL_TRACES_SAMPLER_ARG → otel.traces.sampler.arg
+//   OTEL_BSP_MAX_QUEUE_SIZE → otel.bsp.max.queue.size
+//   OTEL_BSP_SCHEDULE_DELAY → otel.bsp.schedule.delay
+//   OTEL_BSP_MAX_EXPORT_BATCH_SIZE → otel.bsp.max.export.batch.size
+//   OTEL_EXPORTER_OTLP_TIMEOUT → otel.exporter.otlp.timeout
+//   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE → otel.exporter.otlp.metrics.temporality.preference (cumulative, delta, lowmemory)
+
+// Инициализирует OpenTelemetry SDK из менеджера параметров и регистрирует глобально.
+// Создаёт провайдеры трассировки, логирования и метрик, собирает SDK и регистрирует его.
+//
+// Параметры:
+//   МенеджерПараметров - МенеджерПараметров - менеджер параметров (необязательный, по умолчанию из ENV)
+//
+// Возвращаемое значение:
+//   ОтелSdk - настроенный и глобально зарегистрированный экземпляр SDK
+//
+Функция Инициализировать(МенеджерПараметров = Неопределено) Экспорт
+    Менеджер = ПолучитьМенеджер(МенеджерПараметров);
+
+    Возврат Новый ОтелПостроительSdk()
+        .УстановитьПровайдерТрассировки(СоздатьПровайдерТрассировки(Менеджер))
+        .УстановитьПровайдерЛогирования(СоздатьПровайдерЛогирования(Менеджер))
+        .УстановитьПровайдерМетрик(СоздатьПровайдерМетрик(Менеджер))
+        .ПостроитьИЗарегистрироватьГлобально();
+КонецФункции
 
 // Создаёт менеджер параметров по умолчанию (из переменных окружения с префиксом OTEL_).
 //
@@ -25,7 +44,7 @@
 //
 Функция СоздатьМенеджерПараметровПоУмолчанию() Экспорт
     Менеджер = Новый МенеджерПараметров();
-    ПровайдерENV = Новый ПровайдерПараметровENV("OTEL_");
+    ПровайдерENV = Новый ПровайдерПараметровENV();
     Менеджер.ДобавитьПровайдерПараметров(ПровайдерENV, 1);
     Менеджер.Прочитать();
     Возврат Менеджер;
@@ -44,7 +63,7 @@
 
     Ресурс = Новый ОтелРесурс();
 
-    ИмяСервиса = Менеджер.Параметр("service.name");
+    ИмяСервиса = Менеджер.Параметр("otel.service.name");
     Если ИмяСервиса <> Неопределено Тогда
         Ресурс.Атрибуты().Установить("service.name", ИмяСервиса);
     КонецЕсли;
@@ -63,8 +82,8 @@
 Функция СоздатьТранспорт(МенеджерПараметров = Неопределено) Экспорт
     Менеджер = ПолучитьМенеджер(МенеджерПараметров);
 
-    Эндпоинт = Менеджер.Параметр("exporter.otlp.endpoint", "http://localhost:4318");
-    Протокол = Менеджер.Параметр("exporter.otlp.protocol", "http/json");
+    Эндпоинт = Менеджер.Параметр("otel.exporter.otlp.endpoint", "http://localhost:4318");
+    Протокол = Менеджер.Параметр("otel.exporter.otlp.protocol", "http/json");
 
     Если Протокол = "grpc" Тогда
         Возврат Новый ОтелGrpcТранспорт(Эндпоинт);
@@ -86,7 +105,7 @@
 
     Ресурс = СоздатьРесурс(Менеджер);
 
-    ЭкспортерИмя = Менеджер.Параметр("traces.exporter", "otlp");
+    ЭкспортерИмя = Менеджер.Параметр("otel.traces.exporter", "otlp");
     Если ЭкспортерИмя = "none" Тогда
         Возврат Новый ОтелПровайдерТрассировки(Ресурс);
     КонецЕсли;
@@ -100,7 +119,7 @@
     ДоляСемплирования = 1.0;
     КорневаяСтратегия = Неопределено;
 
-    ИмяСемплера = Менеджер.Параметр("traces.sampler");
+    ИмяСемплера = Менеджер.Параметр("otel.traces.sampler");
     Если ИмяСемплера <> Неопределено Тогда
         Если ИмяСемплера = "always_on" Тогда
             СтратегияСемплирования = ОтелСемплер.ВсегдаВключен();
@@ -108,7 +127,7 @@
             СтратегияСемплирования = ОтелСемплер.ВсегдаВыключен();
         ИначеЕсли ИмяСемплера = "traceidratio" Тогда
             СтратегияСемплирования = ОтелСемплер.ПоДолеТрассировок();
-            АргументСемплера = Менеджер.Параметр("traces.sampler.arg", "1.0");
+            АргументСемплера = Менеджер.Параметр("otel.traces.sampler.arg", "1.0");
             ДоляСемплирования = Число(АргументСемплера);
         ИначеЕсли ИмяСемплера = "parentbased_always_on" Тогда
             СтратегияСемплирования = ОтелСемплер.НаОсновеРодителя();
@@ -119,7 +138,7 @@
         ИначеЕсли ИмяСемплера = "parentbased_traceidratio" Тогда
             СтратегияСемплирования = ОтелСемплер.НаОсновеРодителя();
             КорневаяСтратегия = ОтелСемплер.ПоДолеТрассировок();
-            АргументСемплера = Менеджер.Параметр("traces.sampler.arg", "1.0");
+            АргументСемплера = Менеджер.Параметр("otel.traces.sampler.arg", "1.0");
             ДоляСемплирования = Число(АргументСемплера);
         Иначе
             СтратегияСемплирования = ОтелСемплер.ВсегдаВключен();
@@ -127,9 +146,9 @@
     КонецЕсли;
 
     // Определяем процессор (batch или simple)
-    МаксРазмерОчереди = Число(Менеджер.Параметр("bsp.max.queue.size", "2048"));
-    ИнтервалЭкспорта = Число(Менеджер.Параметр("bsp.schedule.delay", "5000"));
-    МаксРазмерПакета = Число(Менеджер.Параметр("bsp.max.export.batch.size", "512"));
+    МаксРазмерОчереди = Число(Менеджер.Параметр("otel.bsp.max.queue.size", "2048"));
+    ИнтервалЭкспорта = Число(Менеджер.Параметр("otel.bsp.schedule.delay", "5000"));
+    МаксРазмерПакета = Число(Менеджер.Параметр("otel.bsp.max.export.batch.size", "512"));
 
     Процессор = Новый ОтелПакетныйПроцессорСпанов(Экспортер, МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта);
     Процессор.ЗапуститьФоновыйЭкспорт();
@@ -150,7 +169,7 @@
 
     Ресурс = СоздатьРесурс(Менеджер);
 
-    ЭкспортерИмя = Менеджер.Параметр("logs.exporter", "otlp");
+    ЭкспортерИмя = Менеджер.Параметр("otel.logs.exporter", "otlp");
     Если ЭкспортерИмя = "none" Тогда
         Возврат Новый ОтелПровайдерЛогирования(Ресурс);
     КонецЕсли;
@@ -178,7 +197,7 @@
 
     Ресурс = СоздатьРесурс(Менеджер);
 
-    ЭкспортерИмя = Менеджер.Параметр("metrics.exporter", "otlp");
+    ЭкспортерИмя = Менеджер.Параметр("otel.metrics.exporter", "otlp");
     Если ЭкспортерИмя = "none" Тогда
         Возврат Новый ОтелПровайдерМетрик(Ресурс);
     КонецЕсли;
@@ -186,7 +205,7 @@
     Транспорт = СоздатьТранспорт(Менеджер);
 
     // Определяем селектор временной агрегации
-    ПредпочтениеВременнойАгрегации = Менеджер.Параметр("exporter.otlp.metrics.temporality.preference", "cumulative");
+    ПредпочтениеВременнойАгрегации = Менеджер.Параметр("otel.exporter.otlp.metrics.temporality.preference", "cumulative");
     Если ПредпочтениеВременнойАгрегации = "delta" Тогда
         Селектор = ОтелСелекторВременнойАгрегации.ПредпочтительноДельта();
     ИначеЕсли ПредпочтениеВременнойАгрегации = "lowmemory" Тогда
