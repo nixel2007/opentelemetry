@@ -394,7 +394,7 @@ SDK следует архитектуре [OpenTelemetry SDK Specification](http
 - 1connector 2.2.1+
 - collectionos 0.8.2+
 - oint 1.33.0+ (для gRPC-транспорта)
-- configor (для автоконфигурации)
+- configor 0.11.1+ (для автоконфигурации)
 - async 0.3.0+ (для пакетных процессоров)
 
 Все зависимости устанавливаются автоматически через `opm install`.
@@ -410,7 +410,7 @@ opm install -l --dev
 ### Запуск тестов
 
 ```bash
-oneunit execute
+oneunit execute --recursive
 ```
 
 ### Структура тестов
