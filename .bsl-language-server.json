@@ -11,9 +11,10 @@
     },
     "diagnostics": {
         "parameters": {
-            "LineLength": {
-                "maxLineLength": 140
-            }
+            "IncorrectLineBreak": {
+                "listOfIncorrectFirstSymbol": "\\)|;|,\\s*\\S+|\\)s*;\\s*\\S+"
+            },
+            "LatinAndCyrillicSymbolInWord": false
         }
     }
 }

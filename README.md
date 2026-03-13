@@ -413,6 +413,12 @@ opm install -l --dev
 oneunit execute --recursive
 ```
 
+Для получения отчета в формате JUnit XML (например, для CI):
+
+```bash
+oneunit execute --recursive --junit out/junit.xml
+```
+
 ### Структура тестов
 
 - `tests/unit/` - модульные тесты (274 теста), организованы по подсистемам
