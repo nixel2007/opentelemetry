@@ -109,7 +109,7 @@
     Провайдер.СброситьБуфер();
 
     // Тогда - в Prometheus есть метрика _count со значением 3
-    // OTLP→Prometheus конвертирует unit "ms" в суффикс "_milliseconds"
+    // OTLP->Prometheus конвертирует unit "ms" в суффикс "_milliseconds"
     ИмяМетрикиCount = ИмяГистограммы + "_milliseconds_count";
     ДанныеМетрики = ПолучитьМетрикуИзPrometheus(ИмяМетрикиCount);
     Ожидаем.Что(ДанныеМетрики.Количество() > 0).Равно(Истина);
