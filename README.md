@@ -1,5 +1,11 @@
 # OpenTelemetry SDK для OneScript
 
+[![Quality Gate](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=alert_status)](https://sonar.openbsl.ru/dashboard?id=opentelemetry)
+[![Coverage](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=coverage)](https://sonar.openbsl.ru/component_measures?id=opentelemetry&metric=coverage)
+[![Bugs](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=bugs)](https://sonar.openbsl.ru/project/issues?id=opentelemetry&resolved=false&types=BUG)
+[![Code Smells](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=code_smells)](https://sonar.openbsl.ru/project/issues?id=opentelemetry&resolved=false&types=CODE_SMELL)
+[![Lines of Code](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=ncloc)](https://sonar.openbsl.ru/component_measures?id=opentelemetry&metric=ncloc)
+[![Telegram](https://img.shields.io/badge/Telegram-чат-blue?logo=telegram)](https://t.me/autumn_winow)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nixel2007/opentelemetry)
 
 Библиотека на [OneScript](https://oscript.io) для использования [OpenTelemetry](https://opentelemetry.io) в оскриптовых проектах.
