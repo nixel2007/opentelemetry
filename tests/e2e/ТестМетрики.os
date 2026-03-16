@@ -1,4 +1,8 @@
 // BSLLS:MagicNumber-off
+// BSLLS:MissingVariablesDescription-off
+// BSLLS:PublicMethodsDescription-off
+// BSLLS:MissingParameterDescription-off
+// BSLLS:MissingReturnedValueDescription-off
 // Интеграционные тесты метрик с LGTM-стеком.
 // Запускают контейнер grafana/otel-lgtm через testcontainers.
 // Проверяют отправку и чтение метрик через OTLP HTTP и gRPC, верифицируя содержимое через API Prometheus.

@@ -1,4 +1,8 @@
 // BSLLS:MagicNumber-off
+// BSLLS:MissingVariablesDescription-off
+// BSLLS:PublicMethodsDescription-off
+// BSLLS:MissingParameterDescription-off
+// BSLLS:MissingReturnedValueDescription-off
 // Интеграционный тест кросс-сигнальной корреляции с LGTM-стеком.
 // Проверяет совместную работу трассировки, логирования и метрик
 // с общим ресурсом и корреляцией через traceId.

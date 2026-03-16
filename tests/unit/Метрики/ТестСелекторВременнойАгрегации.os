@@ -1,3 +1,7 @@
+// BSLLS:MissingVariablesDescription-off
+// BSLLS:PublicMethodsDescription-off
+// BSLLS:MissingParameterDescription-off
+// BSLLS:MissingReturnedValueDescription-off
 #Использовать "../../.."
 #Использовать asserts
 
