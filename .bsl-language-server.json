@@ -12,7 +12,7 @@
     "diagnostics": {
         "parameters": {
             "IncorrectLineBreak": {
-                "listOfIncorrectFirstSymbol": "\\)|;|,\\s*\\S+|\\)s*;\\s*\\S+"
+                "listOfIncorrectFirstSymbol": ";|,\\s*\\S+"
             },
             "LatinAndCyrillicSymbolInWord": false
         }
