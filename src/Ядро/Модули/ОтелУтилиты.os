@@ -1,3 +1,4 @@
+// BSLLS:DuplicatedInsertionIntoCollection-off
 // Модуль вспомогательных функций OpenTelemetry SDK.
 //
 // Предоставляет утилиты для генерации идентификаторов и работы с временными метками.

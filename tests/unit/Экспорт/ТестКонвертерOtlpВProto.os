@@ -3,6 +3,7 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
+// BSLLS:DuplicatedInsertionIntoCollection-off
 #Использовать "../../.."
 #Использовать asserts
 
