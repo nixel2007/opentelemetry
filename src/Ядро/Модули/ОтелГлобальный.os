@@ -1,5 +1,7 @@
+// BSLLS:CommentedCode-off
 // Модуль глобального реестра OpenTelemetry (GlobalOpenTelemetry).
 // Аналог Java SDK: GlobalOpenTelemetry
+// BSLLS:CommentedCode-on
 //
 // Хранит единственный экземпляр ОтелSdk для всего приложения.
 //

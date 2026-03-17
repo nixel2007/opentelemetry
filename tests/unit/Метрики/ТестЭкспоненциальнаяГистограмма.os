@@ -3,6 +3,7 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
+// BSLLS:DuplicateStringLiteral-off
 #Использовать "../../.."
 #Использовать asserts
 
@@ -131,6 +132,7 @@
 &Тест
 Процедура ШкалаНоль_КорректныеИндексы() Экспорт
 
+    // BSLLS:CommentedCode-off
     // Дано - шкала 0: base = 2, бакеты - степени двойки
     // Бакет i содержит (2^i, 2^(i+1)]
     // Значение 1: log2(1) = 0, ceil(0) - 1 = -1  -> бакет -1 = (0.5, 1]
@@ -138,6 +140,7 @@
     // Значение 3: log2(3) ~ 1.585, ceil(1.585) - 1 = 1 -> бакет 1 = (2, 4]
     // Значение 4: log2(4) = 2, ceil(2) - 1 = 1   -> бакет 1 = (2, 4]
     // Значение 5: log2(5) ~ 2.322, ceil(2.322) - 1 = 2 -> бакет 2 = (4, 8]
+    // BSLLS:CommentedCode-on
     Гистограмма = Новый ОтелЭкспоненциальнаяГистограмма("test.histogram", , , , 0);
 
     // Когда

@@ -17,7 +17,9 @@
 //   OTEL_BSP_SCHEDULE_DELAY -> otel.bsp.schedule.delay
 //   OTEL_BSP_MAX_EXPORT_BATCH_SIZE -> otel.bsp.max.export.batch.size
 //   OTEL_EXPORTER_OTLP_TIMEOUT -> otel.exporter.otlp.timeout
-//   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE -> otel.exporter.otlp.metrics.temporality.preference (cumulative, delta, lowmemory)
+//   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE ->
+//       otel.exporter.otlp.metrics.temporality.preference
+//       (cumulative, delta, lowmemory)
 //   OTEL_PROPAGATORS -> otel.propagators (tracecontext, baggage, none; по умолчанию tracecontext,baggage)
 
 #Область ОписаниеПеременных
@@ -146,6 +148,7 @@
 
     ИмяСемплера = Менеджер.Параметр("otel.traces.sampler");
     Если ИмяСемплера <> Неопределено Тогда
+        // BSLLS:IfElseDuplicatedCodeBlock-off
         Если ИмяСемплера = "always_on" Тогда
             СтратегияСемплирования = ОтелСемплер.ВсегдаВключен();
         ИначеЕсли ИмяСемплера = "always_off" Тогда
@@ -168,6 +171,7 @@
         Иначе
             СтратегияСемплирования = ОтелСемплер.ВсегдаВключен();
         КонецЕсли;
+        // BSLLS:IfElseDuplicatedCodeBlock-on
     КонецЕсли;
 
     // Определяем процессор (batch или simple)
@@ -178,7 +182,10 @@
     Процессор = Новый ОтелПакетныйПроцессорСпанов(Экспортер, МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта);
     Процессор.ЗапуститьФоновыйЭкспорт();
 
-    Возврат Новый ОтелПровайдерТрассировки(Ресурс, Процессор, СтратегияСемплирования, ДоляСемплирования, КорневаяСтратегия);
+    Возврат Новый ОтелПровайдерТрассировки(
+        Ресурс, Процессор,
+        СтратегияСемплирования, ДоляСемплирования,
+        КорневаяСтратегия);
 КонецФункции
 
 // Создает настроенный провайдер логирования.
@@ -229,7 +236,9 @@
     Транспорт = ПолучитьТранспорт(Менеджер);
 
     // Определяем селектор временной агрегации
-    ПредпочтениеВременнойАгрегации = Менеджер.Параметр("otel.exporter.otlp.metrics.temporality.preference", "cumulative");
+    ПредпочтениеВременнойАгрегации = Менеджер.Параметр(
+        "otel.exporter.otlp.metrics.temporality.preference",
+        "cumulative");
     Если ПредпочтениеВременнойАгрегации = "delta" Тогда
         Селектор = ОтелСелекторВременнойАгрегации.ПредпочтительноДельта();
     ИначеЕсли ПредпочтениеВременнойАгрегации = "lowmemory" Тогда
@@ -278,7 +287,11 @@
 
     Если СодержитNone Тогда
         Если ИменаПропагаторов.Количество() > 1 Тогда
-            ВызватьИсключение "Значение ""none"" в otel.propagators не может использоваться совместно с другими пропагаторами";
+            СообщениеОшибки = "Значение ""none"""
+                + " в otel.propagators не может"
+                + " использоваться совместно"
+                + " с другими пропагаторами";
+            ВызватьИсключение СообщениеОшибки;
         КонецЕсли;
         Возврат Неопределено;
     КонецЕсли;

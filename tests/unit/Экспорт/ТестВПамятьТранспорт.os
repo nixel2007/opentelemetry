@@ -2,6 +2,8 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
+// BSLLS:DuplicateStringLiteral-off
+// BSLLS:MagicNumber-off
 #Использовать "../../.."
 #Использовать asserts
 

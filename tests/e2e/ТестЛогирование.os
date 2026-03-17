@@ -3,6 +3,7 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
+// BSLLS:DuplicateStringLiteral-off
 // Интеграционные тесты логирования с LGTM-стеком.
 // Запускают контейнер grafana/otel-lgtm через testcontainers.
 // Проверяют отправку и чтение логов через OTLP HTTP и gRPC, верифицируя содержимое через API Loki.

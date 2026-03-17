@@ -4,6 +4,7 @@
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
 // BSLLS:DuplicatedInsertionIntoCollection-off
+// BSLLS:DuplicateStringLiteral-off
 #Использовать "../../.."
 #Использовать asserts
 

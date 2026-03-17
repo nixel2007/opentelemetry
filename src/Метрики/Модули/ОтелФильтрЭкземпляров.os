@@ -1,3 +1,4 @@
+// BSLLS:MagicNumber-off
 // Модуль фильтрации экземпляров (ExemplarFilter) по спецификации OpenTelemetry.
 //
 // Определяет, когда захватывать экземпляры (exemplars) для метрик.

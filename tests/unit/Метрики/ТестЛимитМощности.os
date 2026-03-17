@@ -4,6 +4,7 @@
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
 // BSLLS:DuplicatedInsertionIntoCollection-off
+// BSLLS:DuplicateStringLiteral-off
 #Использовать "../../.."
 #Использовать asserts
 
@@ -229,7 +230,7 @@
     Счетчик.Добавить(1, АтрБ);
     Счетчик.Добавить(1, АтрВ); // overflow
 
-    // Тогда - 2 + 1 overflow = 3
+    // Тогда - 2 + 1 overflow = 3 // BSLLS:CommentedCode-off
     Точки = Счетчик.ТочкиДанных();
     Ожидаем.Что(Точки.Количество()).Равно(3);
 
@@ -285,7 +286,7 @@
 
     // Тогда
     Точки = Счетчик.ТочкиДанных();
-    // 1 обычная + 1 overflow = 2
+    // 1 обычная + 1 overflow = 2 // BSLLS:CommentedCode-off
     Ожидаем.Что(Точки.Количество()).Равно(2);
 
     НайденOverflow = Ложь;

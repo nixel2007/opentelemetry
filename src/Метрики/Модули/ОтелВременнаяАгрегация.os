@@ -1,3 +1,4 @@
+// BSLLS:MagicNumber-off
 // Модуль временной агрегации метрик (AggregationTemporality) по спецификации OpenTelemetry.
 //
 // Определяет, как значения метрик агрегируются во времени.

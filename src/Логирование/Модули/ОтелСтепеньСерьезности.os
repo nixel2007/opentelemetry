@@ -1,3 +1,4 @@
+// BSLLS:MagicNumber-off
 // Модуль констант степеней серьезности (SeverityNumber) по спецификации OpenTelemetry.
 //
 // Значения соответствуют OTLP SeverityNumber enum.

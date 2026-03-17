@@ -1,3 +1,4 @@
+// BSLLS:MagicNumber-off
 // BSLLS:DuplicatedInsertionIntoCollection-off
 // Модуль вспомогательных функций OpenTelemetry SDK.
 //
