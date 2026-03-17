@@ -126,6 +126,8 @@
     Параметры.Вставить("otel.traces.exporter", "none");
     Параметры.Вставить("otel.logs.exporter", "none");
     Параметры.Вставить("otel.metrics.exporter", "otlp");
+    Параметры.Вставить("otel.metric.export.interval", "100");
+    Параметры.Вставить("otel.exporter.otlp.timeout", "1");
     Параметры.Вставить("otel.service.name", "тест-сервис");
 
     Менеджер = Новый МенеджерПараметров();
@@ -409,6 +411,8 @@
     Параметры.Вставить("otel.traces.exporter", "none");
     Параметры.Вставить("otel.logs.exporter", "otlp");
     Параметры.Вставить("otel.metrics.exporter", "none");
+    Параметры.Вставить("otel.blrp.schedule.delay", "100");
+    Параметры.Вставить("otel.exporter.otlp.timeout", "1");
 
     Менеджер = Новый МенеджерПараметров();
     Менеджер.ДобавитьПровайдерПараметров(Новый ПровайдерПараметровСоответствие(Параметры));
@@ -453,6 +457,8 @@
     Параметры.Вставить("otel.logs.exporter", "none");
     Параметры.Вставить("otel.metrics.exporter", "otlp");
     Параметры.Вставить("otel.exporter.otlp.metrics.temporality.preference", "delta");
+    Параметры.Вставить("otel.metric.export.interval", "100");
+    Параметры.Вставить("otel.exporter.otlp.timeout", "1");
 
     Менеджер = Новый МенеджерПараметров();
     Менеджер.ДобавитьПровайдерПараметров(Новый ПровайдерПараметровСоответствие(Параметры));
@@ -508,6 +514,8 @@
     Параметры.Вставить("otel.traces.exporter", "otlp");
     Параметры.Вставить("otel.logs.exporter", "none");
     Параметры.Вставить("otel.metrics.exporter", "none");
+    Параметры.Вставить("otel.bsp.schedule.delay", "100");
+    Параметры.Вставить("otel.exporter.otlp.timeout", "1");
     Параметры.Вставить("otel.traces.sampler", ИмяСемплера);
     Если АргументСемплера <> Неопределено Тогда
         Параметры.Вставить("otel.traces.sampler.arg", АргументСемплера);
