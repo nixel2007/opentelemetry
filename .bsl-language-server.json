@@ -14,7 +14,11 @@
             "IncorrectLineBreak": {
                 "listOfIncorrectFirstSymbol": ";|,\\s*\\S+"
             },
-            "LatinAndCyrillicSymbolInWord": false
+            "LatinAndCyrillicSymbolInWord": false,
+            "Typo": {
+                "caseInsensitive": true,
+                "userWordsToIgnore": "Сдк,Спан,Спана,Спанов,Спаны,Спаном,Спане,Трассировщик,Трассировщика,Трассировщики,Логгер,Логгера,Логгеров,Аппендер,Эндпоинт,Семплирование,Семплирования,Пропагаторов,Пропагаторов,Пропагатором,Пропагаторами,Трейс,Трейса,Трейсов"
+            }
         }
     }
 }
