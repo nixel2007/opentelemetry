@@ -3,6 +3,8 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
+// BSLLS:UnusedLocalVariable-off
+// BSLLS:DuplicateStringLiteral-off
 #Использовать "../../.."
 #Использовать asserts
 

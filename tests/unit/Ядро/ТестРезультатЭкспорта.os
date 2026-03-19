@@ -6,6 +6,8 @@
 #Использовать "../../.."
 #Использовать asserts
 
+// BSLLS:DuplicatedInsertionIntoCollection-off
+
 &Тест
 Процедура Тест_Успех() Экспорт
 
