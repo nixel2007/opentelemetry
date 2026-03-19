@@ -20,10 +20,17 @@ oneunit execute -d tests/unit --recursive
 # Только e2e-тесты
 oneunit execute -d tests/e2e --recursive
 
+# С отчётом покрытия (Cobertura)
+oneunit execute -d tests --recursive --cobertura=coverage.xml
+
 # Проверка синтаксиса всех файлов
 find src -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
 find tests -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
 ```
+
+## Покрытие кода
+
+Целевой уровень покрытия - **95%**. Отчёт публикуется в SonarQube и Coveralls через CI (`qa.yml`).
 
 > **Внимание:** `oscript -check` может ложно падать на неизвестных переменных - это особенность реализации интерпретатора, не всегда ошибка в коде.
 
