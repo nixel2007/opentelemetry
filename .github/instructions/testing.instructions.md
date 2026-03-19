@@ -21,8 +21,8 @@ oneunit execute -d tests/unit --recursive
 oneunit execute -d tests/e2e --recursive
 
 # Проверка синтаксиса всех файлов
-find src -name "*.os" -exec oscript -check {} \;
-find tests -name "*.os" -exec oscript -check {} \;
+find src -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
+find tests -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
 ```
 
 > **Внимание:** `oscript -check` может ложно падать на неизвестных переменных - это особенность реализации интерпретатора, не всегда ошибка в коде.
