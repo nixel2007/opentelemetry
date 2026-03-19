@@ -1,3 +1,4 @@
+// BSLLS:MagicNumber-off
 #Использовать "../../.."
 #Использовать asserts
 
