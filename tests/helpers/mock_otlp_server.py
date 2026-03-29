@@ -7,8 +7,11 @@ Responds based on path:
   /error     - 500 Internal Server Error
   /retry     - 503 Service Unavailable (first 2 calls), then 200
   /too-many  - 429 Too Many Requests
+  /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
 """
+import gzip
 import http.server
+import json
 import sys
 
 retry_counts = {}
@@ -16,13 +19,31 @@ retry_counts = {}
 class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
-        self.rfile.read(content_length) if content_length > 0 else b''
+        body = self.rfile.read(content_length) if content_length > 0 else b''
 
         if self.path in ('/v1/traces', '/v1/logs', '/v1/metrics'):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(b'{}')
+        elif self.path == '/v1/gzip-traces':
+            encoding = self.headers.get('Content-Encoding', '')
+            if encoding != 'gzip':
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'missing Content-Encoding: gzip')
+                return
+            try:
+                decompressed = gzip.decompress(body)
+                data = json.loads(decompressed)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"decompressedSize": len(decompressed)}).encode())
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(f'invalid gzip: {e}'.encode())
         elif self.path == '/error':
             self.send_response(500)
             self.end_headers()
