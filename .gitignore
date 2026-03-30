@@ -2,3 +2,5 @@ oscript_modules/
 out/
 *.ospx
 configure-grafana.sh
+.env
+container/
