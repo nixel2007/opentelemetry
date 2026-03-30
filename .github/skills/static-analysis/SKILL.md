@@ -10,22 +10,19 @@ description: >
 
 Статический анализ кода. Запускается из **корня проекта**.
 
-### Анализ исходного кода
+> **ВАЖНО:** Анализ нужно запускать по ОБОИМ каталогам - `src` и `tests`. Не пропускай тесты!
+
+### Полный анализ (src + tests)
 
 ```bash
-bsl-language-server analyze -s src -r sarif -o out
-```
-
-### Анализ тестов
-
-```bash
-bsl-language-server analyze -s tests -r sarif -o out
+bsl-language-server analyze -s src -r sarif -o out && bsl-language-server analyze -s tests -r sarif -o out
 ```
 
 ### Анализ конкретной папки
 
 ```bash
 bsl-language-server analyze -s src/Метрики -r sarif -o out
+bsl-language-server analyze -s tests/unit/Метрики -r sarif -o out
 ```
 
 Результат сохраняется в `out/` в формате SARIF.
