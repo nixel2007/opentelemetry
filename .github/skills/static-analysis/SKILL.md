@@ -12,17 +12,33 @@ description: >
 
 > **ВАЖНО:** Анализ нужно запускать по ОБОИМ каталогам - `src` и `tests`. Не пропускай тесты!
 
-### Полный анализ (src + tests)
+### Порядок работы
+
+Выходной файл SARIF один и тот же, поэтому **нельзя** запускать оба каталога подряд - второй запуск перетрёт результаты первого. Работай последовательно:
+
+1. Анализ `src` → исправление замечаний
+2. Анализ `tests` → исправление замечаний
+
+### Анализ src
 
 ```bash
-bsl-language-server analyze -s src -r sarif -o out && bsl-language-server analyze -s tests -r sarif -o out
+bsl-language-server analyze -s src -r sarif -o out
 ```
+
+Прочитай результат, исправь замечания.
+
+### Анализ tests
+
+```bash
+bsl-language-server analyze -s tests -r sarif -o out
+```
+
+Прочитай результат, исправь замечания.
 
 ### Анализ конкретной папки
 
 ```bash
 bsl-language-server analyze -s src/Метрики -r sarif -o out
-bsl-language-server analyze -s tests/unit/Метрики -r sarif -o out
 ```
 
 Результат сохраняется в `out/` в формате SARIF.
@@ -60,6 +76,7 @@ find tests -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
 | `MagicNumber` | В продакшене - выноси в именованную константу. Не подавляй |
 | `MagicNumber` в enum-модулях | Подавление допустимо |
 | `NumberOfOptionalParams` | Подавление допустимо при необходимости (конструкторы с множеством параметров) |
+| `Typo` | Исправляй опечатку. Добавление слова в словарь исключений - **только по согласованию с пользователем** |
 
 ### Подавление в тестах
 
