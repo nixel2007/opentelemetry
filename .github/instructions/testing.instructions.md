@@ -8,61 +8,7 @@ applyTo: "tests/**/*.os"
 
 **СНАЧАЛА тесты (RED), ПОТОМ продакшен код (GREEN).** Никогда не меняй продакшен код до написания падающего теста.
 
-## Запуск тестов
-
-```bash
-# Все тесты
-oneunit execute -d tests --recursive
-
-# Только юнит-тесты
-oneunit execute -d tests/unit --recursive
-
-# Только e2e-тесты
-oneunit execute -d tests/e2e --recursive
-
-# С отчётом покрытия (Cobertura)
-oneunit execute -d tests --recursive --cobertura=coverage.xml
-
-# Проверка синтаксиса всех файлов
-find src -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
-find tests -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
-```
-
-## Покрытие кода
-
-Целевой уровень покрытия - **95%**. Отчёт публикуется в SonarQube и Coveralls через CI (`qa.yml`).
-
-## Локальный анализ SonarQube (BSL Language Server)
-
-Для локальной проверки замечаний статического анализа используй скрипт `bsl-language-server` (доступен в PATH):
-
-```bash
-# Анализ исходного кода
-bsl-language-server analyze -s src -r sarif -o out
-
-# Анализ тестов
-bsl-language-server analyze -s tests -r sarif -o out
-```
-
-Запускать из **корня проекта**. Результат сохраняется в `out/` в формате SARIF.
-
-> Замечания SonarQube необходимо отрабатывать. Цель - **0 новых замечаний** в добавляемом коде.
-
-> **Внимание:** `oscript -check` может ложно падать на неизвестных переменных - это особенность реализации интерпретатора, не всегда ошибка в коде.
-
-> Установка зависимостей перед первым запуском (может занять 1+ минуты - не прерывай):
-> ```bash
-> opm install opm && opm install -l --dev
-> ```
-
-## Структура тестовых файлов
-
-```
-tests/
-├── unit/           # юнит-тесты по доменам (Трассировка/, Метрики/, Логирование/, ...)
-├── e2e/            # интеграционные тесты (требуют внешних сервисов)
-└── helpers/        # вспомогательные скрипты
-```
+> Команды запуска тестов и статического анализа - в скиллах `run-tests` и `static-analysis` (`.github/skills/`).
 
 ## Шаблон теста
 
@@ -125,6 +71,8 @@ tests/
 ```
 
 ## Подавление BSLLS в тестах
+
+> Полные правила обработки замечаний BSLLS - в скилле `static-analysis` (`.github/skills/`).
 
 В тестовых файлах допустимо подавлять в начале файла: `MagicNumber`, `MissingVariablesDescription`, `PublicMethodsDescription`, `MissingParameterDescription`, `MissingReturnedValueDescription`.
 
