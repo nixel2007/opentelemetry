@@ -19,10 +19,14 @@
 //   OTEL_BSP_MAX_QUEUE_SIZE -> otel.bsp.max.queue.size
 //   OTEL_BSP_SCHEDULE_DELAY -> otel.bsp.schedule.delay
 //   OTEL_BSP_MAX_EXPORT_BATCH_SIZE -> otel.bsp.max.export.batch.size
+//   OTEL_BSP_EXPORT_TIMEOUT -> otel.bsp.export.timeout
 //   OTEL_EXPORTER_OTLP_TIMEOUT -> otel.exporter.otlp.timeout
 //   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE ->
 //       otel.exporter.otlp.metrics.temporality.preference
 //       (cumulative, delta, lowmemory)
+//   OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION ->
+//       otel.exporter.otlp.metrics.default.histogram.aggregation
+//       (explicit_bucket_histogram, base2_exponential_bucket_histogram)
 //   OTEL_PROPAGATORS -> otel.propagators (tracecontext, baggage, none; по умолчанию tracecontext,baggage)
 //   OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT -> otel.attribute.value.length.limit (число, по умолчанию без ограничения)
 //   OTEL_ATTRIBUTE_COUNT_LIMIT -> otel.attribute.count.limit (число, по умолчанию 128)
@@ -220,9 +224,10 @@
     МаксРазмерОчереди = Число(Менеджер.Параметр("otel.bsp.max.queue.size", "2048"));
     ИнтервалЭкспорта = Число(Менеджер.Параметр("otel.bsp.schedule.delay", "5000"));
     МаксРазмерПакета = Число(Менеджер.Параметр("otel.bsp.max.export.batch.size", "512"));
+    ТаймаутЭкспорта = Число(Менеджер.Параметр("otel.bsp.export.timeout", "30000"));
 
     Базовый = Новый ОтелБазовыйПакетныйПроцессор(
-        Экспортер, "traces", МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта);
+        Экспортер, "traces", МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта, ТаймаутЭкспорта);
     Процессор = Новый ПостроительНаследника(Новый ОтелПакетныйПроцессорСпанов(), Базовый).Построить();
     Процессор.ЗапуститьФоновыйЭкспорт();
 
@@ -258,9 +263,10 @@
     МаксРазмерОчереди = Число(Менеджер.Параметр("otel.blrp.max.queue.size", "2048"));
     ИнтервалЭкспорта = Число(Менеджер.Параметр("otel.blrp.schedule.delay", "1000"));
     МаксРазмерПакета = Число(Менеджер.Параметр("otel.blrp.max.export.batch.size", "512"));
+    ТаймаутЭкспорта = Число(Менеджер.Параметр("otel.blrp.export.timeout", "30000"));
 
     Базовый = Новый ОтелБазовыйПакетныйПроцессор(
-        Экспортер, "logs", МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта);
+        Экспортер, "logs", МаксРазмерОчереди, МаксРазмерПакета, ИнтервалЭкспорта, ТаймаутЭкспорта);
     Процессор = Новый ПостроительНаследника(Новый ОтелПакетныйПроцессорЛогов(), Базовый).Построить();
     Процессор.ЗапуститьФоновыйЭкспорт();
 
@@ -307,7 +313,13 @@
     Читатель = Новый ОтелПериодическийЧитательМетрик(Экспортер, ИнтервалЭкспортаМс);
     Читатель.Запустить();
 
-    Возврат Новый ОтелПровайдерМетрик(Ресурс, Читатель);
+    АгрегацияГистограмм = Менеджер.Параметр(
+        "otel.exporter.otlp.metrics.default.histogram.aggregation",
+        "explicit_bucket_histogram");
+
+    Провайдер = Новый ОтелПровайдерМетрик(Ресурс, Читатель);
+    Провайдер.УстановитьАгрегациюГистограммПоУмолчанию(АгрегацияГистограмм);
+    Возврат Провайдер;
 КонецФункции
 
 // Создает пропагаторы контекста из конфигурации.
