@@ -4,3 +4,4 @@ out/
 configure-grafana.sh
 .env
 container/
+.github/skills/spec-analysis/__pycache__/
