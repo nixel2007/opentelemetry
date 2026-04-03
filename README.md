@@ -5,10 +5,11 @@
 [![Bugs](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=bugs)](https://sonar.openbsl.ru/project/issues?id=opentelemetry&resolved=false&types=BUG)
 [![Code Smells](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=code_smells)](https://sonar.openbsl.ru/project/issues?id=opentelemetry&resolved=false&types=CODE_SMELL)
 [![Lines of Code](https://sonar.openbsl.ru/api/project_badges/measure?project=opentelemetry&metric=ncloc)](https://sonar.openbsl.ru/component_measures?id=opentelemetry&metric=ncloc)
+[![OTel Spec](https://img.shields.io/badge/OTel_Spec-v1.55.0-blueviolet)](docs/spec-compliance.md)
 [![Telegram](https://img.shields.io/badge/Telegram-чат-blue?logo=telegram)](https://t.me/autumn_winow)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nixel2007/opentelemetry)
 
-Библиотека на [OneScript](https://oscript.io) для использования [OpenTelemetry](https://opentelemetry.io) в оскриптовых проектах.
+Библиотека на [OneScript](https://oscript.io) для использования [OpenTelemetry](https://opentelemetry.io) в оскриптовых проектах. Реализует [спецификацию OpenTelemetry v1.55.0](https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.55.0) ([подробный анализ соответствия](docs/spec-compliance.md)).
 
 Позволяет собирать и отправлять телеметрию (трассировку, логи, метрики) в формате OTLP в любой совместимый коллектор - [Grafana LGTM](https://grafana.com/oss/), [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) и другие. Поддерживает два транспорта: HTTP JSON и gRPC.
 
