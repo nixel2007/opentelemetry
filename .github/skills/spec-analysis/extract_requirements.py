@@ -93,19 +93,58 @@ def fetch_page(url, output_dir, name):
 
 
 def extract_requirements(text, section):
-    """Извлекает требования построчно: каждая строка с MUST/SHOULD = требование."""
+    """Извлекает требования построчно: каждая строка с MUST/SHOULD = требование.
+
+    Отслеживает маркеры 'Status: Development' и 'Status: Stable' в тексте.
+    Status-маркеры привязаны к подразделам: при появлении нового заголовка
+    статус сбрасывается к значению по умолчанию для страницы.
+    """
     reqs = []
     current_subsection = section
+
+    # Определяем стабильность по умолчанию для страницы (первый Status: ...)
+    page_default = "Stable"
+    for line in text.split("\n"):
+        if re.search(r"Status:\s*(Stable|Development|Mixed)", line.strip()):
+            if "Development" in line:
+                page_default = "Development"
+            else:
+                page_default = "Stable"
+            break
+
+    current_stability = page_default
+    # Флаг: видели ли мы Status-маркер после текущего заголовка
+    status_set_for_section = False
 
     for line in text.split("\n"):
         stripped = line.strip()
 
-        # Определяем подразделы по заголовкам
+        # Определяем подразделы по заголовкам - сбрасываем статус к умолчанию
         m = re.match(r"^#{1,4}\s+(.+)", stripped)
         if m:
             current_subsection = m.group(1).strip()
             current_subsection = re.sub(r"\[.*?\]", "", current_subsection).strip()
+            current_stability = page_default
+            status_set_for_section = False
             continue
+
+        # Отслеживаем маркеры стабильности секций
+        if re.search(r"Status:\s*Development", stripped):
+            current_stability = "Development"
+            status_set_for_section = True
+            # Если строка содержит только статус, пропускаем
+            if re.match(r"^Status:\s*Development\s*$", stripped):
+                continue
+        elif re.search(r"Status:\s*Stable", stripped):
+            current_stability = "Stable"
+            status_set_for_section = True
+            if re.match(r"^Status:\s*Stable", stripped):
+                continue
+
+        # Inline Development маркеры - для конкретной строки
+        line_stability = current_stability
+        if "Status: Development" in stripped or "(Development)" in stripped:
+            line_stability = "Development"
 
         # Пропускаем короткие строки
         if len(stripped) < 30:
@@ -138,6 +177,7 @@ def extract_requirements(text, section):
                 "subsection": current_subsection,
                 "level": level,
                 "requirement": clean,
+                "stability": line_stability,
             }
         )
 
@@ -172,6 +212,12 @@ def main():
     counts = Counter(r["level"] for r in all_requirements)
     for level, count in sorted(counts.items()):
         print(f"  {level}: {count}")
+
+    # Статистика по стабильности
+    stability_counts = Counter(r["stability"] for r in all_requirements)
+    print(f"\nПо стабильности:")
+    for stab, count in sorted(stability_counts.items()):
+        print(f"  {stab}: {count}")
 
     # Статистика по разделам
     print("\nПо разделам:")

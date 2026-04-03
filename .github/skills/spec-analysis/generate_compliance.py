@@ -42,21 +42,17 @@ def load_data(req_file, verif_file):
 
 
 def generate_markdown(requirements, spec_version=None):
-    """Генерирует Markdown-документ."""
+    """Генерирует Markdown-документ с разделением на Stable и Development."""
     if not spec_version:
         spec_version = "v1.55.0"
 
-    total = len(requirements)
-    found = sum(1 for r in requirements if r["status"] == "found")
-    partial = sum(1 for r in requirements if r["status"] == "partial")
-    not_found = sum(1 for r in requirements if r["status"] == "not_found")
-    na = sum(1 for r in requirements if r["status"] == "n_a")
-    applicable = total - na
+    pct = lambda n, d: round(100 * n / d, 1) if d > 0 else 0
 
-    must_reqs = [r for r in requirements if r["level"] in ("MUST", "MUST NOT") and r["status"] != "n_a"]
-    must_found = sum(1 for r in must_reqs if r["status"] == "found")
-    should_reqs = [r for r in requirements if r["level"] in ("SHOULD", "SHOULD NOT") and r["status"] != "n_a"]
-    should_found = sum(1 for r in should_reqs if r["status"] == "found")
+    # Разделяем Stable и Development
+    stable_reqs = [r for r in requirements if r.get("stability", "Stable") == "Stable"]
+    dev_reqs = [r for r in requirements if r.get("stability", "Stable") == "Development"]
+
+    total = len(requirements)
 
     md = []
     md.append(f"# Анализ соответствия спецификации OpenTelemetry {spec_version}")
@@ -66,23 +62,35 @@ def generate_markdown(requirements, spec_version=None):
     md.append("> **Методология**: spec-first - извлечены все MUST/SHOULD требования из спецификации, затем каждое прослежено до кода")
     md.append("")
 
-    # Summary
-    md.append("## Сводка")
+    # === Stable summary ===
+    s_found = sum(1 for r in stable_reqs if r["status"] == "found")
+    s_partial = sum(1 for r in stable_reqs if r["status"] == "partial")
+    s_not_found = sum(1 for r in stable_reqs if r["status"] == "not_found")
+    s_na = sum(1 for r in stable_reqs if r["status"] == "n_a")
+    s_applicable = len(stable_reqs) - s_na
+
+    s_must = [r for r in stable_reqs if r["level"] in ("MUST", "MUST NOT") and r["status"] != "n_a"]
+    s_must_found = sum(1 for r in s_must if r["status"] == "found")
+    s_should = [r for r in stable_reqs if r["level"] in ("SHOULD", "SHOULD NOT") and r["status"] != "n_a"]
+    s_should_found = sum(1 for r in s_should if r["status"] == "found")
+
+    md.append("## Сводка (Stable)")
+    md.append("")
+    md.append("Учитываются только требования из стабильных разделов спецификации.")
     md.append("")
     md.append("| Показатель | Значение |")
     md.append("|---|---|")
-    md.append(f"| Всего требований | {total} |")
-    md.append(f"| Применимых (без N/A) | {applicable} |")
-    pct = lambda n, d: round(100 * n / d, 1) if d > 0 else 0
-    md.append(f"| ✅ Реализовано | {found} ({pct(found, applicable)}%) |")
-    md.append(f"| ⚠️ Частично | {partial} ({pct(partial, applicable)}%) |")
-    md.append(f"| ❌ Не реализовано | {not_found} ({pct(not_found, applicable)}%) |")
-    md.append(f"| N/A (неприменимо/Development) | {na} |")
-    md.append(f"| **MUST/MUST NOT** | {must_found}/{len(must_reqs)} ({pct(must_found, len(must_reqs))}%) |")
-    md.append(f"| **SHOULD/SHOULD NOT** | {should_found}/{len(should_reqs)} ({pct(should_found, len(should_reqs))}%) |")
+    md.append(f"| Всего требований | {total} (Stable: {len(stable_reqs)}, Development: {len(dev_reqs)}) |")
+    md.append(f"| Применимых Stable (без N/A) | {s_applicable} |")
+    md.append(f"| ✅ Реализовано | {s_found} ({pct(s_found, s_applicable)}%) |")
+    md.append(f"| ⚠️ Частично | {s_partial} ({pct(s_partial, s_applicable)}%) |")
+    md.append(f"| ❌ Не реализовано | {s_not_found} ({pct(s_not_found, s_applicable)}%) |")
+    md.append(f"| N/A (неприменимо) | {s_na} |")
+    md.append(f"| **MUST/MUST NOT** | {s_must_found}/{len(s_must)} ({pct(s_must_found, len(s_must))}%) |")
+    md.append(f"| **SHOULD/SHOULD NOT** | {s_should_found}/{len(s_should)} ({pct(s_should_found, len(s_should))}%) |")
     md.append("")
 
-    # Per-section summary
+    # === Per-section summary (Stable only) ===
     sections = []
     seen = set()
     for r in requirements:
@@ -90,30 +98,31 @@ def generate_markdown(requirements, spec_version=None):
             sections.append(r["section"])
             seen.add(r["section"])
 
-    md.append("## Соответствие по разделам")
+    md.append("## Соответствие по разделам (Stable)")
     md.append("")
-    md.append("| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % |")
-    md.append("|---|---|---|---|---|---|---|")
+    md.append("| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Dev |")
+    md.append("|---|---|---|---|---|---|---|---|")
 
     for section in sections:
-        sec_reqs = [r for r in requirements if r["section"] == section]
-        t = len(sec_reqs)
-        f = sum(1 for r in sec_reqs if r["status"] == "found")
-        p = sum(1 for r in sec_reqs if r["status"] == "partial")
-        nf = sum(1 for r in sec_reqs if r["status"] == "not_found")
-        n = sum(1 for r in sec_reqs if r["status"] == "n_a")
+        sec_stable = [r for r in stable_reqs if r["section"] == section]
+        sec_dev = [r for r in dev_reqs if r["section"] == section]
+        t = len(sec_stable)
+        f = sum(1 for r in sec_stable if r["status"] == "found")
+        p = sum(1 for r in sec_stable if r["status"] == "partial")
+        nf = sum(1 for r in sec_stable if r["status"] == "not_found")
+        n = sum(1 for r in sec_stable if r["status"] == "n_a")
         appl = t - n
-        md.append(f"| {section} | {t} | {f} | {p} | {nf} | {n} | {pct(f, appl)}% |")
+        md.append(f"| {section} | {t} | {f} | {p} | {nf} | {n} | {pct(f, appl)}% | {len(sec_dev)} |")
 
     md.append("")
 
-    # Key deviations
-    md.append("## Ключевые несоответствия")
+    # === Key deviations (Stable only) ===
+    md.append("## Ключевые несоответствия (Stable)")
     md.append("")
     md.append("### MUST/MUST NOT нарушения")
     md.append("")
 
-    must_devs = [r for r in requirements if r["level"] in ("MUST", "MUST NOT") and r["status"] in ("not_found", "partial")]
+    must_devs = [r for r in stable_reqs if r["level"] in ("MUST", "MUST NOT") and r["status"] in ("not_found", "partial")]
     must_devs.sort(key=lambda r: (r["section"], r["id"]))
 
     for r in must_devs:
@@ -130,7 +139,7 @@ def generate_markdown(requirements, spec_version=None):
     md.append("### SHOULD/SHOULD NOT несоответствия")
     md.append("")
 
-    should_devs = [r for r in requirements if r["level"] in ("SHOULD", "SHOULD NOT") and r["status"] in ("not_found", "partial")]
+    should_devs = [r for r in stable_reqs if r["level"] in ("SHOULD", "SHOULD NOT") and r["status"] in ("not_found", "partial")]
     should_devs.sort(key=lambda r: (r["section"], r["id"]))
 
     for r in should_devs:
@@ -147,12 +156,14 @@ def generate_markdown(requirements, spec_version=None):
     md.append("---")
     md.append("")
 
-    # Detailed per-section tables
-    md.append("## Детальный анализ по разделам")
+    # === Detailed per-section tables (Stable) ===
+    md.append("## Детальный анализ по разделам (Stable)")
     md.append("")
 
     for section in sections:
-        sec_reqs = [r for r in requirements if r["section"] == section]
+        sec_reqs = [r for r in stable_reqs if r["section"] == section]
+        if not sec_reqs:
+            continue
         md.append(f"### {section}")
         md.append("")
         md.append("| # | Уровень | Статус | Требование | Расположение в коде |")
@@ -169,6 +180,52 @@ def generate_markdown(requirements, spec_version=None):
             md.append(f"| {r['id']} | {r['level']} | {icon} | {short_req} | {loc} |")
 
         md.append("")
+
+    # === Development section ===
+    if dev_reqs:
+        md.append("---")
+        md.append("")
+        md.append("## Требования Development-статуса")
+        md.append("")
+        md.append("Эти требования находятся в нестабильных разделах спецификации (Status: Development).")
+        md.append("Они не влияют на основной процент соответствия и могут измениться в будущих версиях спецификации.")
+        md.append("")
+
+        d_found = sum(1 for r in dev_reqs if r["status"] == "found")
+        d_partial = sum(1 for r in dev_reqs if r["status"] == "partial")
+        d_not_found = sum(1 for r in dev_reqs if r["status"] == "not_found")
+        d_na = sum(1 for r in dev_reqs if r["status"] == "n_a")
+        d_applicable = len(dev_reqs) - d_na
+
+        md.append("| Показатель | Значение |")
+        md.append("|---|---|")
+        md.append(f"| Всего Development | {len(dev_reqs)} |")
+        md.append(f"| ✅ Реализовано | {d_found} ({pct(d_found, d_applicable)}%) |")
+        md.append(f"| ⚠️ Частично | {d_partial} ({pct(d_partial, d_applicable)}%) |")
+        md.append(f"| ❌ Не реализовано | {d_not_found} ({pct(d_not_found, d_applicable)}%) |")
+        md.append(f"| N/A | {d_na} |")
+        md.append("")
+
+        for section in sections:
+            sec_dev = [r for r in dev_reqs if r["section"] == section]
+            if not sec_dev:
+                continue
+            md.append(f"### {section} (Development)")
+            md.append("")
+            md.append("| # | Уровень | Статус | Требование | Расположение в коде |")
+            md.append("|---|---|---|---|---|")
+
+            for r in sec_dev:
+                icon = STATUS_ICONS.get(r["status"], "?")
+                short_req = r["requirement"][:120].replace("|", "\\|").replace("\n", " ")
+                if len(r["requirement"]) > 120:
+                    short_req += "..."
+                loc = r["code_location"].replace("|", "\\|") if r["code_location"] else "-"
+                if r["notes"] and r["status"] != "found":
+                    loc += f" ({r['notes']})" if r["code_location"] else r["notes"]
+                md.append(f"| {r['id']} | {r['level']} | {icon} | {short_req} | {loc} |")
+
+            md.append("")
 
     # Platform limitations
     md.append("## Ограничения платформы OneScript")
@@ -189,13 +246,14 @@ def generate_markdown(requirements, spec_version=None):
     md.append("")
     md.append(f"1. Извлечены все предложения с ключевыми словами MUST/MUST NOT/SHOULD/SHOULD NOT из 12 страниц спецификации OTel {spec_version}:")
     md.append("   - Context, Baggage API, Resource SDK, Trace API, Trace SDK, Logs Bridge API, Logs SDK, Metrics API, Metrics SDK, OTLP Exporter, Propagators, SDK Environment Variables")
-    md.append("2. Отфильтрованы требования со статусом Development (LoggerConfig, MeterConfig, TracerConfig, ProbabilitySampler и др.) и дедуплицированы")
-    md.append(f"3. Каждое из {total} требований прослежено до конкретного файла и строки в исходном коде")
+    md.append(f"2. Каждое из {total} требований классифицировано по стабильности (Stable/Development) на основе маркеров `Status:` в спецификации")
+    md.append(f"3. Каждое требование прослежено до конкретного файла и строки в исходном коде")
     md.append("4. Статусы:")
     md.append("   - ✅ found - реализовано")
     md.append("   - ⚠️ partial - частично реализовано")
     md.append("   - ❌ not_found - не реализовано")
-    md.append("   - ➖ n_a - неприменимо к платформе или Development-статус в спецификации")
+    md.append("   - ➖ n_a - неприменимо к платформе")
+    md.append("5. Development-требования вынесены в отдельную секцию и не влияют на основной процент соответствия")
     md.append("")
 
     return "\n".join(md)

@@ -4,37 +4,39 @@
 > **Дата анализа**: 2026-04-03
 > **Методология**: spec-first - извлечены все MUST/SHOULD требования из спецификации, затем каждое прослежено до кода
 
-## Сводка
+## Сводка (Stable)
+
+Учитываются только требования из стабильных разделов спецификации.
 
 | Показатель | Значение |
 |---|---|
-| Всего требований | 767 |
-| Применимых (без N/A) | 700 |
-| ✅ Реализовано | 406 (58.0%) |
-| ⚠️ Частично | 206 (29.4%) |
-| ❌ Не реализовано | 88 (12.6%) |
-| N/A (неприменимо/Development) | 67 |
-| **MUST/MUST NOT** | 295/440 (67.0%) |
-| **SHOULD/SHOULD NOT** | 111/260 (42.7%) |
+| Всего требований | 767 (Stable: 668, Development: 99) |
+| Применимых Stable (без N/A) | 621 |
+| ✅ Реализовано | 381 (61.4%) |
+| ⚠️ Частично | 177 (28.5%) |
+| ❌ Не реализовано | 63 (10.1%) |
+| N/A (неприменимо) | 47 |
+| **MUST/MUST NOT** | 277/386 (71.8%) |
+| **SHOULD/SHOULD NOT** | 104/235 (44.3%) |
 
-## Соответствие по разделам
+## Соответствие по разделам (Stable)
 
-| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % |
-|---|---|---|---|---|---|---|
-| Context | 14 | 12 | 0 | 0 | 2 | 100.0% |
-| Baggage Api | 16 | 15 | 0 | 0 | 1 | 100.0% |
-| Resource Sdk | 25 | 11 | 3 | 1 | 10 | 73.3% |
-| Trace Api | 119 | 102 | 6 | 0 | 11 | 94.4% |
-| Trace Sdk | 110 | 59 | 19 | 13 | 19 | 64.8% |
-| Logs Api | 22 | 7 | 2 | 13 | 0 | 31.8% |
-| Logs Sdk | 85 | 29 | 2 | 54 | 0 | 34.1% |
-| Metrics Api | 99 | 79 | 16 | 0 | 4 | 83.2% |
-| Metrics Sdk | 202 | 66 | 136 | 0 | 0 | 32.7% |
-| Otlp Exporter | 21 | 3 | 9 | 1 | 8 | 23.1% |
-| Propagators | 34 | 18 | 4 | 6 | 6 | 64.3% |
-| Env Vars | 20 | 5 | 9 | 0 | 6 | 35.7% |
+| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Dev |
+|---|---|---|---|---|---|---|---|
+| Context | 14 | 12 | 0 | 0 | 2 | 100.0% | 0 |
+| Baggage Api | 16 | 15 | 0 | 0 | 1 | 100.0% | 0 |
+| Resource Sdk | 15 | 9 | 2 | 1 | 3 | 75.0% | 10 |
+| Trace Api | 115 | 99 | 6 | 0 | 10 | 94.3% | 4 |
+| Trace Sdk | 81 | 48 | 16 | 6 | 11 | 68.6% | 29 |
+| Logs Api | 20 | 7 | 2 | 11 | 0 | 35.0% | 2 |
+| Logs Sdk | 67 | 27 | 2 | 38 | 0 | 40.3% | 18 |
+| Metrics Api | 99 | 79 | 16 | 0 | 4 | 83.2% | 0 |
+| Metrics Sdk | 170 | 59 | 111 | 0 | 0 | 34.7% | 32 |
+| Otlp Exporter | 21 | 3 | 9 | 1 | 8 | 23.1% | 0 |
+| Propagators | 34 | 18 | 4 | 6 | 6 | 64.3% | 0 |
+| Env Vars | 16 | 5 | 9 | 0 | 2 | 35.7% | 4 |
 
-## Ключевые несоответствия
+## Ключевые несоответствия (Stable)
 
 ### MUST/MUST NOT нарушения
 
@@ -68,34 +70,10 @@
   - LoggerConfigurator not found
 - ❌ **[Logs Sdk]** [MUST] configuration MUST also apply to all already returned `Logger`s (i.e. it MUST
   - Config for existing loggers missing
-- ❌ **[Logs Sdk]** [MUST] The function MUST accept the following parameter:
-  - LoggerConfigurator not found
-- ❌ **[Logs Sdk]** [MUST] The function MUST return the relevant `LoggerConfig`, or some signal indicating
-  - LoggerConfigurator return missing
-- ❌ **[Logs Sdk]** [MUST] `Shutdown` MUST be called only once for each `LoggerProvider` instance. After
-  - Shutdown single-call enforcement missing
-- ❌ **[Logs Sdk]** [MUST] the `Logger` MUST be updated to behave according to the new `LoggerConfig`.
-  - Dynamic behavior update missing
-- ❌ **[Logs Sdk]** [MUST] If a `Logger` is disabled, it MUST behave equivalently
-  - Disabled logger behavior missing
-- ❌ **[Logs Sdk]** [MUST] If not explicitly set, the `minimum_severity` parameter MUST default to `0`.
-  - minimum_severity missing
-- ❌ **[Logs Sdk]** [MUST] specified (i.e. not `0`) and is less than the configured `minimum_severity`, the log record MUST
-  - Severity filtering missing
-- ❌ **[Logs Sdk]** [MUST] If not explicitly set, the `trace_based` parameter MUST default to `false`.
-  - trace_based missing
-- ❌ **[Logs Sdk]** [MUST] If `trace_based` is `true`, log records associated with unsampled traces MUST
-  - Unsampled trace filtering missing
-- ❌ **[Logs Sdk]** [MUST] However, the changes MUST be eventually visible.
-  - Config visibility delay missing
 - ❌ **[Logs Sdk]** [MUST] If an Exception is provided, the SDK MUST by default set attributes
   - Exception attribute missing
 - ❌ **[Logs Sdk]** [MUST NOT] User-provided attributes MUST take precedence and MUST NOT be overwritten by
   - User attributes precedence missing
-- ❌ **[Logs Sdk]** [MUST] the implementation MUST apply the filtering rules defined by the
-  - Filtering rules missing
-- ❌ **[Logs Sdk]** [MUST] the log record MUST be dropped.
-  - Log record dropping missing
 - ❌ **[Logs Sdk]** [MUST] `Enabled` MUST return `false` when either:
   - Enabled return conditions missing
 - ❌ **[Logs Sdk]** [MUST] A function receiving this as an argument MUST additionally be able to modify
@@ -128,14 +106,8 @@
   - Observations atomic but logical grouping not explicit
 - ⚠️ **[Metrics Api]** [MUST] This API MUST return a language idiomatic boolean type. A returned value of (`-`)
   - No explicit Enabled API returning boolean
-- ⚠️ **[Metrics Sdk]** [MUST] and (Development) MeterConfigurator) MUST be (`-`)
-  - Configuration API not visible
 - ⚠️ **[Metrics Sdk]** [MUST NOT] configuration MUST also apply to all already returned `Meters` (i.e. it MUST NOT (`-`)
   - Configuration to returned Meters unclear
-- ⚠️ **[Metrics Sdk]** [MUST] The function MUST accept the following parameter: (`-`)
-  - MeterConfigurator accept param unclear
-- ⚠️ **[Metrics Sdk]** [MUST] The function MUST return the relevant `MeterConfig`, or some signal indicating (`-`)
-  - MeterConfigurator return behavior unclear
 - ⚠️ **[Metrics Sdk]** [MUST] attributes that MUST be excluded, all other attributes MUST be kept. If an (`-`)
   - Exclude attribute unclear
 - ⚠️ **[Metrics Sdk]** [MUST] Callback functions MUST be invoked for the specific `MetricReader` (`-`)
@@ -146,14 +118,6 @@
   - Cumulative cardinality guarantee unclear
 - ⚠️ **[Metrics Sdk]** [MUST] Regardless of aggregation temporality, the SDK MUST ensure that every (`-`)
   - Synchronous enforcement unclear
-- ⚠️ **[Metrics Sdk]** [MUST] the `Meter` MUST be updated to behave according to the new `MeterConfig`. (`-`)
-  - Meter update on config unclear
-- ⚠️ **[Metrics Sdk]** [MUST] If a `Meter` is disabled, it MUST behave equivalently (`-`)
-  - Disabled meter behavior unclear
-- ⚠️ **[Metrics Sdk]** [MUST] The value of `enabled` MUST be used to resolve whether an instrument (`-`)
-  - Enabled for resolution unclear
-- ⚠️ **[Metrics Sdk]** [MUST] However, the changes MUST be eventually visible. (`-`)
-  - Config visibility timing unclear
 - ⚠️ **[Metrics Sdk]** [MUST] the SDK MUST aggregate data from identical Instruments (`-`)
   - Conflicting identities unclear
 - ⚠️ **[Metrics Sdk]** [MUST] multiple casings of the same `name`. When this happens, the Meter MUST return (`-`)
@@ -206,24 +170,6 @@
   - No-op fallback unclear
 - ⚠️ **[Metrics Sdk]** [MUST] a metric View, although individual reservoirs MUST still be (`-`)
   - Resource mutation unclear
-- ⚠️ **[Metrics Sdk]** [MUST] The `MetricReader` MUST ensure that data points from OpenTelemetry (`-`)
-  - Aggregator state reset unclear
-- ⚠️ **[Metrics Sdk]** [MUST] temporality, MetricReader.Collect MUST receive data points exposed (`-`)
-  - Collection interval impact unclear
-- ⚠️ **[Metrics Sdk]** [MUST] temporality, MetricReader.Collect MUST only receive data points with (`-`)
-  - Exemplar sampler integration unclear
-- ⚠️ **[Metrics Sdk]** [MUST] temporality, MetricReader.Collect MUST only receive data points with (`-`)
-  - Span context propagation unclear
-- ⚠️ **[Metrics Sdk]** [MUST] successive calls to MetricReader.Collect MUST repeat the same (`-`)
-  - Trace context usage unclear
-- ⚠️ **[Metrics Sdk]** [MUST] calls to MetricReader.Collect MUST advance the starting timestamp ( (`-`)
-  - Baggage integration unclear
-- ⚠️ **[Metrics Sdk]** [MUST] MUST always be equal to time the metric data point took effect, which is equal (`-`)
-  - Log severity mapping unclear
-- ⚠️ **[Metrics Sdk]** [MUST] The SDK MUST support multiple `MetricReader` instances to be registered on the (`-`)
-  - Error reporting unclear
-- ⚠️ **[Metrics Sdk]** [MUST NOT] The SDK MUST NOT allow a `MetricReader` instance to be registered on more than (`-`)
-  - Metric type conversions unclear
 - ⚠️ **[Metrics Sdk]** [MUST] `Shutdown` MUST be called only once for each `MetricReader` instance. After the (`-`)
   - Cardinality budget unclear
 - ⚠️ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`’s `Export` (`-`)
@@ -301,19 +247,9 @@
   - Methods thread-safe by design
 - ⚠️ **[Trace Api]** [MUST] Span - all methods MUST be documented that implementations need to be safe (`src/Трассировка/Классы/ОтелСпан.os`)
   - Methods thread-safe by design
-- ⚠️ **[Trace Sdk]** [MUST] and (Development) TracerConfigurator) MUST be (`src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os`)
-  - Builder provided but no TracerConfigurator
 - ⚠️ **[Trace Sdk]** [MUST] the updated configuration MUST also apply to all already returned `Tracers` (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
   - Delegation model but no dynamic config updates
-- ❌ **[Trace Sdk]** [MUST] `Shutdown` MUST be called only once for each `TracerProvider` instance. After (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105`)
-  - Закрыть() can be called multiple times
-- ❌ **[Trace Sdk]** [MUST] the `Tracer` MUST be updated to behave according to the new `TracerConfig`. (`Config changes don't propagate to created Tracers`)
-- ❌ **[Trace Sdk]** [MUST] If a `Tracer` is disabled, it MUST behave equivalently (`No disable mechanism implemented`)
-- ❌ **[Trace Sdk]** [MUST] The value of `enabled` MUST be used to resolve whether a `Tracer` (`No dynamic enabled check`)
-- ❌ **[Trace Sdk]** [MUST] `Enabled` MUST return `false` when either: (`No implementation`)
-- ❌ **[Trace Sdk]** [MUST] The `ProbabilitySampler` sampler MUST ignore the parent `SampledFlag`. (`No warning when used as root`)
 - ❌ **[Trace Sdk]** [MUST] The SDK MUST provide a mechanism for customizing the way IDs are generated for (`No IdGenerator extension point`)
-- ❌ **[Trace Sdk]** [MUST] The SDK MUST guarantee that the span can no longer be modified by any other thread (`No explicit guarantee documented`)
 - ❌ **[Trace Sdk]** [MUST] `Shutdown` MUST include the effects of `ForceFlush`. (`Not explicit`)
 - ❌ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over (`No timeout support`)
 - ⚠️ **[Trace Sdk]** [MUST] Each implementation MUST document the concurrency characteristics the SDK (`src/Трассировка/Классы/`)
@@ -341,18 +277,10 @@
   - Enabled Context not optional
 - ❌ **[Logs Api]** [SHOULD] SHOULD be documented that instrumentation authors needs to call this API each
   - Enabled calling docs missing
-- ❌ **[Logs Api]** [SHOULD] The ergonomic API SHOULD make it more convenient to emit event records following
-  - No ergonomic API
-- ❌ **[Logs Api]** [SHOULD] The design of the ergonomic API SHOULD be idiomatic for its language.
-  - No idiomatic method overloading
 - ❌ **[Logs Sdk]** [SHOULD] throwing an exception, its `name` SHOULD keep the original invalid value, and a
   - Invalid name handling missing
 - ❌ **[Logs Sdk]** [SHOULD] message reporting that the specified value is invalid SHOULD be logged.
   - Invalid name logging missing
-- ❌ **[Logs Sdk]** [SHOULD] SDKs SHOULD return a valid no-op `Logger` for these calls, if possible.
-  - No-op fallback not documented
-- ❌ **[Logs Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be
-  - Shutdown timeout missing
 - ❌ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded,
   - ForceFlush return status missing
 - ❌ **[Logs Sdk]** [SHOULD] failed or timed out. `ForceFlush` SHOULD return some ERROR status if there
@@ -361,12 +289,8 @@
   - ForceFlush success status missing
 - ❌ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` MAY be
   - ForceFlush timeout missing
-- ❌ **[Logs Sdk]** [SHOULD] If not explicitly set, the `enabled` parameter SHOULD default to `true` (
-  - LoggerConfig.enabled missing
 - ⚠️ **[Logs Sdk]** [SHOULD] the implementation SHOULD set it equal to the current time. (`src/Логирование/Классы/ОтелЗаписьЛога.os:346-349`)
   - Timestamp set no condition
-- ❌ **[Logs Sdk]** [SHOULD] Otherwise, it SHOULD return `true`.
-  - Enabled return true conditions missing
 - ❌ **[Logs Sdk]** [SHOULD] The options MAY be bundled in a class, which then SHOULD be called
   - LogLimits naming missing
 - ❌ **[Logs Sdk]** [SHOULD] There SHOULD be a message printed in the SDK’s log to indicate to the user
@@ -425,12 +349,6 @@
   - State passing to callback not supported
 - ⚠️ **[Metrics Sdk]** [SHOULD] message reporting that the specified value is invalid SHOULD be logged. (`-`)
   - Warning logging not implemented
-- ⚠️ **[Metrics Sdk]** [SHOULD] SHOULD return a valid no-op Meter for these calls, if possible. (`-`)
-  - No-op Meter return on shutdown unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, (`-`)
-  - Shutdown return status not explicit
-- ⚠️ **[Metrics Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be (`-`)
-  - Shutdown timeout not implemented
 - ⚠️ **[Metrics Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, (`-`)
   - ForceFlush return status unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] failed or timed out. `ForceFlush` SHOULD return some ERROR status if there (`-`)
@@ -457,8 +375,6 @@
   - Default from MetricReader unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] Aggregators of asynchronous instruments SHOULD prefer the first-observed (`-`)
   - First-observed preference unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] If not explicitly set, the `enabled` parameter SHOULD default to `true` ( (`-`)
-  - Enabled default true unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] a warning SHOULD be emitted. The emitted warning SHOULD include information for (`-`)
   - Warning on duplicate unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] SHOULD avoid the warning.* If the potential conflict involves instruments that can be distinguished by (`-`)
@@ -477,8 +393,6 @@
   - Fallback on duplicate errors unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] parameters. If an advisory parameter is not valid, the Meter SHOULD emit an error (`-`)
   - Advisory on duplicates unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] Otherwise, it SHOULD return `true`. (`-`)
-  - Type conflict detection unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] `Exemplar` sampling SHOULD be turned on by default. If `Exemplar` sampling is (`-`)
   - Scope conflict detection unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: (`-`)
@@ -511,14 +425,6 @@
   - Reader concurrent access unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] number of bucket boundaries plus one. This configuration parameter SHOULD have (`-`)
   - View concurrent registration unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] * The `exporter` to use, which is a `MetricExporter` instance.* The default output `aggregation` (optional), a function of instrument kind. This funct... (`-`)
-  - Instrumentation scope immutability unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] `MetricReader` SHOULD be provided to be used (`-`)
-  - Attribute mutability unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD NOT] `MetricReader` instance SHOULD NOT introduce side-effects to other `MetricReader` (`-`)
-  - Debug logging unclear
-- ⚠️ **[Metrics Sdk]** [SHOULD] The SDK SHOULD provide a way to allow `MetricReader` to respond to (`-`)
-  - Unit conversion unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] `Collect` SHOULD provide a way to let the caller know whether it succeeded, (`-`)
   - Temporal aggregation strategy unclear
 - ⚠️ **[Metrics Sdk]** [SHOULD] `Collect` SHOULD invoke Produce on registered (`-`)
@@ -577,14 +483,8 @@
   - OTEL_PROPAGATORS limited
 - ⚠️ **[Resource Sdk]** [SHOULD] SHOULD be considered an error. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:101-119`)
   - Limited error reporting
-- ⚠️ **[Resource Sdk]** [SHOULD] variable value SHOULD be discarded and an error SHOULD be reported following the (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:459+`)
-  - Invalid values not fully validated
 - ⚠️ **[Trace Api]** [SHOULD] Thus, the API SHOULD provide a way to set/register and access (`src/Трассировка/Классы/ОтелПостроительСпана.os:98`)
   - SetStartTimestamp exists but no register/access API for system clock
-- ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
-  - Закрыть() returns no status
-- ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` can be (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
-  - No timeout mechanism
 - ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:91-95`)
   - СброситьБуфер() no return status
 - ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` can be (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
@@ -620,7 +520,7 @@
 
 ---
 
-## Детальный анализ по разделам
+## Детальный анализ по разделам (Stable)
 
 ### Context
 
@@ -681,16 +581,6 @@
 | 43 | MUST | ➖ | semantic conventions MUST ensure that the resource has a Schema URL set to a | n/a (Schema URL support) |
 | 44 | SHOULD | ➖ | value that matches the semantic conventions. Empty Schema URL SHOULD be used if | n/a (Empty Schema URL) |
 | 45 | MUST | ➖ | the detectors use different non-empty Schema URL it MUST be an error since it is | n/a (Schema URL conflict) |
-| 46 | SHOULD | ➖ | Resource detectors SHOULD have a unique name for reference in configuration. For | n/a (Detector naming) |
-| 47 | SHOULD | ➖ | Names SHOULD be snake case and | n/a (Snake case naming) |
-| 48 | SHOULD | ➖ | Resource detector names SHOULD reflect | n/a (Detector naming purpose) |
-| 49 | SHOULD | ➖ | multiple root namespaces SHOULD choose a name which appropriately conveys their | n/a (Multiple root namespace) |
-| 50 | SHOULD | ➖ | An SDK which identifies multiple resource detectors with the same name SHOULD | n/a (Duplicate detector detection) |
-| 51 | SHOULD | ➖ | report an error. In order to limit collisions, resource detectors SHOULD | n/a (Collision limiting) |
-| 52 | MUST | ✅ | The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:101-119 |
-| 53 | MUST | ✅ | All attribute values MUST be considered strings. The `,` and `=` characters | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:459+ |
-| 54 | MUST | ➖ | in keys and values MUST be percent encoded. Other characters MAY be | n/a (Percent encoding details) |
-| 55 | SHOULD | ⚠️ | variable value SHOULD be discarded and an error SHOULD be reported following the | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:459+ (Invalid values not fully validated) |
 
 ### Trace Api
 
@@ -711,10 +601,6 @@
 | 68 | SHOULD | ✅ | inside the trace module. This functionality SHOULD be fully implemented in the API when possible. | src/Ядро/Модули/ОтелКонтекст.os |
 | 69 | MUST | ✅ | The `Tracer` MUST provide functions to: | src/Трассировка/Классы/ОтелТрассировщик.os:22-80 |
 | 70 | SHOULD | ✅ | The `Tracer` SHOULD provide functions to: | src/Трассировка/Классы/ОтелТрассировщик.os:22-80 |
-| 71 | SHOULD | ✅ | creating `Span`s, a `Tracer` SHOULD provide this `Enabled` API. | src/Трассировка/Классы/ОтелТрассировщик.os:33-35 |
-| 72 | MUST | ✅ | added in the future, therefore, the API MUST be structured in a way for | src/Трассировка/Классы/ОтелТрассировщик.os |
-| 73 | MUST | ✅ | This API MUST return a language idiomatic boolean type. A returned value of | src/Трассировка/Классы/ОтелТрассировщик.os:33 |
-| 74 | SHOULD | ➖ | SHOULD be documented that instrumentation authors needs to call this API each | Language specific documentation |
 | 75 | MUST | ✅ | The API MUST implement methods to create a `SpanContext`. These methods SHOULD be the only way to | src/Трассировка/Классы/ОтелКонтекстСпана.os:124-142 |
 | 76 | SHOULD NOT | ✅ | create a `SpanContext`. This functionality MUST be fully implemented in the API, and SHOULD NOT be | src/Трассировка/Классы/ОтелКонтекстСпана.os |
 | 77 | MUST | ✅ | The API MUST allow retrieving the `TraceId` and `SpanId` in the following forms: | src/Трассировка/Классы/ОтелКонтекстСпана.os:23-33 |
@@ -823,26 +709,11 @@
 | 175 | SHOULD | ✅ | It SHOULD only be possible to create `Tracer` instances through a `TracerProvider` | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:52 |
 | 176 | MUST | ✅ | The `TracerProvider` MUST implement the Get a Tracer API. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:52-69 |
 | 177 | MUST | ✅ | The input provided by the user MUST be used to create | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:57-68 |
-| 178 | MUST | ⚠️ | and (Development) TracerConfigurator) MUST be | src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os (Builder provided but no TracerConfigurator) |
 | 179 | MUST | ⚠️ | the updated configuration MUST also apply to all already returned `Tracers` | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (Delegation model but no dynamic config updates) |
 | 180 | MUST NOT | ✅ | (i.e. it MUST NOT matter whether a `Tracer` was obtained from the | src/Трассировка/Классы/ОтелТрассировщик.os |
-| 181 | MUST | ➖ | The function MUST accept the following parameter: | SDK doesn't implement TracerConfigurator |
-| 182 | MUST | ➖ | The function MUST return the relevant `TracerConfig`, or some signal indicating | Same as above |
-| 183 | MUST | ❌ | `Shutdown` MUST be called only once for each `TracerProvider` instance. After | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105 (Закрыть() can be called multiple times) |
-| 184 | SHOULD | ✅ | SHOULD return a valid no-op Tracer for these calls, if possible. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:59-60 |
-| 185 | SHOULD | ⚠️ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (Закрыть() returns no status) |
-| 186 | SHOULD | ⚠️ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` can be | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (No timeout mechanism) |
-| 187 | MUST | ✅ | `Shutdown` MUST be implemented at least by invoking `Shutdown` within all internal processors. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105 |
 | 188 | SHOULD | ⚠️ | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:91-95 (СброситьБуфер() no return status) |
 | 189 | SHOULD | ⚠️ | `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` can be | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (No timeout) |
 | 190 | MUST | ✅ | `ForceFlush` MUST invoke `ForceFlush` on all registered `SpanProcessors`. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:91-95 |
-| 191 | MUST | ❌ | the `Tracer` MUST be updated to behave according to the new `TracerConfig`. | Config changes don't propagate to created Tracers |
-| 192 | SHOULD | ✅ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os |
-| 193 | MUST | ❌ | If a `Tracer` is disabled, it MUST behave equivalently | No disable mechanism implemented |
-| 194 | MUST | ❌ | The value of `enabled` MUST be used to resolve whether a `Tracer` | No dynamic enabled check |
-| 195 | MUST | ➖ | However, the changes MUST be eventually visible. | No dynamic configuration system |
-| 196 | MUST | ❌ | `Enabled` MUST return `false` when either: | No implementation |
-| 197 | SHOULD | ➖ | Otherwise, it SHOULD return `true`. | Same |
 | 198 | MUST | ✅ | Readable span: A function receiving this as argument MUST be able to | src/Трассировка/Классы/ОтелСпан.os |
 | 199 | MUST | ✅ | A function receiving this as argument MUST be able to access | src/Трассировка/Классы/ОтелСпан.os:63-217 |
 | 200 | MUST | ✅ | it MUST also be able to access the `InstrumentationLibrary` | src/Трассировка/Классы/ОтелСпан.os:162-164 |
@@ -867,15 +738,6 @@
 | 219 | MUST | ➖ | * The sampling algorithm MUST be deterministic. A trace identified by a given | Language specific |
 | 220 | MUST | ✅ | implementations MUST use a deterministic hash of the `TraceId` when computing | src/Трассировка/Модули/ОтелСэмплер.os:247-269 |
 | 221 | MUST | ✅ | will produce the same decision.* A `TraceIdRatioBased` sampler with a given sampling probability MUST also sample all | src/Трассировка/Модули/ОтелСэмплер.os:260-262 |
-| 222 | SHOULD | ✅ | when it is used not as a root sampler, the SDK SHOULD emit a warning | src/Трассировка/Модули/ОтелСэмплер.os:247-269 |
-| 223 | MUST | ❌ | The `ProbabilitySampler` sampler MUST ignore the parent `SampledFlag`. | No warning when used as root |
-| 224 | SHOULD | ➖ | * If randomness value (R) is greater or equal to the rejection threshold (T), meaning when (R >= T), return `RECORD_AND_... | Not in spec for OTel |
-| 225 | MUST | ✅ | Based on the decision from the wrapped root sampler, `AlwaysRecord` MUST behave | src/Трассировка/Модули/ОтелСэмплер.os:92-94 |
-| 226 | MUST NOT | ✅ | Note: ComposableSamplers MUST NOT modify the parameters passed to | src/Трассировка/Модули/ОтелСэмплер.os |
-| 227 | MUST NOT | ✅ | complexity. ComposableSamplers MUST NOT modify the OpenTelemetry | src/Трассировка/Модули/ОтелСэмплер.os |
-| 228 | SHOULD | ➖ | CompositeSampler SHOULD update the threshold of the outgoing | Probability sampler specific |
-| 229 | MUST | ✅ | randomness values MUST not be modified. | src/Трассировка/Модули/ОтелСэмплер.os |
-| 230 | SHOULD | ➖ | a `ComposableAlwaysOff` instance SHOULD be returned instead. | Probability sampler specific |
 | 231 | SHOULD | ❌ | For root span contexts, the SDK SHOULD implement the TraceID randomness requirements of the W3C Trace Context Level 2 Ca... | src/Ядро/Модули/ОтелУтилиты.os (No W3C Level 2 randomness) |
 | 232 | SHOULD | ❌ | For root span contexts, the SDK SHOULD set the `Random` flag in the trace flags when it generates TraceIDs that meet the... | Same as above |
 | 233 | MUST NOT | ➖ | MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState | No explicit randomness tracking |
@@ -891,16 +753,11 @@
 | 243 | MUST | ❌ | The SDK MUST provide a mechanism for customizing the way IDs are generated for | No IdGenerator extension point |
 | 244 | MUST | ➖ | `IdGenerator`, name of the methods MUST be consistent with | No IdGenerator interface |
 | 245 | MUST NOT | ➖ | X-Ray trace id generator MUST NOT be maintained or distributed as part of the | Not required |
-| 246 | SHOULD | ➖ | Custom implementations of the `IdGenerator` SHOULD identify themselves | No custom generators |
 | 247 | MUST | ✅ | of span processor and optional exporter. SDK MUST allow to end each pipeline with | src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os |
 | 248 | MUST | ✅ | SDK MUST allow users to implement and configure custom processors. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:76-78 |
 | 249 | MUST | ✅ | The `SpanProcessor` interface MUST declare the following methods: | src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:17-47 |
 | 250 | SHOULD | ⚠️ | The `SpanProcessor` interface SHOULD declare the following methods: | src/Трассировка/Классы/ (No optional methods in public API) |
 | 251 | SHOULD | ⚠️ | It SHOULD be possible to keep a reference to this span object and updates to the span | src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26 (References span in ПриЗавершении) |
-| 252 | MUST | ✅ | The end timestamp MUST have been computed (the `OnEnding` method duration is not included | src/Трассировка/Классы/ОтелСпан.os:438-441 |
-| 253 | MUST | ✅ | The Span object MUST still be mutable (i.e., `SetAttribute`, `AddLink`, `AddEvent` can be called) while `OnEnding` is ca... | src/Трассировка/Классы/ОтелСпан.os |
-| 254 | MUST | ✅ | This method MUST be called synchronously within the `Span.End()` API, | src/Трассировка/Классы/ОтелСпан.os:444-446 |
-| 255 | MUST | ❌ | The SDK MUST guarantee that the span can no longer be modified by any other thread | No explicit guarantee documented |
 | 256 | MUST | ✅ | This method MUST be called synchronously within the `Span.End()` API, | src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26-32 |
 | 257 | SHOULD | ✅ | `Shutdown` SHOULD be called only once for each `SpanProcessor` instance. After | src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:43-47 |
 | 258 | SHOULD | ⚠️ | are not allowed. SDKs SHOULD ignore these calls gracefully, if possible. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105 (No graceful handling) |
@@ -955,8 +812,6 @@
 | 302 | MUST | ❌ | For each required parameter, the API MUST be structured to obligate a user to | -User param provision docs missing |
 | 303 | MUST | ❌ | LoggerProvider - all methods MUST be documented that implementations need to | -LoggerProvider concurrency docs missing |
 | 304 | MUST | ❌ | Logger - all methods MUST be documented that implementations need to | -Logger concurrency docs missing |
-| 305 | SHOULD | ❌ | The ergonomic API SHOULD make it more convenient to emit event records following | -No ergonomic API |
-| 306 | SHOULD | ❌ | The design of the ergonomic API SHOULD be idiomatic for its language. | -No idiomatic method overloading |
 
 ### Logs Sdk
 
@@ -974,33 +829,15 @@
 | 316 | SHOULD | ❌ | message reporting that the specified value is invalid SHOULD be logged. | -Invalid name logging missing |
 | 317 | MUST | ❌ | MUST be owned by the `LoggerProvider`. The configuration MAY be applied at the | -LoggerConfigurator not found |
 | 318 | MUST | ❌ | configuration MUST also apply to all already returned `Logger`s (i.e. it MUST | -Config for existing loggers missing |
-| 319 | MUST | ❌ | The function MUST accept the following parameter: | -LoggerConfigurator not found |
-| 320 | MUST | ❌ | The function MUST return the relevant `LoggerConfig`, or some signal indicating | -LoggerConfigurator return missing |
-| 321 | MUST | ❌ | `Shutdown` MUST be called only once for each `LoggerProvider` instance. After | -Shutdown single-call enforcement missing |
-| 322 | SHOULD | ❌ | SDKs SHOULD return a valid no-op `Logger` for these calls, if possible. | -No-op fallback not documented |
-| 323 | SHOULD | ✅ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | src/Логирование/Классы/ОтелПровайдерЛогирования.os:90-104 |
-| 324 | SHOULD | ❌ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be | -Shutdown timeout missing |
-| 325 | MUST | ✅ | `Shutdown` MUST be implemented by invoking `Shutdown` on all | src/Логирование/Классы/ОтелПровайдерЛогирования.os:90-104 |
 | 326 | SHOULD | ❌ | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, | -ForceFlush return status missing |
 | 327 | SHOULD | ❌ | failed or timed out. `ForceFlush` SHOULD return some ERROR status if there | -ForceFlush error status missing |
 | 328 | SHOULD | ❌ | is an error condition; and if there is no error condition, it SHOULD return | -ForceFlush success status missing |
 | 329 | SHOULD | ❌ | `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` MAY be | -ForceFlush timeout missing |
 | 330 | MUST | ✅ | `ForceFlush` MUST invoke `ForceFlush` on all | src/Логирование/Классы/ОтелПровайдерЛогирования.os:88-116 |
-| 331 | MUST | ❌ | the `Logger` MUST be updated to behave according to the new `LoggerConfig`. | -Dynamic behavior update missing |
-| 332 | SHOULD | ❌ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | -LoggerConfig.enabled missing |
-| 333 | MUST | ❌ | If a `Logger` is disabled, it MUST behave equivalently | -Disabled logger behavior missing |
-| 334 | MUST | ❌ | If not explicitly set, the `minimum_severity` parameter MUST default to `0`. | -minimum_severity missing |
-| 335 | MUST | ❌ | specified (i.e. not `0`) and is less than the configured `minimum_severity`, the log record MUST | -Severity filtering missing |
-| 336 | MUST | ❌ | If not explicitly set, the `trace_based` parameter MUST default to `false`. | -trace_based missing |
-| 337 | MUST | ❌ | If `trace_based` is `true`, log records associated with unsampled traces MUST | -Unsampled trace filtering missing |
-| 338 | MUST | ❌ | However, the changes MUST be eventually visible. | -Config visibility delay missing |
 | 339 | SHOULD | ⚠️ | the implementation SHOULD set it equal to the current time. | src/Логирование/Классы/ОтелЗаписьЛога.os:346-349 (Timestamp set no condition) |
 | 340 | MUST | ❌ | If an Exception is provided, the SDK MUST by default set attributes | -Exception attribute missing |
 | 341 | MUST NOT | ❌ | User-provided attributes MUST take precedence and MUST NOT be overwritten by | -User attributes precedence missing |
-| 342 | MUST | ❌ | the implementation MUST apply the filtering rules defined by the | -Filtering rules missing |
-| 343 | MUST | ❌ | the log record MUST be dropped. | -Log record dropping missing |
 | 344 | MUST | ❌ | `Enabled` MUST return `false` when either: | -Enabled return conditions missing |
-| 345 | SHOULD | ❌ | Otherwise, it SHOULD return `true`. | -Enabled return true conditions missing |
 | 346 | MUST | ✅ | A function receiving this as an argument MUST be able to access all the | src/Логирование/Классы/ОтелЗаписьЛога.os:40-155 |
 | 347 | MUST | ✅ | information added to the LogRecord. It MUST also be able to | src/Логирование/Классы/ОтелЗаписьЛога.os:135-137 |
 | 348 | MUST | ✅ | The trace context fields MUST be populated from | src/Логирование/Классы/ОтелЗаписьЛога.os:99-119 |
@@ -1166,15 +1003,7 @@
 | 498 | MUST | ✅ | working Meter MUST be returned as a fallback rather than returning null or | ОтелПровайдерМетрик.os:55 |
 | 499 | SHOULD | ✅ | throwing an exception, its `name` SHOULD keep the original invalid value, and a | ОтелПровайдерМетрик.os:56 |
 | 500 | SHOULD | ⚠️ | message reporting that the specified value is invalid SHOULD be logged. | - (Warning logging not implemented) |
-| 501 | MUST | ⚠️ | and (Development) MeterConfigurator) MUST be | - (Configuration API not visible) |
 | 502 | MUST NOT | ⚠️ | configuration MUST also apply to all already returned `Meters` (i.e. it MUST NOT | - (Configuration to returned Meters unclear) |
-| 503 | MUST | ⚠️ | The function MUST accept the following parameter: | - (MeterConfigurator accept param unclear) |
-| 504 | MUST | ⚠️ | The function MUST return the relevant `MeterConfig`, or some signal indicating | - (MeterConfigurator return behavior unclear) |
-| 505 | MUST | ✅ | `Shutdown` MUST be called only once for each `MeterProvider` instance. After the | ОтелПровайдерМетрик.os:127 |
-| 506 | SHOULD | ⚠️ | SHOULD return a valid no-op Meter for these calls, if possible. | - (No-op Meter return on shutdown unclear) |
-| 507 | SHOULD | ⚠️ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | - (Shutdown return status not explicit) |
-| 508 | SHOULD | ⚠️ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be | - (Shutdown timeout not implemented) |
-| 509 | MUST | ✅ | `Shutdown` MUST be implemented at least by invoking `Shutdown` on all registered | ОтелПровайдерМетрик.os:128 |
 | 510 | MUST | ✅ | `ForceFlush` MUST invoke `ForceFlush` on all registered | ОтелПровайдерМетрик.os:112 |
 | 511 | SHOULD | ⚠️ | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, | - (ForceFlush return status unclear) |
 | 512 | SHOULD | ⚠️ | failed or timed out. `ForceFlush` SHOULD return some ERROR status if there | - (ForceFlush error handling not explicit) |
@@ -1231,11 +1060,6 @@
 | 563 | SHOULD | ⚠️ | The implementation SHOULD use a timeout to prevent indefinite callback | - (Callback timeout not implemented) |
 | 564 | MUST | ⚠️ | The implementation MUST complete the execution of all callbacks for a | - (All callback completion unclear) |
 | 565 | SHOULD NOT | ⚠️ | The implementation SHOULD NOT produce aggregated metric data for a | - (Aggregated data for incomplete unclear) |
-| 566 | MUST | ✅ | For delta aggregations, the start timestamp MUST equal the previous collection | ОтелАгрегаторСуммы.os:1 |
-| 567 | MUST | ✅ | with delta temporality aggregation for an instrument MUST share the same start | ОтелАгрегаторСуммы.os:1 |
-| 568 | MUST | ✅ | Cumulative timeseries MUST use a consistent start timestamp for all collection | ОтелАгрегаторСуммы.os:1 |
-| 569 | SHOULD | ✅ | For synchronous instruments, the start timestamp SHOULD be the time of the | ОтелБазовыйСинхронныйИнструмент.os:1 |
-| 570 | SHOULD | ✅ | For asynchronous instrument, the start timestamp SHOULD be: | ОтелБазовыйНаблюдаемыйИнструмент.os:1 |
 | 571 | SHOULD | ⚠️ | SDKs SHOULD support being configured with a cardinality limit. The number of | - (Cardinality limit config unclear) |
 | 572 | SHOULD | ⚠️ | cycle. Cardinality limit enforcement SHOULD occur after attribute filtering, | - (Enforcement after filtering unclear) |
 | 573 | SHOULD | ⚠️ | stream, that value SHOULD be used.* If there is no matching view, but the `MetricReader` defines a default | - (Default from MetricReader unclear) |
@@ -1247,11 +1071,6 @@
 | 579 | MUST NOT | ✅ | Measurements MUST NOT be double-counted or dropped | ОтелМетр.os:300 |
 | 580 | SHOULD | ⚠️ | Aggregators of asynchronous instruments SHOULD prefer the first-observed | - (First-observed preference unclear) |
 | 581 | MUST | ✅ | Distinct meters MUST be treated as separate namespaces for the purposes of detecting | ОтелМетр.os:12 |
-| 582 | MUST | ⚠️ | the `Meter` MUST be updated to behave according to the new `MeterConfig`. | - (Meter update on config unclear) |
-| 583 | SHOULD | ⚠️ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | - (Enabled default true unclear) |
-| 584 | MUST | ⚠️ | If a `Meter` is disabled, it MUST behave equivalently | - (Disabled meter behavior unclear) |
-| 585 | MUST | ⚠️ | The value of `enabled` MUST be used to resolve whether an instrument | - (Enabled for resolution unclear) |
-| 586 | MUST | ⚠️ | However, the changes MUST be eventually visible. | - (Config visibility timing unclear) |
 | 587 | MUST | ✅ | duplicate instrument. This means that the Meter MUST return a functional | ОтелМетр.os:45 |
 | 588 | SHOULD | ⚠️ | a warning SHOULD be emitted. The emitted warning SHOULD include information for | - (Warning on duplicate unclear) |
 | 589 | SHOULD | ⚠️ | SHOULD avoid the warning.* If the potential conflict involves instruments that can be distinguished by | - (Warning details unclear) |
@@ -1270,7 +1089,6 @@
 | 602 | MUST | ⚠️ | MUST take precedence over the advisory parameters. | - (Name normalization for duplicates unclear) |
 | 603 | MUST | ⚠️ | parameter MUST be used. If neither is provided, the default bucket boundaries | - (Case sensitivity in duplicates unclear) |
 | 604 | MUST | ⚠️ | The synchronous instrument `Enabled` MUST return `false` | - (Name conflict detection unclear) |
-| 605 | SHOULD | ⚠️ | Otherwise, it SHOULD return `true`. | - (Type conflict detection unclear) |
 | 606 | MUST | ⚠️ | A Metric SDK MUST provide a mechanism to sample `Exemplar`s from measurements | - (Unit conflict detection unclear) |
 | 607 | SHOULD | ⚠️ | `Exemplar` sampling SHOULD be turned on by default. If `Exemplar` sampling is | - (Scope conflict detection unclear) |
 | 608 | MUST NOT | ⚠️ | off, the SDK MUST NOT have overhead related to exemplar sampling. | - (Multiple views per instrument unclear) |
@@ -1305,19 +1123,6 @@
 | 637 | MUST | ⚠️ | The SDK MUST provide a mechanism for SDK users to provide their own | - (Provider shutdown concurrency unclear) |
 | 638 | MUST | ⚠️ | ExemplarReservoir implementation. This extension MUST be configurable on | - (No-op fallback unclear) |
 | 639 | MUST | ⚠️ | a metric View, although individual reservoirs MUST still be | - (Resource mutation unclear) |
-| 640 | SHOULD | ⚠️ | * The `exporter` to use, which is a `MetricExporter` instance.* The default output `aggregation` (optional), a function ... | - (Instrumentation scope immutability unclear) |
-| 641 | SHOULD | ⚠️ | `MetricReader` SHOULD be provided to be used | - (Attribute mutability unclear) |
-| 642 | MUST | ⚠️ | The `MetricReader` MUST ensure that data points from OpenTelemetry | - (Aggregator state reset unclear) |
-| 643 | MUST | ⚠️ | temporality, MetricReader.Collect MUST receive data points exposed | - (Collection interval impact unclear) |
-| 644 | MUST | ⚠️ | temporality, MetricReader.Collect MUST only receive data points with | - (Exemplar sampler integration unclear) |
-| 645 | MUST | ⚠️ | temporality, MetricReader.Collect MUST only receive data points with | - (Span context propagation unclear) |
-| 646 | MUST | ⚠️ | successive calls to MetricReader.Collect MUST repeat the same | - (Trace context usage unclear) |
-| 647 | MUST | ⚠️ | calls to MetricReader.Collect MUST advance the starting timestamp ( | - (Baggage integration unclear) |
-| 648 | MUST | ⚠️ | MUST always be equal to time the metric data point took effect, which is equal | - (Log severity mapping unclear) |
-| 649 | MUST | ⚠️ | The SDK MUST support multiple `MetricReader` instances to be registered on the | - (Error reporting unclear) |
-| 650 | SHOULD NOT | ⚠️ | `MetricReader` instance SHOULD NOT introduce side-effects to other `MetricReader` | - (Debug logging unclear) |
-| 651 | MUST NOT | ⚠️ | The SDK MUST NOT allow a `MetricReader` instance to be registered on more than | - (Metric type conversions unclear) |
-| 652 | SHOULD | ⚠️ | The SDK SHOULD provide a way to allow `MetricReader` to respond to | - (Unit conversion unclear) |
 | 653 | SHOULD | ⚠️ | `Collect` SHOULD provide a way to let the caller know whether it succeeded, | - (Temporal aggregation strategy unclear) |
 | 654 | SHOULD | ⚠️ | `Collect` SHOULD invoke Produce on registered | - (Exemplar retention unclear) |
 | 655 | MUST | ⚠️ | `Shutdown` MUST be called only once for each `MetricReader` instance. After the | - (Cardinality budget unclear) |
@@ -1444,6 +1249,151 @@
 | 761 | SHOULD | ⚠️ | Enum values SHOULD be interpreted in a case-insensitive manner. | src/Конфигурация/Модули/ОтелАвтоконфигурация.os (Inconsistent case handling) |
 | 762 | MUST | ⚠️ | the implementation does not recognize, the implementation MUST generate | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:216-218 (Inconsistent error logging) |
 | 763 | SHOULD | ✅ | Implementations SHOULD only offer environment variables for the types of attributes, for | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:7-34 |
+
+---
+
+## Требования Development-статуса
+
+Эти требования находятся в нестабильных разделах спецификации (Status: Development).
+Они не влияют на основной процент соответствия и могут измениться в будущих версиях спецификации.
+
+| Показатель | Значение |
+|---|---|
+| Всего Development | 99 |
+| ✅ Реализовано | 25 (31.6%) |
+| ⚠️ Частично | 29 (36.7%) |
+| ❌ Не реализовано | 25 (31.6%) |
+| N/A | 20 |
+
+### Resource Sdk (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 46 | SHOULD | ➖ | Resource detectors SHOULD have a unique name for reference in configuration. For | n/a (Detector naming) |
+| 47 | SHOULD | ➖ | Names SHOULD be snake case and | n/a (Snake case naming) |
+| 48 | SHOULD | ➖ | Resource detector names SHOULD reflect | n/a (Detector naming purpose) |
+| 49 | SHOULD | ➖ | multiple root namespaces SHOULD choose a name which appropriately conveys their | n/a (Multiple root namespace) |
+| 50 | SHOULD | ➖ | An SDK which identifies multiple resource detectors with the same name SHOULD | n/a (Duplicate detector detection) |
+| 51 | SHOULD | ➖ | report an error. In order to limit collisions, resource detectors SHOULD | n/a (Collision limiting) |
+| 52 | MUST | ✅ | The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:101-119 |
+| 53 | MUST | ✅ | All attribute values MUST be considered strings. The `,` and `=` characters | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:459+ |
+| 54 | MUST | ➖ | in keys and values MUST be percent encoded. Other characters MAY be | n/a (Percent encoding details) |
+| 55 | SHOULD | ⚠️ | variable value SHOULD be discarded and an error SHOULD be reported following the | src/Конфигурация/Модули/ОтелАвтоконфигурация.os:459+ (Invalid values not fully validated) |
+
+### Trace Api (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 71 | SHOULD | ✅ | creating `Span`s, a `Tracer` SHOULD provide this `Enabled` API. | src/Трассировка/Классы/ОтелТрассировщик.os:33-35 |
+| 72 | MUST | ✅ | added in the future, therefore, the API MUST be structured in a way for | src/Трассировка/Классы/ОтелТрассировщик.os |
+| 73 | MUST | ✅ | This API MUST return a language idiomatic boolean type. A returned value of | src/Трассировка/Классы/ОтелТрассировщик.os:33 |
+| 74 | SHOULD | ➖ | SHOULD be documented that instrumentation authors needs to call this API each | Language specific documentation |
+
+### Trace Sdk (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 178 | MUST | ⚠️ | and (Development) TracerConfigurator) MUST be | src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os (Builder provided but no TracerConfigurator) |
+| 181 | MUST | ➖ | The function MUST accept the following parameter: | SDK doesn't implement TracerConfigurator |
+| 182 | MUST | ➖ | The function MUST return the relevant `TracerConfig`, or some signal indicating | Same as above |
+| 183 | MUST | ❌ | `Shutdown` MUST be called only once for each `TracerProvider` instance. After | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105 (Закрыть() can be called multiple times) |
+| 184 | SHOULD | ✅ | SHOULD return a valid no-op Tracer for these calls, if possible. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:59-60 |
+| 185 | SHOULD | ⚠️ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (Закрыть() returns no status) |
+| 186 | SHOULD | ⚠️ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` can be | src/Трассировка/Классы/ОтелПровайдерТрассировки.os (No timeout mechanism) |
+| 187 | MUST | ✅ | `Shutdown` MUST be implemented at least by invoking `Shutdown` within all internal processors. | src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105 |
+| 191 | MUST | ❌ | the `Tracer` MUST be updated to behave according to the new `TracerConfig`. | Config changes don't propagate to created Tracers |
+| 192 | SHOULD | ✅ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os |
+| 193 | MUST | ❌ | If a `Tracer` is disabled, it MUST behave equivalently | No disable mechanism implemented |
+| 194 | MUST | ❌ | The value of `enabled` MUST be used to resolve whether a `Tracer` | No dynamic enabled check |
+| 195 | MUST | ➖ | However, the changes MUST be eventually visible. | No dynamic configuration system |
+| 196 | MUST | ❌ | `Enabled` MUST return `false` when either: | No implementation |
+| 197 | SHOULD | ➖ | Otherwise, it SHOULD return `true`. | Same |
+| 222 | SHOULD | ✅ | when it is used not as a root sampler, the SDK SHOULD emit a warning | src/Трассировка/Модули/ОтелСэмплер.os:247-269 |
+| 223 | MUST | ❌ | The `ProbabilitySampler` sampler MUST ignore the parent `SampledFlag`. | No warning when used as root |
+| 224 | SHOULD | ➖ | * If randomness value (R) is greater or equal to the rejection threshold (T), meaning when (R >= T), return `RECORD_AND_... | Not in spec for OTel |
+| 225 | MUST | ✅ | Based on the decision from the wrapped root sampler, `AlwaysRecord` MUST behave | src/Трассировка/Модули/ОтелСэмплер.os:92-94 |
+| 226 | MUST NOT | ✅ | Note: ComposableSamplers MUST NOT modify the parameters passed to | src/Трассировка/Модули/ОтелСэмплер.os |
+| 227 | MUST NOT | ✅ | complexity. ComposableSamplers MUST NOT modify the OpenTelemetry | src/Трассировка/Модули/ОтелСэмплер.os |
+| 228 | SHOULD | ➖ | CompositeSampler SHOULD update the threshold of the outgoing | Probability sampler specific |
+| 229 | MUST | ✅ | randomness values MUST not be modified. | src/Трассировка/Модули/ОтелСэмплер.os |
+| 230 | SHOULD | ➖ | a `ComposableAlwaysOff` instance SHOULD be returned instead. | Probability sampler specific |
+| 246 | SHOULD | ➖ | Custom implementations of the `IdGenerator` SHOULD identify themselves | No custom generators |
+| 252 | MUST | ✅ | The end timestamp MUST have been computed (the `OnEnding` method duration is not included | src/Трассировка/Классы/ОтелСпан.os:438-441 |
+| 253 | MUST | ✅ | The Span object MUST still be mutable (i.e., `SetAttribute`, `AddLink`, `AddEvent` can be called) while `OnEnding` is ca... | src/Трассировка/Классы/ОтелСпан.os |
+| 254 | MUST | ✅ | This method MUST be called synchronously within the `Span.End()` API, | src/Трассировка/Классы/ОтелСпан.os:444-446 |
+| 255 | MUST | ❌ | The SDK MUST guarantee that the span can no longer be modified by any other thread | No explicit guarantee documented |
+
+### Logs Api (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 305 | SHOULD | ❌ | The ergonomic API SHOULD make it more convenient to emit event records following | -No ergonomic API |
+| 306 | SHOULD | ❌ | The design of the ergonomic API SHOULD be idiomatic for its language. | -No idiomatic method overloading |
+
+### Logs Sdk (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 319 | MUST | ❌ | The function MUST accept the following parameter: | -LoggerConfigurator not found |
+| 320 | MUST | ❌ | The function MUST return the relevant `LoggerConfig`, or some signal indicating | -LoggerConfigurator return missing |
+| 321 | MUST | ❌ | `Shutdown` MUST be called only once for each `LoggerProvider` instance. After | -Shutdown single-call enforcement missing |
+| 322 | SHOULD | ❌ | SDKs SHOULD return a valid no-op `Logger` for these calls, if possible. | -No-op fallback not documented |
+| 323 | SHOULD | ✅ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | src/Логирование/Классы/ОтелПровайдерЛогирования.os:90-104 |
+| 324 | SHOULD | ❌ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be | -Shutdown timeout missing |
+| 325 | MUST | ✅ | `Shutdown` MUST be implemented by invoking `Shutdown` on all | src/Логирование/Классы/ОтелПровайдерЛогирования.os:90-104 |
+| 331 | MUST | ❌ | the `Logger` MUST be updated to behave according to the new `LoggerConfig`. | -Dynamic behavior update missing |
+| 332 | SHOULD | ❌ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | -LoggerConfig.enabled missing |
+| 333 | MUST | ❌ | If a `Logger` is disabled, it MUST behave equivalently | -Disabled logger behavior missing |
+| 334 | MUST | ❌ | If not explicitly set, the `minimum_severity` parameter MUST default to `0`. | -minimum_severity missing |
+| 335 | MUST | ❌ | specified (i.e. not `0`) and is less than the configured `minimum_severity`, the log record MUST | -Severity filtering missing |
+| 336 | MUST | ❌ | If not explicitly set, the `trace_based` parameter MUST default to `false`. | -trace_based missing |
+| 337 | MUST | ❌ | If `trace_based` is `true`, log records associated with unsampled traces MUST | -Unsampled trace filtering missing |
+| 338 | MUST | ❌ | However, the changes MUST be eventually visible. | -Config visibility delay missing |
+| 342 | MUST | ❌ | the implementation MUST apply the filtering rules defined by the | -Filtering rules missing |
+| 343 | MUST | ❌ | the log record MUST be dropped. | -Log record dropping missing |
+| 345 | SHOULD | ❌ | Otherwise, it SHOULD return `true`. | -Enabled return true conditions missing |
+
+### Metrics Sdk (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 501 | MUST | ⚠️ | and (Development) MeterConfigurator) MUST be | - (Configuration API not visible) |
+| 503 | MUST | ⚠️ | The function MUST accept the following parameter: | - (MeterConfigurator accept param unclear) |
+| 504 | MUST | ⚠️ | The function MUST return the relevant `MeterConfig`, or some signal indicating | - (MeterConfigurator return behavior unclear) |
+| 505 | MUST | ✅ | `Shutdown` MUST be called only once for each `MeterProvider` instance. After the | ОтелПровайдерМетрик.os:127 |
+| 506 | SHOULD | ⚠️ | SHOULD return a valid no-op Meter for these calls, if possible. | - (No-op Meter return on shutdown unclear) |
+| 507 | SHOULD | ⚠️ | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, | - (Shutdown return status not explicit) |
+| 508 | SHOULD | ⚠️ | `Shutdown` SHOULD complete or abort within some timeout. `Shutdown` MAY be | - (Shutdown timeout not implemented) |
+| 509 | MUST | ✅ | `Shutdown` MUST be implemented at least by invoking `Shutdown` on all registered | ОтелПровайдерМетрик.os:128 |
+| 566 | MUST | ✅ | For delta aggregations, the start timestamp MUST equal the previous collection | ОтелАгрегаторСуммы.os:1 |
+| 567 | MUST | ✅ | with delta temporality aggregation for an instrument MUST share the same start | ОтелАгрегаторСуммы.os:1 |
+| 568 | MUST | ✅ | Cumulative timeseries MUST use a consistent start timestamp for all collection | ОтелАгрегаторСуммы.os:1 |
+| 569 | SHOULD | ✅ | For synchronous instruments, the start timestamp SHOULD be the time of the | ОтелБазовыйСинхронныйИнструмент.os:1 |
+| 570 | SHOULD | ✅ | For asynchronous instrument, the start timestamp SHOULD be: | ОтелБазовыйНаблюдаемыйИнструмент.os:1 |
+| 582 | MUST | ⚠️ | the `Meter` MUST be updated to behave according to the new `MeterConfig`. | - (Meter update on config unclear) |
+| 583 | SHOULD | ⚠️ | If not explicitly set, the `enabled` parameter SHOULD default to `true` ( | - (Enabled default true unclear) |
+| 584 | MUST | ⚠️ | If a `Meter` is disabled, it MUST behave equivalently | - (Disabled meter behavior unclear) |
+| 585 | MUST | ⚠️ | The value of `enabled` MUST be used to resolve whether an instrument | - (Enabled for resolution unclear) |
+| 586 | MUST | ⚠️ | However, the changes MUST be eventually visible. | - (Config visibility timing unclear) |
+| 605 | SHOULD | ⚠️ | Otherwise, it SHOULD return `true`. | - (Type conflict detection unclear) |
+| 640 | SHOULD | ⚠️ | * The `exporter` to use, which is a `MetricExporter` instance.* The default output `aggregation` (optional), a function ... | - (Instrumentation scope immutability unclear) |
+| 641 | SHOULD | ⚠️ | `MetricReader` SHOULD be provided to be used | - (Attribute mutability unclear) |
+| 642 | MUST | ⚠️ | The `MetricReader` MUST ensure that data points from OpenTelemetry | - (Aggregator state reset unclear) |
+| 643 | MUST | ⚠️ | temporality, MetricReader.Collect MUST receive data points exposed | - (Collection interval impact unclear) |
+| 644 | MUST | ⚠️ | temporality, MetricReader.Collect MUST only receive data points with | - (Exemplar sampler integration unclear) |
+| 645 | MUST | ⚠️ | temporality, MetricReader.Collect MUST only receive data points with | - (Span context propagation unclear) |
+| 646 | MUST | ⚠️ | successive calls to MetricReader.Collect MUST repeat the same | - (Trace context usage unclear) |
+| 647 | MUST | ⚠️ | calls to MetricReader.Collect MUST advance the starting timestamp ( | - (Baggage integration unclear) |
+| 648 | MUST | ⚠️ | MUST always be equal to time the metric data point took effect, which is equal | - (Log severity mapping unclear) |
+| 649 | MUST | ⚠️ | The SDK MUST support multiple `MetricReader` instances to be registered on the | - (Error reporting unclear) |
+| 650 | SHOULD NOT | ⚠️ | `MetricReader` instance SHOULD NOT introduce side-effects to other `MetricReader` | - (Debug logging unclear) |
+| 651 | MUST NOT | ⚠️ | The SDK MUST NOT allow a `MetricReader` instance to be registered on more than | - (Metric type conversions unclear) |
+| 652 | SHOULD | ⚠️ | The SDK SHOULD provide a way to allow `MetricReader` to respond to | - (Unit conversion unclear) |
+
+### Env Vars (Development)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
 | 764 | SHOULD | ➖ | * `"otlp"`: OTLP* `"zipkin"`: Zipkin (Defaults to protobuf format)* `"console"`: Standard Output* `"logging"`: Standard ... | -Not metrics-specific |
 | 765 | SHOULD | ➖ | * `"otlp"`: OTLP* `"prometheus"`: Prometheus* `"console"`: Standard Output* `"logging"`: Standard Output. It is a deprec... | -Prometheus not in scope |
 | 766 | SHOULD | ➖ | * `"otlp"`: OTLP* `"console"`: Standard Output* `"logging"`: Standard Output. It is a deprecated value left for backward... | -Prometheus not in scope |
@@ -1465,10 +1415,11 @@
 
 1. Извлечены все предложения с ключевыми словами MUST/MUST NOT/SHOULD/SHOULD NOT из 12 страниц спецификации OTel v1.55.0:
    - Context, Baggage API, Resource SDK, Trace API, Trace SDK, Logs Bridge API, Logs SDK, Metrics API, Metrics SDK, OTLP Exporter, Propagators, SDK Environment Variables
-2. Отфильтрованы требования со статусом Development (LoggerConfig, MeterConfig, TracerConfig, ProbabilitySampler и др.) и дедуплицированы
-3. Каждое из 767 требований прослежено до конкретного файла и строки в исходном коде
+2. Каждое из 767 требований классифицировано по стабильности (Stable/Development) на основе маркеров `Status:` в спецификации
+3. Каждое требование прослежено до конкретного файла и строки в исходном коде
 4. Статусы:
    - ✅ found - реализовано
    - ⚠️ partial - частично реализовано
    - ❌ not_found - не реализовано
-   - ➖ n_a - неприменимо к платформе или Development-статус в спецификации
+   - ➖ n_a - неприменимо к платформе
+5. Development-требования вынесены в отдельную секцию и не влияют на основной процент соответствия
