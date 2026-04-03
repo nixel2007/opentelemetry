@@ -42,15 +42,32 @@ def load_data(req_file, verif_file):
 
 
 def generate_markdown(requirements, spec_version=None):
-    """Генерирует Markdown-документ с разделением на Stable и Development."""
+    """Генерирует Markdown-документ с разделением на Stable/Development/Conditional."""
     if not spec_version:
         spec_version = "v1.55.0"
 
     pct = lambda n, d: round(100 * n / d, 1) if d > 0 else 0
 
-    # Разделяем Stable и Development
-    stable_reqs = [r for r in requirements if r.get("stability", "Stable") == "Stable"]
+    # Разделяем по стабильности и scope
+    # Основные: Stable + universal scope
+    stable_reqs = [
+        r for r in requirements
+        if r.get("stability", "Stable") == "Stable"
+        and r.get("scope", "universal") == "universal"
+    ]
+    # Development
     dev_reqs = [r for r in requirements if r.get("stability", "Stable") == "Development"]
+    # Conditional (B3, GetAll, etc.) - Stable но scope != universal && != deprecated
+    cond_reqs = [
+        r for r in requirements
+        if r.get("stability", "Stable") == "Stable"
+        and r.get("scope", "universal").startswith("conditional:")
+    ]
+    # Deprecated
+    depr_reqs = [
+        r for r in requirements
+        if r.get("scope", "universal") == "deprecated"
+    ]
 
     total = len(requirements)
 
@@ -76,11 +93,15 @@ def generate_markdown(requirements, spec_version=None):
 
     md.append("## Сводка (Stable)")
     md.append("")
-    md.append("Учитываются только требования из стабильных разделов спецификации.")
+    md.append("Учитываются только требования из стабильных разделов спецификации с универсальной областью применения.")
     md.append("")
     md.append("| Показатель | Значение |")
     md.append("|---|---|")
-    md.append(f"| Всего требований | {total} (Stable: {len(stable_reqs)}, Development: {len(dev_reqs)}) |")
+    md.append(f"| Всего требований | {total} |")
+    md.append(f"| Stable (универсальные) | {len(stable_reqs)} |")
+    md.append(f"| Conditional (B3, Prometheus и др.) | {len(cond_reqs)} |")
+    md.append(f"| Development (нестабильные) | {len(dev_reqs)} |")
+    md.append(f"| Deprecated | {len(depr_reqs)} |")
     md.append(f"| Применимых Stable (без N/A) | {s_applicable} |")
     md.append(f"| ✅ Реализовано | {s_found} ({pct(s_found, s_applicable)}%) |")
     md.append(f"| ⚠️ Частично | {s_partial} ({pct(s_partial, s_applicable)}%) |")
@@ -100,11 +121,12 @@ def generate_markdown(requirements, spec_version=None):
 
     md.append("## Соответствие по разделам (Stable)")
     md.append("")
-    md.append("| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Dev |")
-    md.append("|---|---|---|---|---|---|---|---|")
+    md.append("| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Cond | Dev |")
+    md.append("|---|---|---|---|---|---|---|---|---|")
 
     for section in sections:
         sec_stable = [r for r in stable_reqs if r["section"] == section]
+        sec_cond = [r for r in cond_reqs if r["section"] == section]
         sec_dev = [r for r in dev_reqs if r["section"] == section]
         t = len(sec_stable)
         f = sum(1 for r in sec_stable if r["status"] == "found")
@@ -112,7 +134,7 @@ def generate_markdown(requirements, spec_version=None):
         nf = sum(1 for r in sec_stable if r["status"] == "not_found")
         n = sum(1 for r in sec_stable if r["status"] == "n_a")
         appl = t - n
-        md.append(f"| {section} | {t} | {f} | {p} | {nf} | {n} | {pct(f, appl)}% | {len(sec_dev)} |")
+        md.append(f"| {section} | {t} | {f} | {p} | {nf} | {n} | {pct(f, appl)}% | {len(sec_cond)} | {len(sec_dev)} |")
 
     md.append("")
 
@@ -227,6 +249,76 @@ def generate_markdown(requirements, spec_version=None):
 
             md.append("")
 
+    # === Conditional section ===
+    if cond_reqs:
+        md.append("---")
+        md.append("")
+        md.append("## Условные требования (Conditional)")
+        md.append("")
+        md.append("Эти требования применяются только при реализации конкретной опциональной функциональности")
+        md.append("(например, B3 propagator, Prometheus exporter). Если функциональность не реализована,")
+        md.append("требования неприменимы (N/A) и не влияют на основной процент соответствия.")
+        md.append("")
+
+        c_found = sum(1 for r in cond_reqs if r["status"] == "found")
+        c_partial = sum(1 for r in cond_reqs if r["status"] == "partial")
+        c_not_found = sum(1 for r in cond_reqs if r["status"] == "not_found")
+        c_na = sum(1 for r in cond_reqs if r["status"] == "n_a")
+        c_applicable = len(cond_reqs) - c_na
+
+        md.append("| Показатель | Значение |")
+        md.append("|---|---|")
+        md.append(f"| Всего Conditional | {len(cond_reqs)} |")
+        md.append(f"| ✅ Реализовано | {c_found} ({pct(c_found, c_applicable)}%) |")
+        md.append(f"| ⚠️ Частично | {c_partial} ({pct(c_partial, c_applicable)}%) |")
+        md.append(f"| ❌ Не реализовано | {c_not_found} ({pct(c_not_found, c_applicable)}%) |")
+        md.append(f"| N/A | {c_na} |")
+        md.append("")
+
+        # Group by scope (feature)
+        from collections import defaultdict
+        by_scope = defaultdict(list)
+        for r in cond_reqs:
+            feature = r.get("scope", "conditional").replace("conditional:", "")
+            by_scope[feature].append(r)
+
+        for feature, freqs in sorted(by_scope.items()):
+            md.append(f"### {feature}")
+            md.append("")
+            md.append("| # | Уровень | Статус | Требование | Расположение в коде |")
+            md.append("|---|---|---|---|---|")
+
+            for r in freqs:
+                icon = STATUS_ICONS.get(r["status"], "?")
+                short_req = r["requirement"][:120].replace("|", "\\|").replace("\n", " ")
+                if len(r["requirement"]) > 120:
+                    short_req += "..."
+                loc = r["code_location"].replace("|", "\\|") if r["code_location"] else "-"
+                if r["notes"] and r["status"] != "found":
+                    loc += f" ({r['notes']})" if r["code_location"] else r["notes"]
+                md.append(f"| {r['id']} | {r['level']} | {icon} | {short_req} | {loc} |")
+
+            md.append("")
+
+    # === Deprecated section ===
+    if depr_reqs:
+        md.append("---")
+        md.append("")
+        md.append("## Deprecated")
+        md.append("")
+        md.append("Требования из устаревших разделов спецификации. Не влияют на основной процент.")
+        md.append("")
+        md.append("| # | Уровень | Статус | Требование | Расположение в коде |")
+        md.append("|---|---|---|---|---|")
+        for r in depr_reqs:
+            icon = STATUS_ICONS.get(r["status"], "?")
+            short_req = r["requirement"][:120].replace("|", "\\|").replace("\n", " ")
+            if len(r["requirement"]) > 120:
+                short_req += "..."
+            loc = r["code_location"].replace("|", "\\|") if r["code_location"] else "-"
+            md.append(f"| {r['id']} | {r['level']} | {icon} | {short_req} | {loc} |")
+        md.append("")
+
     # Platform limitations
     md.append("## Ограничения платформы OneScript")
     md.append("")
@@ -246,14 +338,20 @@ def generate_markdown(requirements, spec_version=None):
     md.append("")
     md.append(f"1. Извлечены все предложения с ключевыми словами MUST/MUST NOT/SHOULD/SHOULD NOT из 12 страниц спецификации OTel {spec_version}:")
     md.append("   - Context, Baggage API, Resource SDK, Trace API, Trace SDK, Logs Bridge API, Logs SDK, Metrics API, Metrics SDK, OTLP Exporter, Propagators, SDK Environment Variables")
-    md.append(f"2. Каждое из {total} требований классифицировано по стабильности (Stable/Development) на основе маркеров `Status:` в спецификации")
-    md.append(f"3. Каждое требование прослежено до конкретного файла и строки в исходном коде")
+    md.append(f"2. Каждое из {total} требований классифицировано по трем осям:")
+    md.append("   - **Стабильность**: Stable / Development (на основе маркеров `Status:` в спецификации)")
+    md.append("   - **Область**: universal / conditional / deprecated")
+    md.append("     - *universal* - обязательно для любой реализации SDK")
+    md.append("     - *conditional* - обязательно только при реализации конкретной опциональной фичи (B3, Prometheus и др.)")
+    md.append("     - *deprecated* - относится к устаревшей функциональности (Jaeger, OT Trace)")
+    md.append("3. Каждое требование прослежено до конкретного файла и строки в исходном коде")
     md.append("4. Статусы:")
     md.append("   - ✅ found - реализовано")
     md.append("   - ⚠️ partial - частично реализовано")
     md.append("   - ❌ not_found - не реализовано")
     md.append("   - ➖ n_a - неприменимо к платформе")
-    md.append("5. Development-требования вынесены в отдельную секцию и не влияют на основной процент соответствия")
+    md.append("5. Основной процент соответствия считается только по Stable + universal требованиям")
+    md.append("6. Development, conditional и deprecated требования вынесены в отдельные секции")
     md.append("")
 
     return "\n".join(md)

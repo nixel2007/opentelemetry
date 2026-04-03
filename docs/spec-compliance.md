@@ -6,35 +6,39 @@
 
 ## Сводка (Stable)
 
-Учитываются только требования из стабильных разделов спецификации.
+Учитываются только требования из стабильных разделов спецификации с универсальной областью применения.
 
 | Показатель | Значение |
 |---|---|
-| Всего требований | 767 (Stable: 668, Development: 99) |
-| Применимых Stable (без N/A) | 621 |
-| ✅ Реализовано | 381 (61.4%) |
-| ⚠️ Частично | 177 (28.5%) |
-| ❌ Не реализовано | 63 (10.1%) |
+| Всего требований | 767 |
+| Stable (универсальные) | 662 |
+| Conditional (B3, Prometheus и др.) | 6 |
+| Development (нестабильные) | 99 |
+| Deprecated | 0 |
+| Применимых Stable (без N/A) | 615 |
+| ✅ Реализовано | 381 (62.0%) |
+| ⚠️ Частично | 177 (28.8%) |
+| ❌ Не реализовано | 57 (9.3%) |
 | N/A (неприменимо) | 47 |
-| **MUST/MUST NOT** | 277/386 (71.8%) |
+| **MUST/MUST NOT** | 277/380 (72.9%) |
 | **SHOULD/SHOULD NOT** | 104/235 (44.3%) |
 
 ## Соответствие по разделам (Stable)
 
-| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Dev |
-|---|---|---|---|---|---|---|---|
-| Context | 14 | 12 | 0 | 0 | 2 | 100.0% | 0 |
-| Baggage Api | 16 | 15 | 0 | 0 | 1 | 100.0% | 0 |
-| Resource Sdk | 15 | 9 | 2 | 1 | 3 | 75.0% | 10 |
-| Trace Api | 115 | 99 | 6 | 0 | 10 | 94.3% | 4 |
-| Trace Sdk | 81 | 48 | 16 | 6 | 11 | 68.6% | 29 |
-| Logs Api | 20 | 7 | 2 | 11 | 0 | 35.0% | 2 |
-| Logs Sdk | 67 | 27 | 2 | 38 | 0 | 40.3% | 18 |
-| Metrics Api | 99 | 79 | 16 | 0 | 4 | 83.2% | 0 |
-| Metrics Sdk | 170 | 59 | 111 | 0 | 0 | 34.7% | 32 |
-| Otlp Exporter | 21 | 3 | 9 | 1 | 8 | 23.1% | 0 |
-| Propagators | 34 | 18 | 4 | 6 | 6 | 64.3% | 0 |
-| Env Vars | 16 | 5 | 9 | 0 | 2 | 35.7% | 4 |
+| Раздел | Всего | ✅ | ⚠️ | ❌ | N/A | % | Cond | Dev |
+|---|---|---|---|---|---|---|---|---|
+| Context | 14 | 12 | 0 | 0 | 2 | 100.0% | 0 | 0 |
+| Baggage Api | 16 | 15 | 0 | 0 | 1 | 100.0% | 0 | 0 |
+| Resource Sdk | 15 | 9 | 2 | 1 | 3 | 75.0% | 0 | 10 |
+| Trace Api | 115 | 99 | 6 | 0 | 10 | 94.3% | 0 | 4 |
+| Trace Sdk | 81 | 48 | 16 | 6 | 11 | 68.6% | 0 | 29 |
+| Logs Api | 20 | 7 | 2 | 11 | 0 | 35.0% | 0 | 2 |
+| Logs Sdk | 67 | 27 | 2 | 38 | 0 | 40.3% | 0 | 18 |
+| Metrics Api | 99 | 79 | 16 | 0 | 4 | 83.2% | 0 | 0 |
+| Metrics Sdk | 170 | 59 | 111 | 0 | 0 | 34.7% | 0 | 32 |
+| Otlp Exporter | 21 | 3 | 9 | 1 | 8 | 23.1% | 0 | 0 |
+| Propagators | 28 | 18 | 4 | 0 | 6 | 81.8% | 6 | 0 |
+| Env Vars | 16 | 5 | 9 | 0 | 2 | 35.7% | 0 | 4 |
 
 ## Ключевые несоответствия (Stable)
 
@@ -222,18 +226,6 @@
   - No per-type getter
 - ⚠️ **[Propagators]** [MUST] These platforms MUST also allow pre-configured propagators to be disabled or overridden. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
   - Override not detailed
-- ❌ **[Propagators]** [MUST] * MUST attempt to extract B3 encoded using single and multi-header (`n/a`)
-  - B3 Extract not implemented
-- ❌ **[Propagators]** [MUST] the multi-header version.* MUST preserve a debug trace flag, if received, and propagate (`n/a`)
-  - B3 multi-header not applicable
-- ❌ **[Propagators]** [MUST NOT] MUST set the sampled trace flag when the debug flag is set.* MUST NOT reuse `X-B3-SpanId` as the id for the server-side span.#### B3 Inject (`n/a`)
-  - B3 debug flag not applicable
-- ❌ **[Propagators]** [MUST] * MUST default to injecting B3 using the single-header format* MUST provide configuration to change the default injection format to B3 (`n/a`)
-  - B3 Inject not applicable
-- ❌ **[Propagators]** [MUST NOT] multi-header* MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support (`n/a`)
-  - B3 multi-header format not applicable
-- ❌ **[Propagators]** [MUST] Fields MUST return the header names that correspond to the configured format, (`n/a`)
-  - B3 Fields not applicable
 - ⚠️ **[Resource Sdk]** [MUST] or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:96-119`)
   - Resource detectors not fully implemented
 - ❌ **[Resource Sdk]** [MUST] Resource detector packages MUST provide a method that returns a resource. This (`n/a`)
@@ -1222,12 +1214,6 @@
 | 739 | MUST NOT | ➖ | used by the OpenTracing Basic Tracers. It MUST NOT use `OpenTracing` in the resulting | n/a (OpenTracing not applicable) |
 | 740 | MUST NOT | ➖ | X-Ray trace header protocol MUST NOT be maintained or distributed as part of | n/a (X-Ray not implemented) |
 | 741 | MUST | ✅ | A W3C Trace Context propagator MUST parse and validate the `traceparent` and `tracestate` HTTP headers as specified in W... | src/Пропагация/Модули/ОтелW3CПропагатор.os:38-56 |
-| 742 | MUST | ❌ | * MUST attempt to extract B3 encoded using single and multi-header | n/a (B3 Extract not implemented) |
-| 743 | MUST | ❌ | the multi-header version.* MUST preserve a debug trace flag, if received, and propagate | n/a (B3 multi-header not applicable) |
-| 744 | MUST NOT | ❌ | MUST set the sampled trace flag when the debug flag is set.* MUST NOT reuse `X-B3-SpanId` as the id for the server-side ... | n/a (B3 debug flag not applicable) |
-| 745 | MUST | ❌ | * MUST default to injecting B3 using the single-header format* MUST provide configuration to change the default injectio... | n/a (B3 Inject not applicable) |
-| 746 | MUST NOT | ❌ | multi-header* MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support | n/a (B3 multi-header format not applicable) |
-| 747 | MUST | ❌ | Fields MUST return the header names that correspond to the configured format, | n/a (B3 Fields not applicable) |
 
 ### Env Vars
 
@@ -1399,6 +1385,33 @@
 | 766 | SHOULD | ➖ | * `"otlp"`: OTLP* `"console"`: Standard Output* `"logging"`: Standard Output. It is a deprecated value left for backward... | -Prometheus not in scope |
 | 767 | MUST | ➖ | MUST be ignored. Ignoring the environment variables is necessary because | -Prometheus not applicable |
 
+---
+
+## Условные требования (Conditional)
+
+Эти требования применяются только при реализации конкретной опциональной функциональности
+(например, B3 propagator, Prometheus exporter). Если функциональность не реализована,
+требования неприменимы (N/A) и не влияют на основной процент соответствия.
+
+| Показатель | Значение |
+|---|---|
+| Всего Conditional | 6 |
+| ✅ Реализовано | 0 (0.0%) |
+| ⚠️ Частично | 0 (0.0%) |
+| ❌ Не реализовано | 6 (100.0%) |
+| N/A | 0 |
+
+### B3 Propagator (extension)
+
+| # | Уровень | Статус | Требование | Расположение в коде |
+|---|---|---|---|---|
+| 742 | MUST | ❌ | * MUST attempt to extract B3 encoded using single and multi-header | n/a (B3 Extract not implemented) |
+| 743 | MUST | ❌ | the multi-header version.* MUST preserve a debug trace flag, if received, and propagate | n/a (B3 multi-header not applicable) |
+| 744 | MUST NOT | ❌ | MUST set the sampled trace flag when the debug flag is set.* MUST NOT reuse `X-B3-SpanId` as the id for the server-side ... | n/a (B3 debug flag not applicable) |
+| 745 | MUST | ❌ | * MUST default to injecting B3 using the single-header format* MUST provide configuration to change the default injectio... | n/a (B3 Inject not applicable) |
+| 746 | MUST NOT | ❌ | multi-header* MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support | n/a (B3 multi-header format not applicable) |
+| 747 | MUST | ❌ | Fields MUST return the header names that correspond to the configured format, | n/a (B3 Fields not applicable) |
+
 ## Ограничения платформы OneScript
 
 Некоторые требования спецификации не могут быть полностью реализованы из-за ограничений платформы:
@@ -1415,11 +1428,17 @@
 
 1. Извлечены все предложения с ключевыми словами MUST/MUST NOT/SHOULD/SHOULD NOT из 12 страниц спецификации OTel v1.55.0:
    - Context, Baggage API, Resource SDK, Trace API, Trace SDK, Logs Bridge API, Logs SDK, Metrics API, Metrics SDK, OTLP Exporter, Propagators, SDK Environment Variables
-2. Каждое из 767 требований классифицировано по стабильности (Stable/Development) на основе маркеров `Status:` в спецификации
+2. Каждое из 767 требований классифицировано по трем осям:
+   - **Стабильность**: Stable / Development (на основе маркеров `Status:` в спецификации)
+   - **Область**: universal / conditional / deprecated
+     - *universal* - обязательно для любой реализации SDK
+     - *conditional* - обязательно только при реализации конкретной опциональной фичи (B3, Prometheus и др.)
+     - *deprecated* - относится к устаревшей функциональности (Jaeger, OT Trace)
 3. Каждое требование прослежено до конкретного файла и строки в исходном коде
 4. Статусы:
    - ✅ found - реализовано
    - ⚠️ partial - частично реализовано
    - ❌ not_found - не реализовано
    - ➖ n_a - неприменимо к платформе
-5. Development-требования вынесены в отдельную секцию и не влияют на основной процент соответствия
+5. Основной процент соответствия считается только по Stable + universal требованиям
+6. Development, conditional и deprecated требования вынесены в отдельные секции

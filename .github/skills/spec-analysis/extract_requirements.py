@@ -42,6 +42,28 @@ NOISE_PATTERNS = [
     r"document-status",
 ]
 
+# Условные секции: подразделы, чьи MUST/SHOULD требования применяются
+# только при реализации конкретной опциональной функциональности.
+# Ключ - паттерн (regex) для сопоставления с subsection. Значение - название фичи.
+CONDITIONAL_SUBSECTIONS = {
+    # Propagators: B3 - extension package, не обязательный для SDK
+    r"^B3": "B3 Propagator (extension)",
+    # Propagators: GetAll - добавляется после stable релиза Getter
+    r"^GetAll": "GetAll Getter (post-stable extension)",
+    # Resource SDK: detector name conventions - только для SDK с детекторами
+    r"^Resource detector name": "Resource Detector Naming (conditional)",
+    # Env Vars: Prometheus exporter - отдельный пакет
+    r"^Prometheus": "Prometheus Exporter (extension)",
+}
+
+# Deprecated секции: требования из них помечаются как deprecated
+DEPRECATED_PATTERNS = [
+    r"Jaeger",
+    r"OT Trace",
+    r"OpenTracing",
+    r"OpenCensus",
+]
+
 
 def fetch_page(url, output_dir, name):
     """Загружает страницу, конвертирует HTML в текст, кеширует."""
@@ -98,6 +120,11 @@ def extract_requirements(text, section):
     Отслеживает маркеры 'Status: Development' и 'Status: Stable' в тексте.
     Status-маркеры привязаны к подразделам: при появлении нового заголовка
     статус сбрасывается к значению по умолчанию для страницы.
+
+    Определяет scope требования:
+    - universal: обязательно для любой реализации SDK
+    - conditional:<feature>: обязательно только при реализации <feature>
+    - deprecated: относится к устаревшей функциональности
     """
     reqs = []
     current_subsection = section
@@ -113,8 +140,7 @@ def extract_requirements(text, section):
             break
 
     current_stability = page_default
-    # Флаг: видели ли мы Status-маркер после текущего заголовка
-    status_set_for_section = False
+    current_scope = "universal"
 
     for line in text.split("\n"):
         stripped = line.strip()
@@ -125,26 +151,41 @@ def extract_requirements(text, section):
             current_subsection = m.group(1).strip()
             current_subsection = re.sub(r"\[.*?\]", "", current_subsection).strip()
             current_stability = page_default
-            status_set_for_section = False
+
+            # Определяем scope по подразделу
+            current_scope = "universal"
+            for pattern, feature in CONDITIONAL_SUBSECTIONS.items():
+                if re.search(pattern, current_subsection):
+                    current_scope = f"conditional:{feature}"
+                    break
+            for pattern in DEPRECATED_PATTERNS:
+                if re.search(pattern, current_subsection, re.IGNORECASE):
+                    current_scope = "deprecated"
+                    break
             continue
 
         # Отслеживаем маркеры стабильности секций
         if re.search(r"Status:\s*Development", stripped):
             current_stability = "Development"
-            status_set_for_section = True
-            # Если строка содержит только статус, пропускаем
             if re.match(r"^Status:\s*Development\s*$", stripped):
                 continue
         elif re.search(r"Status:\s*Stable", stripped):
             current_stability = "Stable"
-            status_set_for_section = True
             if re.match(r"^Status:\s*Stable", stripped):
                 continue
 
-        # Inline Development маркеры - для конкретной строки
+        # Inline Development/Deprecated маркеры - для конкретной строки
         line_stability = current_stability
+        line_scope = current_scope
         if "Status: Development" in stripped or "(Development)" in stripped:
             line_stability = "Development"
+        if "Status: Deprecated" in stripped:
+            line_scope = "deprecated"
+        for pattern in DEPRECATED_PATTERNS:
+            if re.search(pattern, stripped, re.IGNORECASE) and current_scope == "universal":
+                # Только если встречается в контексте описания deprecated фичи
+                if "Deprecated" in stripped:
+                    line_scope = "deprecated"
 
         # Пропускаем короткие строки
         if len(stripped) < 30:
@@ -178,6 +219,7 @@ def extract_requirements(text, section):
                 "level": level,
                 "requirement": clean,
                 "stability": line_stability,
+                "scope": line_scope,
             }
         )
 
@@ -218,6 +260,12 @@ def main():
     print(f"\nПо стабильности:")
     for stab, count in sorted(stability_counts.items()):
         print(f"  {stab}: {count}")
+
+    # Статистика по scope
+    scope_counts = Counter(r["scope"] for r in all_requirements)
+    print(f"\nПо области применения:")
+    for scope, count in sorted(scope_counts.items()):
+        print(f"  {scope}: {count}")
 
     # Статистика по разделам
     print("\nПо разделам:")

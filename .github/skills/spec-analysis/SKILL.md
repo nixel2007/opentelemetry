@@ -11,6 +11,30 @@ description: >
 Скилл выполняет **spec-first анализ соответствия** реализации спецификации OpenTelemetry.
 Результат - файл `docs/spec-compliance.md` с трассируемым чеклистом: каждое MUST/SHOULD требование привязано к конкретному файлу и строке в коде.
 
+### Классификация требований
+
+Каждое извлеченное требование классифицируется по двум осям:
+
+**Стабильность** (определяется маркерами `Status:` в тексте спецификации):
+- **Stable** - стабильное требование, обязательное к исполнению
+- **Development** - нестабильное, может измениться в будущих версиях
+
+**Область применения** (scope):
+- **universal** - обязательно для любой реализации SDK
+- **conditional** - обязательно **только** при реализации конкретной опциональной фичи. Пример: "B3 propagator MUST parse single-header format" - это MUST внутри описания B3, но B3 сам по себе MAY быть реализован как extension package
+- **deprecated** - относится к устаревшей функциональности (Jaeger, OT Trace)
+
+> **Ключевое правило**: основной процент соответствия считается **только** по Stable + universal требованиям. Остальные вынесены в отдельные секции документа.
+
+Известные условные секции:
+
+| Подраздел спецификации | Фича | Почему условная |
+|---|---|---|
+| B3 Extract / B3 Inject / B3 Fields | B3 Propagator | MAY be maintained as extension package |
+| GetAll | GetAll Getter | Добавляется после stable релиза Getter |
+| Resource detector name | Resource Detector Naming | Только для SDK с реализованными детекторами |
+| Prometheus Exporter | Prometheus Exporter | Отдельный extension package |
+
 ## Шаг 1: Извлечение требований из спецификации
 
 Запусти Python-скрипт для парсинга всех страниц спецификации OTel.
@@ -24,8 +48,9 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 Скрипт:
 1. Загружает 12 страниц спецификации (Context, Baggage API, Resource SDK, Trace API, Trace SDK, Logs Bridge API, Logs SDK, Metrics API, Metrics SDK, OTLP Exporter, Propagators, SDK Environment Variables)
 2. Извлекает все предложения с MUST/MUST NOT/SHOULD/SHOULD NOT
-3. Фильтрует Development-статус требования и дедуплицирует
-4. Сохраняет результат в `/tmp/otel-specs/requirements.json`
+3. Классифицирует по стабильности (Stable/Development) на основе маркеров `Status:` в тексте
+4. Классифицирует по scope (universal/conditional/deprecated) на основе контекста подраздела
+5. Сохраняет результат в `/tmp/otel-specs/requirements.json`
 
 Ожидаемый результат: ~750+ требований в JSON. Никакой дедупликации не производится - каждая строка спецификации с ключевым словом сохраняется как отдельное требование.
 
@@ -50,6 +75,11 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 - **partial** - частично. Указать что отсутствует
 - **not_found** - не реализовано
 - **n_a** - неприменимо к платформе
+
+> **ВАЖНО: Условные требования.** Если требование помечено `scope: conditional:...`,
+> агент должен проверить, реализована ли указанная фича в SDK.
+> Если фича НЕ реализована (например, B3 propagator) - все требования этой фичи = **n_a**.
+> Если фича реализована - проверять как обычное требование.
 
 Формат вывода агента:
 ```
