@@ -115,7 +115,11 @@ def fetch_page(url, output_dir, name):
 
 
 def extract_requirements(text, section):
-    """Извлекает требования построчно: каждая строка с MUST/SHOULD = требование.
+    """Извлекает требования из текста спецификации.
+
+    Каждая строка с MUST/SHOULD = отдельное требование.
+    К тексту требования добавляется контекст из последующих строк
+    (буллеты, параметры), чтобы не терять смысл.
 
     Отслеживает маркеры 'Status: Development' и 'Status: Stable' в тексте.
     Status-маркеры привязаны к подразделам: при появлении нового заголовка
@@ -129,9 +133,11 @@ def extract_requirements(text, section):
     reqs = []
     current_subsection = section
 
+    lines = text.split("\n")
+
     # Определяем стабильность по умолчанию для страницы (первый Status: ...)
     page_default = "Stable"
-    for line in text.split("\n"):
+    for line in lines:
         if re.search(r"Status:\s*(Stable|Development|Mixed)", line.strip()):
             if "Development" in line:
                 page_default = "Development"
@@ -142,7 +148,7 @@ def extract_requirements(text, section):
     current_stability = page_default
     current_scope = "universal"
 
-    for line in text.split("\n"):
+    for i, line in enumerate(lines):
         stripped = line.strip()
 
         # Определяем подразделы по заголовкам - сбрасываем статус к умолчанию
@@ -205,8 +211,16 @@ def extract_requirements(text, section):
         if not level:
             continue
 
-        # Нормализуем пробелы
-        clean = re.sub(r"\s+", " ", stripped)[:450]
+        # Собираем контекст: если строка заканчивается на ":" или содержит
+        # "the following", подбираем последующие буллеты/строки
+        req_text = stripped
+        if _needs_continuation(stripped):
+            continuation = _collect_continuation(lines, i + 1)
+            if continuation:
+                req_text = stripped + " " + continuation
+
+        # Нормализуем пробелы, допускаем до 800 символов для полного контекста
+        clean = re.sub(r"\s+", " ", req_text)[:800]
 
         # Пропускаем шум
         if any(re.search(p, clean, re.IGNORECASE) for p in NOISE_PATTERNS):
@@ -224,6 +238,61 @@ def extract_requirements(text, section):
         )
 
     return reqs
+
+
+def _needs_continuation(line):
+    """Определяет, нужен ли контекст из следующих строк.
+
+    Строки заканчивающиеся на ":" или содержащие "the following"
+    обычно продолжаются списком параметров.
+    """
+    stripped = line.rstrip()
+    if stripped.endswith(":"):
+        return True
+    if re.search(r"the following\b", stripped, re.IGNORECASE):
+        return True
+    return False
+
+
+def _collect_continuation(lines, start_idx, max_lines=8, max_chars=500):
+    """Собирает продолжение: буллеты и строки до следующего заголовка или пустого блока.
+
+    Останавливается при:
+    - Заголовке (##)
+    - Строке с собственным MUST/SHOULD (это уже отдельное требование)
+    - Превышении лимита строк/символов
+    - Двух пустых строках подряд
+    """
+    parts = []
+    total = 0
+    empty_count = 0
+
+    for j in range(start_idx, min(start_idx + max_lines, len(lines))):
+        s = lines[j].strip()
+
+        if not s:
+            empty_count += 1
+            if empty_count >= 2:
+                break
+            continue
+        empty_count = 0
+
+        # Стоп на заголовке
+        if re.match(r"^#{1,4}\s+", s):
+            break
+
+        # Стоп на строке с собственным MUST/SHOULD (это отдельное требование)
+        if re.search(r"\bMUST\b|\bSHOULD\b", s) and not s.startswith("*"):
+            break
+
+        # Добавляем строку (убираем маркер буллета для компактности)
+        clean = re.sub(r"^\*\s*", "- ", s)
+        if total + len(clean) > max_chars:
+            break
+        parts.append(clean)
+        total += len(clean)
+
+    return " ".join(parts)
 
 
 def main():

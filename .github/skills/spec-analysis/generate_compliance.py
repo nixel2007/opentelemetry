@@ -149,8 +149,8 @@ def generate_markdown(requirements, spec_version=None):
 
     for r in must_devs:
         icon = "⚠️" if r["status"] == "partial" else "❌"
-        short_req = r["requirement"][:150]
-        if len(r["requirement"]) > 150:
+        short_req = r["requirement"][:250]
+        if len(r["requirement"]) > 250:
             short_req += "..."
         loc = f" (`{r['code_location']}`)" if r["code_location"] else ""
         md.append(f"- {icon} **[{r['section']}]** [{r['level']}] {short_req}{loc}")
@@ -166,8 +166,8 @@ def generate_markdown(requirements, spec_version=None):
 
     for r in should_devs:
         icon = "⚠️" if r["status"] == "partial" else "❌"
-        short_req = r["requirement"][:150]
-        if len(r["requirement"]) > 150:
+        short_req = r["requirement"][:250]
+        if len(r["requirement"]) > 250:
             short_req += "..."
         loc = f" (`{r['code_location']}`)" if r["code_location"] else ""
         md.append(f"- {icon} **[{r['section']}]** [{r['level']}] {short_req}{loc}")
@@ -193,8 +193,8 @@ def generate_markdown(requirements, spec_version=None):
 
         for r in sec_reqs:
             icon = STATUS_ICONS.get(r["status"], "?")
-            short_req = r["requirement"][:120].replace("|", "\\|").replace("\n", " ")
-            if len(r["requirement"]) > 120:
+            short_req = r["requirement"][:200].replace("|", "\\|").replace("\n", " ")
+            if len(r["requirement"]) > 200:
                 short_req += "..."
             loc = r["code_location"].replace("|", "\\|") if r["code_location"] else "-"
             if r["notes"] and r["status"] != "found":
@@ -239,8 +239,8 @@ def generate_markdown(requirements, spec_version=None):
 
             for r in sec_dev:
                 icon = STATUS_ICONS.get(r["status"], "?")
-                short_req = r["requirement"][:120].replace("|", "\\|").replace("\n", " ")
-                if len(r["requirement"]) > 120:
+                short_req = r["requirement"][:200].replace("|", "\\|").replace("\n", " ")
+                if len(r["requirement"]) > 200:
                     short_req += "..."
                 loc = r["code_location"].replace("|", "\\|") if r["code_location"] else "-"
                 if r["notes"] and r["status"] != "found":
