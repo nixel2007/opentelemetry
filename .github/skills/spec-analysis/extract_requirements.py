@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Извлечение MUST/SHOULD требований из спецификации OpenTelemetry.
+"""Извлечение секций спецификации OpenTelemetry для анализа соответствия.
 
-Загружает 12 страниц спецификации с opentelemetry.io, извлекает все строки
-с ключевыми словами MUST/MUST NOT/SHOULD/SHOULD NOT и сохраняет в JSON.
-Никакой дедупликации и фильтрации не производится - каждая строка спецификации
-с ключевым словом сохраняется как отдельное требование.
+Загружает 12 страниц спецификации с opentelemetry.io, разбивает на секции
+по заголовкам (##/###), сохраняет полный текст каждой секции с метаданными.
+
+Агенты верификации получают полные секции и сами идентифицируют
+MUST/SHOULD требования в контексте окружающего текста.
 
 Использование:
     python3 extract_requirements.py <output_dir>
@@ -33,30 +34,15 @@ SPEC_URLS = {
     "Env Vars": "https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/",
 }
 
-# Строки-шум, которые нужно пропускать
-NOISE_PATTERNS = [
-    r"^Status:",
-    r"Copyright",
-    r"[Ff]eedback",
-    r"page helpful",
-    r"document-status",
-]
-
-# Условные секции: подразделы, чьи MUST/SHOULD требования применяются
-# только при реализации конкретной опциональной функциональности.
-# Ключ - паттерн (regex) для сопоставления с subsection. Значение - название фичи.
+# Условные подразделы - применяются только при реализации фичи
 CONDITIONAL_SUBSECTIONS = {
-    # Propagators: B3 - extension package, не обязательный для SDK
     r"^B3": "B3 Propagator (extension)",
-    # Propagators: GetAll - добавляется после stable релиза Getter
     r"^GetAll": "GetAll Getter (post-stable extension)",
-    # Resource SDK: detector name conventions - только для SDK с детекторами
     r"^Resource detector name": "Resource Detector Naming (conditional)",
-    # Env Vars: Prometheus exporter - отдельный пакет
     r"^Prometheus": "Prometheus Exporter (extension)",
 }
 
-# Deprecated секции: требования из них помечаются как deprecated
+# Deprecated секции
 DEPRECATED_PATTERNS = [
     r"Jaeger",
     r"OT Trace",
@@ -114,185 +100,125 @@ def fetch_page(url, output_dir, name):
     return text
 
 
-def extract_requirements(text, section):
-    """Извлекает требования из текста спецификации.
+def _make_anchor(subsection):
+    """Генерирует URL-якорь из заголовка (аналогично GitHub/Hugo)."""
+    anchor = subsection.lower()
+    anchor = re.sub(r"[^a-z0-9\s-]", "", anchor)
+    anchor = re.sub(r"\s+", "-", anchor).strip("-")
+    return anchor
 
-    Каждая строка с MUST/SHOULD = отдельное требование.
-    К тексту требования добавляется контекст из последующих строк
-    (буллеты, параметры), чтобы не терять смысл.
 
-    Отслеживает маркеры 'Status: Development' и 'Status: Stable' в тексте.
-    Status-маркеры привязаны к подразделам: при появлении нового заголовка
-    статус сбрасывается к значению по умолчанию для страницы.
+def _classify_subsection(subsection):
+    """Определяет scope подраздела."""
+    for pattern, feature in CONDITIONAL_SUBSECTIONS.items():
+        if re.search(pattern, subsection):
+            return f"conditional:{feature}"
+    for pattern in DEPRECATED_PATTERNS:
+        if re.search(pattern, subsection, re.IGNORECASE):
+            return "deprecated"
+    return "universal"
 
-    Определяет scope требования:
-    - universal: обязательно для любой реализации SDK
-    - conditional:<feature>: обязательно только при реализации <feature>
-    - deprecated: относится к устаревшей функциональности
+
+def _count_keywords(text):
+    """Считает MUST/SHOULD ключевые слова в тексте."""
+    must = len(re.findall(r"\bMUST\b", text))
+    must_not = len(re.findall(r"\bMUST NOT\b", text))
+    should = len(re.findall(r"\bSHOULD\b", text))
+    should_not = len(re.findall(r"\bSHOULD NOT\b", text))
+    return {
+        "must": must - must_not,  # MUST без MUST NOT
+        "must_not": must_not,
+        "should": should - should_not,  # SHOULD без SHOULD NOT
+        "should_not": should_not,
+        "total": must + should,  # все ключевые слова
+    }
+
+
+def _detect_stability(text, page_default):
+    """Определяет стабильность секции по маркерам Status:."""
+    if re.search(r"Status:\s*Development", text):
+        return "Development"
+    return page_default
+
+
+def extract_sections(text, page_name, page_url):
+    """Разбивает текст страницы на секции по заголовкам.
+
+    Возвращает список секций с полным текстом и метаданными.
     """
-    reqs = []
-    current_subsection = section
-
+    sections = []
     lines = text.split("\n")
 
-    # Определяем стабильность по умолчанию для страницы (первый Status: ...)
+    # Стабильность по умолчанию для страницы
     page_default = "Stable"
     for line in lines:
         if re.search(r"Status:\s*(Stable|Development|Mixed)", line.strip()):
             if "Development" in line:
                 page_default = "Development"
-            else:
-                page_default = "Stable"
             break
 
-    current_stability = page_default
-    current_scope = "universal"
-
+    # Находим все заголовки ## и ###
+    headings = []
     for i, line in enumerate(lines):
-        stripped = line.strip()
-
-        # Определяем подразделы по заголовкам - сбрасываем статус к умолчанию
-        m = re.match(r"^#{1,4}\s+(.+)", stripped)
+        m = re.match(r"^(#{1,4})\s+(.+)", line.strip())
         if m:
-            current_subsection = m.group(1).strip()
-            current_subsection = re.sub(r"\[.*?\]", "", current_subsection).strip()
-            current_stability = page_default
+            level = len(m.group(1))
+            title = m.group(2).strip()
+            title = re.sub(r"\[.*?\]", "", title).strip()
+            headings.append((i, level, title))
 
-            # Определяем scope по подразделу
-            current_scope = "universal"
-            for pattern, feature in CONDITIONAL_SUBSECTIONS.items():
-                if re.search(pattern, current_subsection):
-                    current_scope = f"conditional:{feature}"
-                    break
-            for pattern in DEPRECATED_PATTERNS:
-                if re.search(pattern, current_subsection, re.IGNORECASE):
-                    current_scope = "deprecated"
-                    break
+    if not headings:
+        # Страница без заголовков - одна секция
+        kw = _count_keywords(text)
+        if kw["total"] > 0:
+            sections.append({
+                "page": page_name,
+                "subsection": page_name,
+                "url": page_url,
+                "stability": page_default,
+                "scope": "universal",
+                "text": text,
+                "keywords": kw,
+            })
+        return sections
+
+    # Разбиваем на секции между заголовками
+    for idx, (line_idx, hlevel, title) in enumerate(headings):
+        # Текст секции - от текущего заголовка до следующего того же или более высокого уровня
+        if idx + 1 < len(headings):
+            end_idx = headings[idx + 1][0]
+        else:
+            end_idx = len(lines)
+
+        section_text = "\n".join(lines[line_idx:end_idx]).strip()
+        kw = _count_keywords(section_text)
+
+        # Пропускаем секции без требований
+        if kw["total"] == 0:
             continue
 
-        # Отслеживаем маркеры стабильности секций
-        if re.search(r"Status:\s*Development", stripped):
-            current_stability = "Development"
-            if re.match(r"^Status:\s*Development\s*$", stripped):
-                continue
-        elif re.search(r"Status:\s*Stable", stripped):
-            current_stability = "Stable"
-            if re.match(r"^Status:\s*Stable", stripped):
-                continue
-
-        # Inline Development/Deprecated маркеры - для конкретной строки
-        line_stability = current_stability
-        line_scope = current_scope
-        if "Status: Development" in stripped or "(Development)" in stripped:
-            line_stability = "Development"
-        if "Status: Deprecated" in stripped:
-            line_scope = "deprecated"
-        for pattern in DEPRECATED_PATTERNS:
-            if re.search(pattern, stripped, re.IGNORECASE) and current_scope == "universal":
-                # Только если встречается в контексте описания deprecated фичи
-                if "Deprecated" in stripped:
-                    line_scope = "deprecated"
-
-        # Пропускаем короткие строки
-        if len(stripped) < 30:
+        # Фильтруем шумные секции
+        if any(
+            p in title.lower()
+            for p in ["feedback", "copyright", "on this page", "edit this page"]
+        ):
             continue
 
-        # Определяем уровень требования (приоритет: NOT-варианты первые)
-        level = None
-        if re.search(r"\bMUST NOT\b", stripped):
-            level = "MUST NOT"
-        elif re.search(r"\bSHOULD NOT\b", stripped):
-            level = "SHOULD NOT"
-        elif re.search(r"\bMUST\b", stripped):
-            level = "MUST"
-        elif re.search(r"\bSHOULD\b", stripped):
-            level = "SHOULD"
+        anchor = _make_anchor(title)
+        stability = _detect_stability(section_text, page_default)
+        scope = _classify_subsection(title)
 
-        if not level:
-            continue
+        sections.append({
+            "page": page_name,
+            "subsection": title,
+            "url": f"{page_url}#{anchor}",
+            "stability": stability,
+            "scope": scope,
+            "text": section_text,
+            "keywords": kw,
+        })
 
-        # Собираем контекст: если строка заканчивается на ":" или содержит
-        # "the following", подбираем последующие буллеты/строки
-        req_text = stripped
-        if _needs_continuation(stripped):
-            continuation = _collect_continuation(lines, i + 1)
-            if continuation:
-                req_text = stripped + " " + continuation
-
-        # Нормализуем пробелы, допускаем до 800 символов для полного контекста
-        clean = re.sub(r"\s+", " ", req_text)[:800]
-
-        # Пропускаем шум
-        if any(re.search(p, clean, re.IGNORECASE) for p in NOISE_PATTERNS):
-            continue
-
-        reqs.append(
-            {
-                "section": section,
-                "subsection": current_subsection,
-                "level": level,
-                "requirement": clean,
-                "stability": line_stability,
-                "scope": line_scope,
-            }
-        )
-
-    return reqs
-
-
-def _needs_continuation(line):
-    """Определяет, нужен ли контекст из следующих строк.
-
-    Строки заканчивающиеся на ":" или содержащие "the following"
-    обычно продолжаются списком параметров.
-    """
-    stripped = line.rstrip()
-    if stripped.endswith(":"):
-        return True
-    if re.search(r"the following\b", stripped, re.IGNORECASE):
-        return True
-    return False
-
-
-def _collect_continuation(lines, start_idx, max_lines=8, max_chars=500):
-    """Собирает продолжение: буллеты и строки до следующего заголовка или пустого блока.
-
-    Останавливается при:
-    - Заголовке (##)
-    - Строке с собственным MUST/SHOULD (это уже отдельное требование)
-    - Превышении лимита строк/символов
-    - Двух пустых строках подряд
-    """
-    parts = []
-    total = 0
-    empty_count = 0
-
-    for j in range(start_idx, min(start_idx + max_lines, len(lines))):
-        s = lines[j].strip()
-
-        if not s:
-            empty_count += 1
-            if empty_count >= 2:
-                break
-            continue
-        empty_count = 0
-
-        # Стоп на заголовке
-        if re.match(r"^#{1,4}\s+", s):
-            break
-
-        # Стоп на строке с собственным MUST/SHOULD (это отдельное требование)
-        if re.search(r"\bMUST\b|\bSHOULD\b", s) and not s.startswith("*"):
-            break
-
-        # Добавляем строку (убираем маркер буллета для компактности)
-        clean = re.sub(r"^\*\s*", "- ", s)
-        if total + len(clean) > max_chars:
-            break
-        parts.append(clean)
-        total += len(clean)
-
-    return " ".join(parts)
+    return sections
 
 
 def main():
@@ -303,48 +229,45 @@ def main():
     output_dir = sys.argv[1]
     os.makedirs(output_dir, exist_ok=True)
 
-    print("Извлечение требований из спецификации OpenTelemetry")
+    print("Извлечение секций спецификации OpenTelemetry")
     print(f"Каталог: {output_dir}")
     print()
 
-    all_requirements = []
+    all_sections = []
+    total_keywords = 0
 
-    for section, url in SPEC_URLS.items():
-        text = fetch_page(url, output_dir, section)
-        reqs = extract_requirements(text, section)
-        print(f"  {section}: {len(reqs)} требований из {len(text)} символов текста")
-        all_requirements.extend(reqs)
+    for page_name, url in SPEC_URLS.items():
+        text = fetch_page(url, output_dir, page_name)
+        sections = extract_sections(text, page_name, url)
+        page_kw = sum(s["keywords"]["total"] for s in sections)
+        total_keywords += page_kw
+        print(f"  {page_name}: {len(sections)} секций, ~{page_kw} требований")
+        all_sections.extend(sections)
 
-    print(f"\nВсего извлечено: {len(all_requirements)}")
+    print(f"\nВсего секций: {len(all_sections)}")
+    print(f"Всего ключевых слов MUST/SHOULD: ~{total_keywords}")
 
-    # Статистика по уровням
+    # Статистика
     from collections import Counter
 
-    counts = Counter(r["level"] for r in all_requirements)
-    for level, count in sorted(counts.items()):
-        print(f"  {level}: {count}")
-
-    # Статистика по стабильности
-    stability_counts = Counter(r["stability"] for r in all_requirements)
+    stability_counts = Counter(s["stability"] for s in all_sections)
     print(f"\nПо стабильности:")
     for stab, count in sorted(stability_counts.items()):
-        print(f"  {stab}: {count}")
+        print(f"  {stab}: {count} секций")
 
-    # Статистика по scope
-    scope_counts = Counter(r["scope"] for r in all_requirements)
-    print(f"\nПо области применения:")
+    scope_counts = Counter(s["scope"] for s in all_sections)
+    print(f"\nПо области:")
     for scope, count in sorted(scope_counts.items()):
-        print(f"  {scope}: {count}")
+        print(f"  {scope}: {count} секций")
 
-    # Статистика по разделам
-    print("\nПо разделам:")
-    section_counts = Counter(r["section"] for r in all_requirements)
-    for section, count in sorted(section_counts.items(), key=lambda x: -x[1]):
-        print(f"  {section}: {count}")
+    page_counts = Counter(s["page"] for s in all_sections)
+    print(f"\nПо страницам:")
+    for page, count in sorted(page_counts.items(), key=lambda x: -x[1]):
+        print(f"  {page}: {count} секций")
 
-    output_file = os.path.join(output_dir, "requirements.json")
+    output_file = os.path.join(output_dir, "sections.json")
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(all_requirements, f, ensure_ascii=False, indent=2)
+        json.dump(all_sections, f, ensure_ascii=False, indent=2)
 
     print(f"\nСохранено в {output_file}")
 
