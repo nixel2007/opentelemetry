@@ -62,8 +62,8 @@ for f in glob.glob('out/*.sarif'):
 ## Проверка синтаксиса (oscript -check)
 
 ```bash
-find src -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
-find tests -name "*.os" -exec oscript -check -env=src/fake-entrypoint.os {} \;
+find src -name "*.os" -exec oscript -check {} -env=src/fake-entrypoint.os \;
+find tests -name "*.os" -exec oscript -check {} -env=src/fake-entrypoint.os \;
 ```
 
 > `oscript -check` может ложно падать на неизвестных переменных и внешних типах - это особенность реализации интерпретатора. Для надёжной проверки используй запуск тестов.
