@@ -477,14 +477,6 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
         "| Используется миллисекундная точность |"
     )
     lines.append(
-        "| Нет нативного protobuf | HTTP/JSON вместо HTTP/protobuf "
-        "| Полная поддержка через JSON-сериализацию |"
-    )
-    lines.append(
-        "| Нет gRPC | Только HTTP транспорт "
-        "| HTTP/JSON как основной протокол |"
-    )
-    lines.append(
         "| Нет TLS/mTLS из SDK | Сертификаты конфигурируются вне SDK "
         "| Делегировано системе/прокси |"
     )

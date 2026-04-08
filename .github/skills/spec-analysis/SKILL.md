@@ -53,7 +53,7 @@ description: >
 | B3 Extract / B3 Inject / B3 Fields | B3 Propagator | MAY be maintained as extension package |
 | GetAll | GetAll Getter | Добавляется после stable релиза Getter |
 | Resource detector name | Resource Detector Naming | Только для SDK с реализованными детекторами |
-| Prometheus Exporter | Prometheus Exporter | Отдельный extension package |
+| Prometheus Exporter | Prometheus Exporter | Extension package (реализован: ОтелПрометеусЧитательМетрик) |
 
 ## Шаг 1: Извлечение секций из спецификации
 
@@ -186,7 +186,6 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ## Ограничения платформы OneScript
 
 При анализе учитывай, что OneScript не поддерживает:
-- Нативный protobuf (HTTP/JSON вместо HTTP/protobuf)
 - Наносекундную точность времени (только миллисекунды)
 - TLS/mTLS конфигурацию сертификатов
 - B3/X-Ray пропагаторы (только W3C TraceContext и W3C Baggage)
