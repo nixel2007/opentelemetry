@@ -66,11 +66,20 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 
 ## Шаг 2: Верификация требований по коду
 
-Для каждого раздела спецификации запусти **параллельных explore-агентов** (до 5 одновременно).
+Запусти **параллельных general-purpose агентов** для верификации.
+
+> **ВАЖНО:** Используй `agent_type: "general-purpose"` (Sonnet), НЕ `explore` (Haiku).
+> Haiku не обладает достаточной глубиной рассуждений для корректной верификации
+> архитектурных требований спецификации (false positive: маркирует "found" когда
+> код есть, но интерфейс не совпадает со спекой).
 
 ### Подготовка данных для агентов
 
 Из `sections.json` отбери секции по страницам (поле `page`) и сгруппируй для каждого агента.
+
+**Правило размера:** каждый агент получает **не более 5-8 секций** (до ~40 keywords).
+Если страница содержит больше секций - разбей на несколько агентов.
+
 Каждый агент получает:
 - **Полный текст** каждой секции из `sections.json` (поле `text`)
 - URL секции для справки (поле `url`)
@@ -79,13 +88,18 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 
 ### Разделение на агентов
 
-| Агент | Страницы спецификации (поле `page`) | Каталоги кода |
+Минимальная разбивка по страницам спецификации (разбей крупные страницы дополнительно):
+
+| Домен | Страницы спецификации (поле `page`) | Каталоги кода |
 |---|---|---|
-| verify-core | Context, Baggage Api, Resource Sdk, Propagators | `src/Ядро/`, `src/Пропагация/` |
-| verify-traces | Trace Api, Trace Sdk | `src/Трассировка/` |
-| verify-logs | Logs Api, Logs Sdk | `src/Логирование/` |
-| verify-metrics | Metrics Api, Metrics Sdk | `src/Метрики/` |
-| verify-export | Otlp Exporter, Env Vars | `src/Экспорт/`, `src/Конфигурация/` |
+| core | Context, Baggage Api, Resource Sdk, Propagators | `src/Ядро/`, `src/Пропагация/` |
+| traces | Trace Api, Trace Sdk | `src/Трассировка/` |
+| logs | Logs Api, Logs Sdk | `src/Логирование/` |
+| metrics | Metrics Api, Metrics Sdk | `src/Метрики/` |
+| export | Otlp Exporter, Env Vars | `src/Экспорт/`, `src/Конфигурация/` |
+
+Для каждого домена создай столько агентов, сколько нужно, чтобы уложиться в лимит 5-8 секций.
+Например, Metrics Sdk (48 секций) разбивается на ~8 агентов по 6 секций.
 
 ### Инструкция для каждого агента
 
@@ -104,17 +118,78 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
    - Найди в коде реализацию (grep по ключевым словам, просмотр файлов)
    - Определи статус: found / partial / not_found / n_a
    - Укажи файл:строка для found/partial
+   - Укажи URL секции спецификации (поле `url` из sections.json)
 
-**Критически важно:**
+### Строгие критерии статуса
+
+**found** - ВСЕ следующие условия выполнены:
+- В коде есть метод/класс/интерфейс с **совпадающей сигнатурой** (имя, параметры, возвращаемый тип)
+- Поведение метода соответствует описанному в спецификации
+- Если спецификация требует **отдельную сущность** (интерфейс, класс, аргумент) - она СУЩЕСТВУЕТ как отдельная сущность
+
+**partial** - одно из:
+- Функциональность РЕАЛИЗОВАНА, но **архитектура не совпадает** с требуемой (например, inline-код вместо отдельного интерфейса)
+- Метод существует, но **сигнатура не совпадает** (другие параметры, другой тип возврата)
+- Поведение реализовано **не полностью** (часть кейсов не покрыта)
+- Требование реализовано через **обходной путь**, а не так, как описано в спеке
+
+**not_found** - реализация отсутствует полностью
+
+### Стратегия верификации
+
+Для каждого требования используй **правильную стратегию проверки**:
+
+**Тип 1: Требование к API-интерфейсу** ("MUST accept parameter X", "MUST return Y", "MUST provide method Z")
+→ Найди **конкретный метод**, проверь его **сигнатуру** (параметры + возврат). Если параметры не совпадают - `partial`.
+
+**Тип 2: Требование к отдельной сущности** ("MUST provide a Getter", "MUST be implemented as separate packages", "MUST return an opaque object")
+→ Ищи **отдельный класс/интерфейс/модуль**. Если функциональность inline в другом классе - `partial`.
+
+**Тип 3: Требование к поведению** ("MUST NOT modify values", "MUST be thread-safe", "MUST propagate")
+→ Прочитай реализацию, проверь что поведение соблюдается. Если есть но не полностью - `partial`.
+
+**Тип 4: Требование к конфигурации** ("MUST support env variable X")
+→ Найди `grep` по имени переменной. Проверь, что она читается и применяется.
+
+### Примеры распространённых ошибок (false positive → partial)
+
+**Ошибка 1: "Код есть → found"**
+Спецификация: "Extract MUST accept an optional Getter argument with Keys, Get, GetAll methods"
+Код: `Функция Извлечь(Контекст, Заголовки)` - Extract напрямую итерирует Заголовки (Соответствие)
+❌ Неправильно: `found` - "код Extract существует"
+✅ Правильно: `partial` - "Extract есть, но нет Getter-интерфейса как отдельного объекта с Keys/Get/GetAll"
+
+**Ошибка 2: "Похожий код → found"**
+Спецификация: "CreateKey MUST return an opaque object"
+Код: `Ключ = "otel-span"` (строковая константа)
+❌ Неправильно: `found` - "ключ используется"
+✅ Правильно: `not_found` - "нет функции CreateKey, ключи - строки, а не опак-объекты"
+
+**Ошибка 3: "Функция близкой семантики → found"**
+Спецификация: "SetGlobalPropagator MUST exist as global API"
+Код: `Установить(Сдк)` (устанавливает весь SDK, а не пропагатор отдельно)
+❌ Неправильно: `found` - "установка глобального объекта есть"
+✅ Правильно: `partial` - "пропагаторы задаются через SDK builder, нет отдельного SetGlobalPropagator"
+
+**Ошибка 4: "Inline-код → found"**
+Спецификация: "Resource detectors MUST be implemented as packages separate from the SDK"
+Код: Детекция ресурсов захардкожена в `ОтелРесурс.ПриСозданииОбъекта()`
+❌ Неправильно: `found` - "ресурсы детектятся"
+✅ Правильно: `partial` - "детекция есть, но inline в классе ресурса, а не в отдельных пакетах"
+
+### Общие правила
 - НЕ ПРОПУСКАЙ ни одного MUST/SHOULD. Даже если в одном абзаце три MUST - это три отдельных требования
 - Если MUST/SHOULD находится внутри bullet-point (списка) - это тоже отдельное требование
 - Если в одном предложении и MUST и SHOULD - это два требования
 - Поле `keywords` секции показывает ожидаемое количество требований - твой результат должен быть близок к нему
 - Текст требования в выводе должен быть достаточно полным, чтобы понять суть без обращения к спецификации
+- В строке `spec_url:` после заголовка секции укажи URL из поля `url` в sections.json - это критично для трассируемости требований
+- **При каждом `partial` или `not_found` - добавь краткое пояснение ПОЧЕМУ** после текста требования
 
 **Формат вывода** - для каждой секции:
 ```
 === PAGE/SUBSECTION [stability] [scope] ===
+spec_url: <URL секции из поля url в sections.json>
 
 [LEVEL] STATUS | file:line | Полный текст требования из спецификации
 [LEVEL] STATUS | file:line | Полный текст требования из спецификации
@@ -124,10 +199,11 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 Пример:
 ```
 === Context/Create a key [Stable] [universal] ===
+spec_url: https://opentelemetry.io/docs/specs/otel/context/#create-a-key
 
-[MUST] found | src/Ядро/Классы/ОтелКонтекст.os:15 | The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key.
-[SHOULD NOT] found | src/Ядро/Классы/ОтелКонтекст.os:15 | Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise.
-[MUST] found | src/Ядро/Классы/ОтелКонтекст.os:20 | The API MUST return an opaque object representing the newly created key.
+[MUST] found | src/Ядро/Модули/ОтелКонтекст.os:147 | The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key.
+[SHOULD NOT] n_a | - | Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise. (OneScript не поддерживает опак-объекты, ключи - строки)
+[MUST] not_found | - | The API MUST return an opaque object representing the newly created key. (Нет функции CreateKey, ключи - строковые константы "otel-span", не опак-объекты)
 ```
 
 ---
@@ -192,7 +268,7 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 ## Детальный анализ по разделам (Stable)
 ### Context
 #### Create a key
-| # | Уровень | Статус | Требование | Расположение в коде |
+| # | Уровень | Статус | Требование | Ссылка на спек | Расположение в коде |
 ...
 #### Get value
 ...
@@ -208,6 +284,7 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 
 > Каждая секция спецификации = отдельный подзаголовок (####).
 > Каждое MUST/SHOULD = отдельная строка таблицы с полным текстом требования.
+> Колонка "Ссылка на спек" содержит markdown-ссылку `[section](url)` на конкретный раздел спецификации (из поля `url` в sections.json / из строки `spec_url:` вывода агента).
 
 ## Шаг 4: Сравнение с предыдущей версией
 
