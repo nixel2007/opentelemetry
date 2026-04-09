@@ -14,13 +14,13 @@
 | Stable + universal keywords | 660 |
 | Conditional keywords | 23 |
 | Development keywords | 156 |
-| Найдено требований (Stable universal) | 625 |
-| ✅ Реализовано (found) | 449 (71.8%) |
-| ⚠️ Частично (partial) | 90 (14.4%) |
-| ❌ Не реализовано (not_found) | 84 (13.4%) |
+| Найдено требований (Stable universal) | 624 |
+| ✅ Реализовано (found) | 478 (76.6%) |
+| ⚠️ Частично (partial) | 81 (13.0%) |
+| ❌ Не реализовано (not_found) | 63 (10.1%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 313/370 (84.6%) |
-| **SHOULD/SHOULD NOT found** | 136/253 (53.8%) |
+| **MUST/MUST NOT found** | 327/377 (86.7%) |
+| **SHOULD/SHOULD NOT found** | 151/256 (59.0%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -33,8 +33,8 @@
 | Trace Sdk | 52 | 15 | 8 | 0 | 75 | 69.3% |
 | Logs Api | 19 | 1 | 1 | 0 | 21 | 90.5% |
 | Logs Sdk | 40 | 10 | 5 | 0 | 55 | 72.7% |
-| Metrics Api | 61 | 5 | 8 | 0 | 74 | 82.4% |
-| Metrics Sdk | 95 | 29 | 43 | 1 | 168 | 56.5% |
+| Metrics Api | 63 | 5 | 6 | 0 | 74 | 85.1% |
+| Metrics Sdk | 122 | 20 | 24 | 1 | 167 | 73.1% |
 | Otlp Exporter | 14 | 5 | 5 | 1 | 25 | 56.0% |
 | Propagators | 19 | 7 | 6 | 0 | 32 | 59.4% |
 | Env Vars | 8 | 3 | 4 | 0 | 15 | 53.3% |
@@ -2758,8 +2758,8 @@
 | 2 | MUST | ✅ found | If a Logger is disabled, it MUST behave equivalently to No-op Logger. | `src/Логирование/Классы/ОтелЛоггер.os:50` | Включен() возвращает Ложь если Конфигурация.Включен() = Ложь. |
 | 3 | MUST | ✅ found | If not explicitly set, the minimum_severity parameter MUST default to 0. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:42` | Конструктор по умолчанию: НоваяМинимальнаяСтепеньСерьезности = 0. |
 | 4 | MUST | ✅ found | If a log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped by the Logger. | `src/Логирование/Классы/ОтелЛоггер.os:53` | Включен() проверяет НомерСерьезности < МинимальнаяСтепеньСерьезности(). |
-| 5 | MUST | ⚠️ partial | If not explicitly set, the trace_based parameter MUST default to false. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os` | ОтелКонфигурацияЛоггера не содержит параметра trace_based. |
-| 6 | MUST | ❌ not_found | If trace_based is true, log records associated with unsampled traces MUST be dropped by the Logger. | - | Фильтрация trace_based не реализована. |
+| 5 | MUST | ✅ found | If not explicitly set, the trace_based parameter MUST default to false. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:42` | Конструктор по умолчанию: TraceBased = Ложь. |
+| 6 | MUST | ✅ found | If trace_based is true, log records associated with unsampled traces MUST be dropped by the Logger. | `src/Логирование/Классы/ОтелЛоггер.os:57` | Включен() проверяет TraceBased() и вызывает ТрассировкаНеСэмплирована(). |
 | 7 | MUST | ✅ found | It is not necessary for implementations to ensure that changes to any of these parameters are immediately visible to callers of Enabled. However, the changes MUST be eventually visible. | `src/Логирование/Классы/ОтелЛоггер.os:112` | УстановитьКонфигурацию() обновляет поле Конфигурация напрямую, изменения видны при следующем вызове Включен(). |
 
 #### Emit a LogRecord
@@ -2769,12 +2769,12 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | SHOULD | ✅ found | If Observed Timestamp is unspecified, the implementation SHOULD set it equal to the current time. | `src/Логирование/Классы/ОтелЛоггер.os:82` |  |
-| 2 | MUST | ❌ not_found | If an Exception is provided, the SDK MUST by default set attributes from the exception on the LogRecord with the conventions outlined in the exception semantic conventions. | - | The Записать (emit) method has no exception handling logic. No exception semantic convention attributes (exception.type, exception.message, exception.stacktrace) are set automatically. |
-| 3 | MUST | ❌ not_found | User-provided attributes MUST take precedence over exception-derived attributes. | - | No exception-derived attribute logic exists, so precedence rules are not applicable but also not implemented. |
-| 4 | MUST NOT | ❌ not_found | User-provided attributes MUST NOT be overwritten by exception-derived attributes. | - | No exception-derived attribute logic exists, so the protection against overwriting is not implemented. |
-| 5 | MUST | ⚠️ partial | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case Enabled was not called prior to emitting the record). | `src/Логирование/Классы/ОтелЛоггер.os:53` | Фильтрация реализована в Включен(), но не дублируется в Записать(). Если вызвать Записать() без предварительного Включен(), фильтрация не применяется. |
-| 6 | MUST | ⚠️ partial | Minimum severity: If the log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:53` | Фильтрация по minimum_severity реализована в Включен(), но не в Записать(). |
-| 7 | MUST | ❌ not_found | Trace-based: If trace_based is true, and if the log record has a SpanId and the TraceFlags SAMPLED flag is unset, the log record MUST be dropped. | - | No trace_based filtering in the emit path. Log records are never dropped based on trace sampling status. |
+| 2 | MUST | ✅ found | If an Exception is provided, the SDK MUST by default set attributes from the exception on the LogRecord with the conventions outlined in the exception semantic conventions. | `src/Логирование/Классы/ОтелЛоггер.os:170` | ПрименитьАтрибутыИсключения() устанавливает exception.type, exception.message, exception.stacktrace из ИнформацииОбИсключении. |
+| 3 | MUST | ✅ found | User-provided attributes MUST take precedence over exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:183` | УстановитьАтрибутИсключенияЕслиНеЗадан() проверяет наличие атрибута перед установкой. |
+| 4 | MUST NOT | ✅ found | User-provided attributes MUST NOT be overwritten by exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:183` | УстановитьАтрибутИсключенияЕслиНеЗадан() не перезаписывает существующие атрибуты. |
+| 5 | MUST | ✅ found | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case Enabled was not called prior to emitting the record). | `src/Логирование/Классы/ОтелЛоггер.os:79` | Записать() вызывает ЗаписьОтброшенаПоКонфигурации() перед обработкой. |
+| 6 | MUST | ✅ found | Minimum severity: If the log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:139` | ЗаписьОтброшенаПоКонфигурации() проверяет НомерСерьезности < МинимальнаяСтепеньСерьезности(). |
+| 7 | MUST | ✅ found | Trace-based: If trace_based is true, and if the log record has a SpanId and the TraceFlags SAMPLED flag is unset, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:143` | ЗаписьОтброшенаПоКонфигурации() проверяет TraceBased() и вызывает ЗаписьЛогаНеСэмплирована(). |
 
 #### Enabled
 
