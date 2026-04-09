@@ -141,10 +141,31 @@ def _detect_stability(text, page_default):
     return page_default
 
 
+def _build_parent_path(headings, idx):
+    """Строит путь из родительских заголовков для уникальной идентификации секции.
+
+    Например, для ### ForceFlush под ## LogRecordProcessor вернёт
+    "LogRecordProcessor/ForceFlush".
+    """
+    current_level = headings[idx][1]
+    parts = [headings[idx][2]]
+
+    # Идём назад, ищем родительские заголовки более высокого уровня
+    for i in range(idx - 1, -1, -1):
+        if headings[i][1] < current_level:
+            parts.insert(0, headings[i][2])
+            current_level = headings[i][1]
+            if current_level <= 2:
+                break
+
+    return "/".join(parts)
+
+
 def extract_sections(text, page_name, page_url):
     """Разбивает текст страницы на секции по заголовкам.
 
     Возвращает список секций с полным текстом и метаданными.
+    Каждая секция имеет уникальный section_id = "page/parent_path".
     """
     sections = []
     lines = text.split("\n")
@@ -171,9 +192,11 @@ def extract_sections(text, page_name, page_url):
         # Страница без заголовков - одна секция
         kw = _count_keywords(text)
         if kw["total"] > 0:
+            section_id = page_name
             sections.append({
                 "page": page_name,
                 "subsection": page_name,
+                "section_id": section_id,
                 "url": page_url,
                 "stability": page_default,
                 "scope": "universal",
@@ -208,15 +231,35 @@ def extract_sections(text, page_name, page_url):
         stability = _detect_stability(section_text, page_default)
         scope = _classify_subsection(title)
 
+        # Уникальный идентификатор: page + путь из родительских заголовков
+        parent_path = _build_parent_path(headings, idx)
+        section_id = f"{page_name}/{parent_path}"
+
         sections.append({
             "page": page_name,
             "subsection": title,
+            "section_id": section_id,
             "url": f"{page_url}#{anchor}",
             "stability": stability,
             "scope": scope,
             "text": section_text,
             "keywords": kw,
         })
+
+    # Дедупликация section_id: при повторах добавляем порядковый номер
+    id_counts = {}
+    for s in sections:
+        sid = s["section_id"]
+        id_counts[sid] = id_counts.get(sid, 0) + 1
+    duplicated_ids = {sid for sid, cnt in id_counts.items() if cnt > 1}
+
+    if duplicated_ids:
+        counters = {}
+        for s in sections:
+            sid = s["section_id"]
+            if sid in duplicated_ids:
+                counters[sid] = counters.get(sid, 0) + 1
+                s["section_id"] = f"{sid}#{counters[sid]}"
 
     return sections
 

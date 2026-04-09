@@ -37,7 +37,8 @@ LEVEL_ORDER = ["MUST", "MUST NOT", "SHOULD", "SHOULD NOT"]
 def load_results(results_dir):
     """Загружает все JSON-файлы результатов агентов.
 
-    Возвращает словарь: (page, subsection) -> section_result
+    Возвращает словарь: section_id -> section_result
+    При отсутствии section_id использует (page, subsection) как fallback.
     """
     merged = {}
     agents_loaded = []
@@ -54,25 +55,30 @@ def load_results(results_dir):
         agents_loaded.append(agent_name)
 
         for section in data.get("sections", []):
-            key = (section["page"], section["subsection"])
+            key = section.get(
+                "section_id",
+                f"{section['page']}/{section['subsection']}",
+            )
             if key in merged:
                 print(
-                    f"⚠️  Дубликат секции {key[0]}/{key[1]} "
+                    f"⚠️  Дубликат секции {key} "
                     f"(агенты: {merged[key].get('_agent')}, {agent_name})"
                 )
             section["_agent"] = agent_name
+            # Обеспечиваем наличие section_id для дальнейшей обработки
+            section.setdefault("section_id", key)
             merged[key] = section
 
     return merged, agents_loaded
 
 
 def load_sections_metadata(sections_file):
-    """Загружает sections.json и строит индекс по (page, subsection)."""
+    """Загружает sections.json и строит индекс по section_id."""
     with open(sections_file, encoding="utf-8") as f:
         sections = json.load(f)
     index = {}
     for s in sections:
-        key = (s["page"], s["subsection"])
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
         index[key] = s
     return sections, index
 
@@ -82,10 +88,10 @@ def validate_completeness(sections, sections_index, merged):
     warnings = []
 
     for s in sections:
-        key = (s["page"], s["subsection"])
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
         if key not in merged:
             warnings.append(
-                f"Секция {s['page']}/{s['subsection']} ({s['keywords']['total']} kw) "
+                f"Секция {key} ({s['keywords']['total']} kw) "
                 f"- нет результата от агента"
             )
             continue
@@ -95,12 +101,12 @@ def validate_completeness(sections, sections_index, merged):
         expected = s["keywords"]["total"]
         if actual_count == 0 and expected > 0:
             warnings.append(
-                f"Секция {s['page']}/{s['subsection']}: "
+                f"Секция {key}: "
                 f"0 требований (ожидалось ~{expected})"
             )
         elif expected > 0 and abs(actual_count - expected) > expected * 0.5:
             warnings.append(
-                f"Секция {s['page']}/{s['subsection']}: "
+                f"Секция {key}: "
                 f"{actual_count} требований (ожидалось ~{expected})"
             )
 
@@ -118,7 +124,7 @@ def compute_stats(merged, sections):
     total_should = Counter()
 
     for s in sections:
-        key = (s["page"], s["subsection"])
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
         result = merged.get(key)
         if not result:
             continue
@@ -269,7 +275,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     for s in sections:
         if s["stability"] != "Stable" or s["scope"] != "universal":
             continue
-        key = (s["page"], s["subsection"])
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
         result = merged.get(key)
         if not result:
             continue
@@ -330,7 +336,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
         if s["stability"] != "Stable" or s["scope"] != "universal":
             continue
 
-        key = (s["page"], s["subsection"])
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
         result = merged.get(key)
 
         # Заголовок страницы
@@ -396,7 +402,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     if dev_sections:
         current_page = None
         for s in dev_sections:
-            key = (s["page"], s["subsection"])
+            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
             result = merged.get(key)
 
             if s["page"] != current_page:

@@ -201,6 +201,7 @@ RESULT_JSON_SCHEMA = r"""
     {
       "page": "<страница спецификации>",
       "subsection": "<подраздел>",
+      "section_id": "<уникальный идентификатор секции>",
       "spec_url": "<URL секции>",
       "stability": "Stable|Development",
       "scope": "universal|conditional:...",
@@ -269,11 +270,13 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
     total_keywords = 0
     for s in agent_sections:
         total_keywords += s["keywords"]["total"]
+        section_id = s.get("section_id", f"{s['page']}/{s['subsection']}")
         sections_block += f"\n{'=' * 60}\n"
         sections_block += (
-            f"=== {s['page']}/{s['subsection']} "
+            f"=== {section_id} "
             f"[{s['stability']}] [{s['scope']}] ===\n"
         )
+        sections_block += f"section_id: {section_id}\n"
         sections_block += f"url: {s['url']}\n"
         sections_block += f"expected_keywords: {s['keywords']['total']}\n"
         sections_block += f"{'=' * 60}\n\n"
@@ -282,9 +285,11 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
     # Формируем JSON-литерал шаблона для Python-записи
     sections_meta = []
     for s in agent_sections:
+        section_id = s.get("section_id", f"{s['page']}/{s['subsection']}")
         sections_meta.append({
             "page": s["page"],
             "subsection": s["subsection"],
+            "section_id": section_id,
             "spec_url": s["url"],
             "stability": s["stability"],
             "scope": s["scope"],
@@ -406,6 +411,7 @@ def main():
                 {
                     "page": s["page"],
                     "subsection": s["subsection"],
+                    "section_id": s.get("section_id", f"{s['page']}/{s['subsection']}"),
                     "url": s["url"],
                     "stability": s["stability"],
                     "scope": s["scope"],
