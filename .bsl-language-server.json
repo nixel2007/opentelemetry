@@ -1,24 +1,24 @@
 {
-    "codeLens": {
-        "testRunner": {
-            "executable": "oneunit",
-            "executableWin": "oneunit.bat",
-            "getTestsArguments": "d --file %s --mode flat",
-            "runAllTestsArguments": "e --file %s --genericCoverage out/genericCoverage.xml --openTestReport out/otr.xml --cobertura out/cobertura.xml",
-            "runTestArguments": "e --file %s -m %s --genericCoverage out/genericCoverage.xml --openTestReport out/otr.xml --cobertura out/cobertura.xml",
-            "getTestsResultPattern": "^[^.]+\\.([^\\s]+).*$"
-        }
-    },
-    "diagnostics": {
-        "parameters": {
-            "IncorrectLineBreak": {
-                "listOfIncorrectFirstSymbol": ";|,\\s*\\S+"
-            },
-            "LatinAndCyrillicSymbolInWord": false,
-            "Typo": {
-                "caseInsensitive": true,
-                "userWordsToIgnore": "Аппендер, Аппендера, Бакет, Бакета, Бакетам, Бакете, Бакеты, Дерегистрацией, Дерегистрация, Иммутабельность, Инструментирования, Логгер, Логгера, Логгеров, Логгеры, Мультитенантные, Мультитенантный, Мутабельный, Несэмплированный, Нооп, Пропагатор, Пропагатора, Пропагаторами, Пропагаторов, Пропагатором, Пропагаторы, Прото, Регистро, Сдк, Спан, Спана, Спане, Спанов, Спаном, Спаны, Сэмпл, Сэмпла, Сэмплер, Сэмплера, Сэмплером, Сэмплеру, Сэмплирован, Сэмплирована, Сэмплирование, Сэмплированию, Сэмплирования, Сэмплированный, Сэмплированный, Сэмплировать, Сэмплов, Сэмплы, Тенант, Тенанта, Трассировщик, Трассировщика, Трассировщики, Трассировщиков, Трейс, Трейса, Трейсов, Шестнадцатеричная, Шестнадцатеричной, Шестнадцатеричную, Шестнадцатеричных"
-            }
-        }
+  "codeLens": {
+    "testRunner": {
+      "executable": "oneunit",
+      "executableWin": "oneunit.bat",
+      "getTestsArguments": "d --file %s --mode flat",
+      "runAllTestsArguments": "e --file %s --genericCoverage out/genericCoverage.xml --openTestReport out/otr.xml --cobertura out/cobertura.xml",
+      "runTestArguments": "e --file %s -m %s --genericCoverage out/genericCoverage.xml --openTestReport out/otr.xml --cobertura out/cobertura.xml",
+      "getTestsResultPattern": "^[^.]+\\.([^\\s]+).*$"
     }
+  },
+  "diagnostics": {
+    "parameters": {
+      "IncorrectLineBreak": {
+        "listOfIncorrectFirstSymbol": ";|,\\s*\\S+"
+      },
+      "LatinAndCyrillicSymbolInWord": false,
+      "Typo": {
+        "caseInsensitive": true,
+        "userWordsToIgnore": "Аппендер, Аппендера, Бакет, Бакета, Бакетам, Бакете, Бакеты, Дерегистрацией, Дерегистрация, Иммутабельность, Инструментирования, Логгер, Логгера, Логгеров, Логгеры, Мультитенантные, Мультитенантный, Мутабельный, Несэмплированный, Нооп, Пропагатор, Пропагатора, Пропагаторами, Пропагаторов, Пропагатором, Пропагаторы, Прото, Регистро, Сдк, Спан, Спана, Спане, Спанов, Спаном, Спаны, Сэмпл, Сэмпла, Сэмплер, Сэмплера, Сэмплером, Сэмплеру, Сэмплирован, Сэмплирована, Сэмплирование, Сэмплированию, Сэмплирования, Сэмплированный, Сэмплированный, Сэмплировать, Сэмплов, Сэмплы, Тенант, Тенанта, Трассировщик, Трассировщика, Трассировщики, Трассировщиков, Трейс, Трейса, Трейсов, Шестнадцатеричная, Шестнадцатеричной, Шестнадцатеричную, Шестнадцатеричных, Мутабелен"
+      }
+    }
+  }
 }
