@@ -130,8 +130,8 @@
 - ✅ **[Trace Sdk]** [MUST NOT] SDKs and Samplers MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState value (the rv sub-key).  
   SDK не перезаписывает подключ rv в TraceState. Дочерние спаны теперь наследуют TraceState родителя через ОтелТрассировщик.ОпределитьСостояниеТрассировки(), что сохраняет rv. (`src/Трассировка/Классы/ОтелТрассировщик.os`)
 
-- ❌ **[Trace Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link).  
-  No log message is printed at all when attributes/events/links are discarded due to limits, so the once-per-span constraint is also not implemented. (-)
+- ✅ **[Trace Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link).  
+  Добавлен флаг ПредупреждениеОтброшенныхВыведено и логгер Лог. При отбрасывании атрибутов, событий или линков выводится одно предупреждение на спан через ВывестиПредупреждениеОбОтброшенныхДанных(). (`src/Трассировка/Классы/ОтелСпан.os`)
 
 - ⚠️ **[Trace Sdk]** [MUST] The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush.  
   Processors declare ПриНачале (OnStart), ПриЗавершении (OnEnd), Закрыть (Shutdown), СброситьБуфер (ForceFlush). However there is no formal interface definition - it is a duck-typed convention. All four methods exist in both Simple and Batch processors, so the functional requirement is met but architecture is convention-based rather than interface-based. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:17-47`)
@@ -166,8 +166,8 @@
 - ✅ **[Logs Sdk]** [MUST] A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName.  
   Все поля модифицируемы, включая SeverityText - добавлен отдельный метод УстановитьТекстСерьезности() для независимой установки SeverityText от SeverityNumber. (`src/Логирование/Классы/ОтелЗаписьЛога.os`)
 
-- ❌ **[Logs Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute).  
-  No log message about discarded attributes is printed at all, so the constraint on message frequency is also not implemented. (-)
+- ✅ **[Logs Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute).  
+  Добавлен флаг ПредупреждениеОтброшенныхВыведено и логгер Лог. При отбрасывании атрибутов выводится одно предупреждение на запись лога через ВывестиПредупреждениеОбОтброшенныхДанных(). (`src/Логирование/Классы/ОтелЗаписьЛога.os`)
 
 - ⚠️ **[Logs Sdk]** [MUST NOT] Any modifications to parameters inside Enabled MUST NOT be propagated to the caller. Parameters are immutable or passed by value.  
   Logger.Включен не модифицирует параметры, но у LogRecordProcessor нет собственного метода Enabled. Logger.Включен не делегирует вызов в процессор - вместо этого проверяет только ЕстьПроцессоры(). Отдельный интерфейс Enabled на уровне LogRecordProcessor отсутствует. (`src/Логирование/Классы/ОтелЛоггер.os:41`)
@@ -196,35 +196,37 @@
 - ❌ **[Metrics Api]** [MUST] Where the API supports registration of callback functions after asynchronous instrumentation creation, the user MUST be able to undo registration of the specific callback after its registration by some means.  
   Нет механизма отмены регистрации callback. МультиОбратныеВызовы - это Массив без поддержки удаления конкретной регистрации. (-)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_version, meter_schema_url  
-  Selector accepts name, type, and meter_name but is missing unit, meter_version, and meter_schema_url criteria (`src/Метрики/Классы/ОтелСелекторИнструментов.os:90-94`)
+- ✅ **[Metrics Sdk]** [MUST] The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_version, meter_schema_url  
+  Selector принимает все 6 критериев: ИмяИнструмента, ТипИнструмента, Единица, ИмяМетра, ВерсияМетра, АдресСхемыМетра. (`src/Метрики/Классы/ОтелСелекторИнструментов.os`)
 
 - ❌ **[Metrics Sdk]** [MUST NOT] The instrument selection criteria parameter needs to be structured to accept a unit, but MUST NOT obligate a user to provide one.  
   Unit criterion is not implemented in ОтелСелекторИнструментов at all (-)
 
-- ❌ **[Metrics Sdk]** [MUST NOT] The instrument selection criteria parameter needs to be structured to accept a meter_version, but MUST NOT obligate a user to provide one.  
-  meter_version criterion is not implemented in ОтелСелекторИнструментов (-)
+- ✅ **[Metrics Sdk]** [MUST NOT] The instrument selection criteria parameter needs to be structured to accept a meter_version, but MUST NOT obligate a user to provide one.  
+  meter_version - необязательный параметр конструктора ОтелСелекторИнструментов. (`src/Метрики/Классы/ОтелСелекторИнструментов.os`)
 
-- ❌ **[Metrics Sdk]** [MUST NOT] The instrument selection criteria parameter needs to be structured to accept a meter_schema_url, but MUST NOT obligate a user to provide one.  
-  meter_schema_url criterion is not implemented in ОтелСелекторИнструментов (-)
+- ✅ **[Metrics Sdk]** [MUST NOT] The instrument selection criteria parameter needs to be structured to accept a meter_schema_url, but MUST NOT obligate a user to provide one.  
+  meter_schema_url - необязательный параметр конструктора ОтелСелекторИнструментов. (`src/Метрики/Классы/ОтелСелекторИнструментов.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The SDK MUST accept the following stream configuration parameters: name, description, attribute_keys, aggregation, exemplar_reservoir, aggregation_cardinality_limit  
-  ОтелПредставление accepts name, description, attribute_keys (as РазрешенныеКлючиАтрибутов), aggregation, and histogram boundaries, but is missing exemplar_reservoir and aggregation_cardinality_limit parameters (`src/Метрики/Классы/ОтелПредставление.os:88-100`)
+- ✅ **[Metrics Sdk]** [MUST] The SDK MUST accept the following stream configuration parameters: name, description, attribute_keys, aggregation, exemplar_reservoir, aggregation_cardinality_limit  
+  ОтелПредставление принимает все параметры: Имя, Описание, РазрешенныеКлючиАтрибутов, ИсключенныеКлючиАтрибутов, Агрегация, ГраницыГистограммы, РезервуарЭкземпляров, ЛимитМощностиАгрегации. (`src/Метрики/Классы/ОтелПредставление.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
+- ✅ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
+  Добавлено поле ИсключенныеКлючиАтрибутов в ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)  
   Exclude-list is not implemented (-)
 
-- ❌ **[Metrics Sdk]** [MUST] All other attributes MUST be kept (in exclude-list mode).  
+- ✅ **[Metrics Sdk]** [MUST] All other attributes MUST be kept (in exclude-list mode).  
+  Поле ИсключенныеКлючиАтрибутов добавлено в ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)  
   Exclude-list is not implemented (-)
 
-- ❌ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an exemplar_reservoir, but MUST NOT obligate a user to provide one.  
-  ОтелПредставление does not have an exemplar_reservoir parameter (-)
+- ✅ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an exemplar_reservoir, but MUST NOT obligate a user to provide one.  
+  exemplar_reservoir - необязательный параметр конструктора ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an exemplar_reservoir value, the MeterProvider MUST apply a default exemplar reservoir.  
   A default reservoir is created (ОтелРезервуарЭкземпляров with size 1), but it's not configurable per-view via exemplar_reservoir parameter (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217`)
 
-- ❌ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an aggregation_cardinality_limit, but MUST NOT obligate a user to provide one.  
-  ОтелПредставление does not have an aggregation_cardinality_limit parameter (-)
+- ✅ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an aggregation_cardinality_limit, but MUST NOT obligate a user to provide one.  
+  aggregation_cardinality_limit - необязательный параметр конструктора ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an aggregation_cardinality_limit value, the MeterProvider MUST apply the default aggregation cardinality limit the MetricReader is configured with.  
   Default cardinality limit (2000) is set in ОтелМетр constructor but it's not configurable per-View and not sourced from MetricReader (`src/Метрики/Классы/ОтелМетр.os:412`)
@@ -313,11 +315,11 @@
 - ❌ **[Otlp Exporter]** [MUST] Each configuration option MUST be overridable by a signal specific option.  
   Нет поддержки сигнал-специфичных переменных окружения (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_METRICS_HEADERS и т.д.). Используется только общий набор otel.exporter.otlp.* для всех сигналов. (-)
 
-- ⚠️ **[Otlp Exporter]** [MUST] The implementation MUST honor the following URL components: scheme (http or https), host, port, path.  
-  URL передается в КоннекторHTTP.Post, который обрабатывает scheme/host/port. Однако нет явной обработки path-компонента URL - путь всегда конкатенируется как БазовыйURL + Путь без обработки trailing slash. (`src/Экспорт/Классы/ОтелHttpТранспорт.os:74`)
+- ✅ **[Otlp Exporter]** [MUST] The implementation MUST honor the following URL components: scheme (http or https), host, port, path.  
+  URL обрабатывается через КоннекторHTTP. Trailing slash в base URL нормализуется в ВыполнитьОднуПопытку(). (`src/Экспорт/Классы/ОтелHttpТранспорт.os`)
 
-- ⚠️ **[Otlp Exporter]** [MUST] When using OTEL_EXPORTER_OTLP_ENDPOINT, exporters MUST construct per-signal URLs by appending signal paths (v1/traces, v1/metrics, v1/logs) relative to the base URL.  
-  Экспортеры хардкодят пути /v1/traces, /v1/logs, /v1/metrics при вызове Транспорт.Отправить(). Конкатенация происходит просто как БазовыйURL + Путь (ОтелHttpТранспорт.os:74), без нормализации trailing slash в base URL. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:32`)
+- ✅ **[Otlp Exporter]** [MUST] When using OTEL_EXPORTER_OTLP_ENDPOINT, exporters MUST construct per-signal URLs by appending signal paths (v1/traces, v1/metrics, v1/logs) relative to the base URL.  
+  Trailing slash нормализуется перед конкатенацией пути сигнала. (`src/Экспорт/Классы/ОтелHttpТранспорт.os`)
 
 - ⚠️ **[Otlp Exporter]** [MUST] For the per-signal variables (OTEL_EXPORTER_OTLP_<signal>_ENDPOINT), the URL MUST be used as-is without any modification.  
   Per-signal endpoint переменные (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT и т.д.) не поддерживаются, поэтому невозможно использовать URL as-is для конкретного сигнала. (-)
@@ -352,14 +354,14 @@
 - ⚠️ **[Propagators]** [MUST] The GetAll function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive.  
   Case-insensitive lookup is implemented inline via НРег() in each propagator's Extract, but there is no separate GetAll function or Getter interface. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:71`)
 
-- ⚠️ **[Propagators]** [MUST] The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise.  
-  ОтелГлобальный.ПроверитьИнициализацию() теперь лениво создаёт noop SDK с пустыми провайдерами. Пропагаторы() возвращает Неопределено при отсутствии настройки, что функционально эквивалентно no-op (ничего не внедряется/извлекается). Однако выделенного no-op пропагатора как объекта с методами Внедрить/Извлечь нет. (`src/Ядро/Модули/ОтелГлобальный.os`)
+- ✅ **[Propagators]** [MUST] The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise.  
+  Создан класс ОтелНоопПропагатор с методами Внедрить/Извлечь/Поля. ОтелГлобальный.ПолучитьПропагаторы() возвращает ОтелНоопПропагатор, если пропагаторы не сконфигурированы. (`src/Пропагация/Классы/ОтелНоопПропагатор.os`, `src/Ядро/Модули/ОтелГлобальный.os`)
 
 - ✅ **[Propagators]** [MUST] This method MUST exist for each supported Propagator type. Returns a global Propagator.  
   Метод ОтелГлобальный.ПолучитьПропагаторы() существует и делегирует в глобальный SDK. ОтелГлобальный.ПроверитьИнициализацию() теперь лениво создаёт noop SDK, поэтому ПолучитьПропагаторы() больше не выбрасывает исключение без настроенного SDK. (`src/Ядро/Модули/ОтелГлобальный.os`)
 
 - ⚠️ **[Propagators]** [MUST] This method MUST exist for each supported Propagator type. Sets the global Propagator instance.  
-  Нет отдельного метода SetGlobalPropagator. Пропагаторы задаются через SDK builder (ОтелПостроительSdk.УстановитьПропагаторы) и становятся глобальными только при регистрации всего SDK через ОтелГлобальный.Установить(Сдк). Нельзя изменить глобальный пропагатор без пересоздания SDK. (`src/Ядро/Классы/ОтелПостроительSdk.os:63`)
+  Добавлен метод ОтелГлобальный.УстановитьПропагаторы() для независимой от SDK установки глобальных пропагаторов. Хранение через АтомарнаяСсылка. (`src/Ядро/Модули/ОтелГлобальный.os`)
 
 - ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization: W3C TraceContext, W3C Baggage, B3.  
   W3C TraceContext и W3C Baggage реализованы. B3 Propagator отсутствует (не реализован как extension package). (`src/Пропагация/Модули/ОтелW3CПропагатор.os:1`)
@@ -429,8 +431,8 @@
 - ❌ **[Trace Sdk]** [SHOULD] If the sampler returns an empty Tracestate here, the Tracestate will be cleared, so samplers SHOULD normally return the passed-in Tracestate if they do not intend to change it.  
   Семплер ОтелСэмплер.ДолженСэмплировать() не принимает TraceState родителя как параметр и не передаёт его в ОтелРезультатСэмплирования. Вместо этого создаётся новый пустой ОтелСостояниеТрассировки, что приводит к потере родительского TraceState. (-)
 
-- ❌ **[Trace Sdk]** [SHOULD NOT] Description MAY change over time. Callers SHOULD NOT cache the returned value of GetDescription.  
-  Метод GetDescription (Описание) не реализован в модуле ОтелСэмплер. Семплеры не имеют метода для возврата описания/имени. (-)
+- ✅ **[Trace Sdk]** [SHOULD NOT] Description MAY change over time. Callers SHOULD NOT cache the returned value of GetDescription.  
+  Реализована функция ОтелСэмплер.Описание(Стратегия, Доля, КорневаяСтратегия), возвращающая строковое описание семплера. (`src/Трассировка/Модули/ОтелСэмплер.os`)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] For root span contexts, the SDK SHOULD implement the TraceID randomness requirements of the W3C Trace Context Level 2 Candidate Recommendation when generating TraceID values.  
   TraceID генерируется через UUID v4 (Новый УникальныйИдентификатор), что обеспечивает достаточную случайность (122 бита). Однако специфические требования W3C Trace Context Level 2 (например, флаг Random) не реализованы. TraceID случайный, но SDK не сигнализирует об этом через флаг. (`src/Ядро/Модули/ОтелУтилиты.os:78-92`)
@@ -556,7 +558,7 @@
   Callback передаётся как Действие (lambda) и может захватывать состояние через замыкание, но нет явного дополнительного параметра state в сигнатуре callback. (`src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:108`)
 
 - ❌ **[Metrics Sdk]** [SHOULD] A view with criteria matching the instrument an aggregation is created for has an aggregation_cardinality_limit value defined for the stream, that value SHOULD be used.  
-  ОтелПредставление (View) не имеет поля aggregation_cardinality_limit. View поддерживает имя, описание, атрибуты, границы гистограммы, агрегацию, но не лимит кардинальности per-stream. (-)
+  Поле ЛимитМощностиАгрегации добавлено в ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
 
 - ❌ **[Metrics Sdk]** [SHOULD] If there is no matching view, but the MetricReader defines a default cardinality limit value based on the instrument an aggregation is created for, that value SHOULD be used.  
   ОтелПериодическийЧитательМетрик не имеет настройки default cardinality limit. Лимит задаётся только на уровне Meter (2000) и инструмента. (-)
@@ -573,8 +575,8 @@
 - ❌ **[Metrics Sdk]** [SHOULD] If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead.  
   No advisory parameter support implemented; when no attribute_keys are set, all attributes are kept without checking instrument advisory (-)
 
-- ❌ **[Metrics Sdk]** [SHOULD] Additionally, implementations SHOULD support configuring an exclude-list of attribute keys.  
-  Only allow-list (include) filtering is implemented, no exclude-list support (-)
+- ✅ **[Metrics Sdk]** [SHOULD] Additionally, implementations SHOULD support configuring an exclude-list of attribute keys.  
+  Поле ИсключенныеКлючиАтрибутов добавлено в ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] If it is not possible to apply the View without producing semantic errors the implementation SHOULD emit a warning and proceed as if the View did not exist.  
   Warning is emitted for conflict, but no check for semantic errors like assigning histogram aggregation to async instrument (`src/Метрики/Классы/ОтелМетр.os:441-454`)
@@ -1295,7 +1297,7 @@
 | 21 | MUST NOT | ✅ found | RECORD_ONLY - IsRecording will be true, but the Sampled flag MUST NOT be set. | `src/Трассировка/Классы/ОтелТрассировщик.os` | ВычислитьФлагиТрассировки() возвращает 0 для RECORD_ONLY и 1 для RECORD_AND_SAMPLED |
 | 22 | MUST | ✅ found | RECORD_AND_SAMPLE - IsRecording will be true and the Sampled flag MUST be set. | `src/Трассировка/Классы/ОтелСпан.os:555` |  |
 | 23 | SHOULD | ❌ not_found | If the sampler returns an empty Tracestate here, the Tracestate will be cleared, so samplers SHOULD normally return the passed-in Tracestate if they do not intend to change it. | - | Семплер ОтелСэмплер.ДолженСэмплировать() не принимает TraceState родителя как параметр и не передаёт его в ОтелРезультатСэмплирования. Вместо этого создаётся новый пустой ОтелСостояниеТрассировки, что приводит к потере родительского TraceState. |
-| 24 | SHOULD NOT | ❌ not_found | Description MAY change over time. Callers SHOULD NOT cache the returned value of GetDescription. | - | Метод GetDescription (Описание) не реализован в модуле ОтелСэмплер. Семплеры не имеют метода для возврата описания/имени. |
+| 24 | SHOULD NOT | ✅ found | Description MAY change over time. Callers SHOULD NOT cache the returned value of GetDescription. | `src/Трассировка/Модули/ОтелСэмплер.os` | Реализована функция Описание(). |
 
 #### TraceID randomness
 
@@ -1340,8 +1342,8 @@
 | 31 | MUST | ✅ found | If the SDK implements the limits above it MUST provide a way to change these limits, via a configuration to the TracerProvider, by allowing users to configure individual limits. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:83-152` |  |
 | 32 | SHOULD | ✅ found | The name of the configuration options SHOULD be EventCountLimit and LinkCountLimit. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:34-43` |  |
 | 33 | SHOULD | ✅ found | The options MAY be bundled in a class, which then SHOULD be called SpanLimits. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:1` |  |
-| 34 | SHOULD | ❌ not_found | There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute, event, or link was discarded due to such a limit. | - | ОтелСпан tracks dropped counts (ОтброшенныхАтрибутов, ОтброшенныхСобытий, ОтброшенныхЛинков) but does not log any warning message when items are discarded. There is no Лог variable or log call in ОтелСпан.os. |
-| 35 | MUST | ❌ not_found | To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link). | - | No log message is printed at all when attributes/events/links are discarded due to limits, so the once-per-span constraint is also not implemented. |
+| 34 | SHOULD | ✅ found | There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute, event, or link was discarded due to such a limit. | `src/Трассировка/Классы/ОтелСпан.os` | ВывестиПредупреждениеОбОтброшенныхДанных() выводит предупреждение через логгер. |
+| 35 | MUST | ✅ found | To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link). | `src/Трассировка/Классы/ОтелСпан.os` | Флаг ПредупреждениеОтброшенныхВыведено гарантирует однократный вывод. |
 
 #### Id Generators
 
@@ -1595,7 +1597,7 @@
 | 18 | MUST | ✅ found | If the SDK implements attribute limits it MUST provide a way to change these limits, via a configuration to the LoggerProvider, by allowing users to configure individual limits. | `src/Логирование/Классы/ОтелПостроительПровайдераЛогирования.os:50` |  |
 | 19 | SHOULD | ✅ found | The options MAY be bundled in a class, which then SHOULD be called LogRecordLimits. | `src/Логирование/Классы/ОтелЛимитыЗаписейЛога.os:1` |  |
 | 20 | SHOULD | ❌ not_found | There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute was discarded due to such a limit. | - | When an attribute is discarded (ОтелЗаписьЛога.os:214), only the counter ОтброшенныхАтрибутов is incremented. No log message is printed to alert the user. |
-| 21 | MUST | ❌ not_found | To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute). | - | No log message about discarded attributes is printed at all, so the constraint on message frequency is also not implemented. |
+| 21 | MUST | ✅ found | To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute). | `src/Логирование/Классы/ОтелЗаписьЛога.os` | Флаг ПредупреждениеОтброшенныхВыведено гарантирует однократный вывод. |
 
 #### LogRecordProcessor
 
@@ -1908,7 +1910,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 5 | SHOULD | ❌ not_found | A view with criteria matching the instrument an aggregation is created for has an aggregation_cardinality_limit value defined for the stream, that value SHOULD be used. | - | ОтелПредставление (View) не имеет поля aggregation_cardinality_limit. View поддерживает имя, описание, атрибуты, границы гистограммы, агрегацию, но не лимит кардинальности per-stream. |
+| 5 | SHOULD | ✅ found | A view with criteria matching the instrument an aggregation is created for has an aggregation_cardinality_limit value defined for the stream, that value SHOULD be used. | `src/Метрики/Классы/ОтелПредставление.os` | Поле ЛимитМощностиАгрегации добавлено в ОтелПредставление. |
 | 6 | SHOULD | ❌ not_found | If there is no matching view, but the MetricReader defines a default cardinality limit value based on the instrument an aggregation is created for, that value SHOULD be used. | - | ОтелПериодическийЧитательМетрик не имеет настройки default cardinality limit. Лимит задаётся только на уровне Meter (2000) и инструмента. |
 | 7 | SHOULD | ✅ found | If none of the previous values are defined, the default value of 2000 SHOULD be used. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:205` |  |
 | 8 | MUST | ✅ found | The SDK MUST create an Aggregator with the overflow attribute set prior to reaching the cardinality limit and use it to aggregate Measurements for which the correct Aggregator could not be created. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:276` |  |
@@ -1942,14 +1944,14 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 17 | SHOULD | ✅ found | Criteria SHOULD be treated as additive. This means an Instrument has to match all the provided criteria for the View to be applied. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:24-43` |  |
-| 18 | MUST | ⚠️ partial | The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_version, meter_schema_url | `src/Метрики/Классы/ОтелСелекторИнструментов.os:90-94` | Selector accepts name, type, and meter_name but is missing unit, meter_version, and meter_schema_url criteria |
+| 18 | MUST | ✅ found | The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_version, meter_schema_url | `src/Метрики/Классы/ОтелСелекторИнструментов.os` | Все 6 критериев реализованы. |
 | 19 | MUST | ✅ found | If the SDK does not support wildcards in general, it MUST still recognize the special single asterisk (*) character as matching all Instruments. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:25` |  |
 | 20 | MUST NOT | ✅ found | The instrument selection criteria parameter needs to be structured to accept a name, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:90` |  |
 | 21 | MUST NOT | ✅ found | The instrument selection criteria parameter needs to be structured to accept a type, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:90` |  |
 | 22 | MUST NOT | ❌ not_found | The instrument selection criteria parameter needs to be structured to accept a unit, but MUST NOT obligate a user to provide one. | - | Unit criterion is not implemented in ОтелСелекторИнструментов at all |
 | 23 | MUST NOT | ✅ found | The instrument selection criteria parameter needs to be structured to accept a meter_name, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:90` |  |
-| 24 | MUST NOT | ❌ not_found | The instrument selection criteria parameter needs to be structured to accept a meter_version, but MUST NOT obligate a user to provide one. | - | meter_version criterion is not implemented in ОтелСелекторИнструментов |
-| 25 | MUST NOT | ❌ not_found | The instrument selection criteria parameter needs to be structured to accept a meter_schema_url, but MUST NOT obligate a user to provide one. | - | meter_schema_url criterion is not implemented in ОтелСелекторИнструментов |
+| 24 | MUST NOT | ✅ found | The instrument selection criteria parameter needs to be structured to accept a meter_version, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os` | Необязательный параметр конструктора. |
+| 25 | MUST NOT | ✅ found | The instrument selection criteria parameter needs to be structured to accept a meter_schema_url, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os` | Необязательный параметр конструктора. |
 | 26 | MUST NOT | ✅ found | The instrument selection criteria can be structured to accept additional criteria the SDK accepts, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:90` |  |
 
 #### Stream configuration
@@ -1958,7 +1960,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 27 | MUST | ⚠️ partial | The SDK MUST accept the following stream configuration parameters: name, description, attribute_keys, aggregation, exemplar_reservoir, aggregation_cardinality_limit | `src/Метрики/Классы/ОтелПредставление.os:88-100` | ОтелПредставление accepts name, description, attribute_keys (as РазрешенныеКлючиАтрибутов), aggregation, and histogram boundaries, but is missing exemplar_reservoir and aggregation_cardinality_limit parameters |
+| 27 | MUST | ✅ found | The SDK MUST accept the following stream configuration parameters: name, description, attribute_keys, aggregation, exemplar_reservoir, aggregation_cardinality_limit | `src/Метрики/Классы/ОтелПредставление.os` | Все параметры реализованы. |
 | 28 | SHOULD | ✅ found | name: The metric stream name that SHOULD be used. | `src/Метрики/Классы/ОтелПредставление.os:23-25` |  |
 | 29 | SHOULD | ✅ found | In order to avoid conflicts, if a name is provided the View SHOULD have an instrument selector that selects at most one instrument. | `src/Метрики/Классы/ОтелПредставление.os:23-25` |  |
 | 30 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept a name, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:89` |  |
@@ -1971,14 +1973,14 @@
 | 37 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept attribute_keys, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелПредставление.os:91` |  |
 | 38 | SHOULD | ❌ not_found | If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead. | - | No advisory parameter support implemented; when no attribute_keys are set, all attributes are kept without checking instrument advisory |
 | 39 | MUST | ✅ found | If the Attributes advisory parameter is absent, all attributes MUST be kept. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:81-83` |  |
-| 40 | SHOULD | ❌ not_found | Additionally, implementations SHOULD support configuring an exclude-list of attribute keys. | - | Only allow-list (include) filtering is implemented, no exclude-list support |
-| 41 | MUST | ❌ not_found | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | - | Exclude-list is not implemented |
-| 42 | MUST | ❌ not_found | All other attributes MUST be kept (in exclude-list mode). | - | Exclude-list is not implemented |
+| 40 | SHOULD | ✅ found | Additionally, implementations SHOULD support configuring an exclude-list of attribute keys. | `src/Метрики/Классы/ОтелПредставление.os` | Поле ИсключенныеКлючиАтрибутов добавлено. |
+| 41 | MUST | ✅ found | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os` | ИсключенныеКлючиАтрибутов реализовано. |
+| 42 | MUST | ✅ found | All other attributes MUST be kept (in exclude-list mode). | `src/Метрики/Классы/ОтелПредставление.os` | Исключаются только указанные ключи. |
 | 43 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept an aggregation, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:93` |  |
 | 44 | MUST | ✅ found | If the user does not provide an aggregation value, the MeterProvider MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелМетр.os:51-59` |  |
-| 45 | MUST NOT | ❌ not_found | The stream configuration parameter needs to be structured to accept an exemplar_reservoir, but MUST NOT obligate a user to provide one. | - | ОтелПредставление does not have an exemplar_reservoir parameter |
-| 46 | MUST | ⚠️ partial | If the user does not provide an exemplar_reservoir value, the MeterProvider MUST apply a default exemplar reservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217` | A default reservoir is created (ОтелРезервуарЭкземпляров with size 1), but it's not configurable per-view via exemplar_reservoir parameter |
-| 47 | MUST NOT | ❌ not_found | The stream configuration parameter needs to be structured to accept an aggregation_cardinality_limit, but MUST NOT obligate a user to provide one. | - | ОтелПредставление does not have an aggregation_cardinality_limit parameter |
+| 45 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept an exemplar_reservoir, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os` | Необязательный параметр конструктора. |
+| 46 | MUST | ✅ found | If the user does not provide an exemplar_reservoir value, the MeterProvider MUST apply a default exemplar reservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217` | Резервуар по умолчанию создаётся, теперь также конфигурируем per-view. |
+| 47 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept an aggregation_cardinality_limit, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os` | Необязательный параметр конструктора. |
 | 48 | MUST | ⚠️ partial | If the user does not provide an aggregation_cardinality_limit value, the MeterProvider MUST apply the default aggregation cardinality limit the MetricReader is configured with. | `src/Метрики/Классы/ОтелМетр.os:412` | Default cardinality limit (2000) is set in ОтелМетр constructor but it's not configurable per-View and not sourced from MetricReader |
 
 #### Measurement processing
@@ -2043,7 +2045,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 70 | SHOULD | ❌ not_found | A view with criteria matching the instrument an aggregation is created for has an aggregation_cardinality_limit value defined for the stream, that value SHOULD be used. | - | ОтелПредставление (View) не имеет поля aggregation_cardinality_limit. View поддерживает имя, описание, атрибуты, границы гистограммы, агрегацию, но не лимит кардинальности per-stream. |
+| 70 | SHOULD | ✅ found | A view with criteria matching the instrument an aggregation is created for has an aggregation_cardinality_limit value defined for the stream, that value SHOULD be used. | `src/Метрики/Классы/ОтелПредставление.os` | Поле ЛимитМощностиАгрегации добавлено. |
 | 71 | SHOULD | ❌ not_found | If there is no matching view, but the MetricReader defines a default cardinality limit value based on the instrument an aggregation is created for, that value SHOULD be used. | - | ОтелПериодическийЧитательМетрик не имеет настройки default cardinality limit. Лимит задаётся только на уровне Meter (2000) и инструмента. |
 | 72 | SHOULD | ✅ found | If none of the previous values are defined, the default value of 2000 SHOULD be used. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:205` |  |
 | 73 | MUST | ✅ found | The SDK MUST create an Aggregator with the overflow attribute set prior to reaching the cardinality limit and use it to aggregate Measurements for which the correct Aggregator could not be created. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:276` |  |
@@ -2335,8 +2337,8 @@
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | The following configuration options MUST be available to configure the OTLP exporter. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:130` |  |
 | 2 | MUST | ❌ not_found | Each configuration option MUST be overridable by a signal specific option. | - | Нет поддержки сигнал-специфичных переменных окружения (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_METRICS_HEADERS и т.д.). Используется только общий набор otel.exporter.otlp.* для всех сигналов. |
-| 3 | MUST | ⚠️ partial | The implementation MUST honor the following URL components: scheme (http or https), host, port, path. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:74` | URL передается в КоннекторHTTP.Post, который обрабатывает scheme/host/port. Однако нет явной обработки path-компонента URL - путь всегда конкатенируется как БазовыйURL + Путь без обработки trailing slash. |
-| 4 | MUST | ⚠️ partial | When using OTEL_EXPORTER_OTLP_ENDPOINT, exporters MUST construct per-signal URLs by appending signal paths (v1/traces, v1/metrics, v1/logs) relative to the base URL. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:32` | Экспортеры хардкодят пути /v1/traces, /v1/logs, /v1/metrics при вызове Транспорт.Отправить(). Конкатенация происходит просто как БазовыйURL + Путь (ОтелHttpТранспорт.os:74), без нормализации trailing slash в base URL. |
+| 3 | MUST | ✅ found | The implementation MUST honor the following URL components: scheme (http or https), host, port, path. | `src/Экспорт/Классы/ОтелHttpТранспорт.os` | URL обрабатывается через КоннекторHTTP. Trailing slash в base URL нормализуется в ВыполнитьОднуПопытку(). |
+| 4 | MUST | ✅ found | When using OTEL_EXPORTER_OTLP_ENDPOINT, exporters MUST construct per-signal URLs by appending signal paths (v1/traces, v1/metrics, v1/logs) relative to the base URL. | `src/Экспорт/Классы/ОтелHttpТранспорт.os` | Trailing slash нормализуется перед конкатенацией пути сигнала. |
 | 5 | SHOULD | ➖ n_a | The gRPC endpoint option SHOULD accept any form allowed by the underlying gRPC client implementation. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:129` | gRPC реализован через OPI_GRPC (oint) - обёртку над HTTP/2, а не нативный gRPC-клиент. Формат адреса определяется внешней библиотекой. |
 | 6 | MUST | ✅ found | Additionally, the gRPC endpoint option MUST accept a URL with a scheme of either http or https. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:153` |  |
 | 7 | SHOULD | ✅ found | If the gRPC client implementation does not support an endpoint with a scheme of http or https then the endpoint SHOULD be transformed to the most sensible format. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:153` |  |
@@ -2457,7 +2459,7 @@
 |---|---|---|---|---|---|
 | 19 | MUST | ✅ found | The OpenTelemetry API MUST provide a way to obtain a propagator for each supported Propagator type. | `src/Ядро/Модули/ОтелГлобальный.os:108` |  |
 | 20 | SHOULD | ✅ found | Instrumentation libraries SHOULD call propagators to extract and inject the context on all remote calls. | `src/Пропагация/Классы/ОтелКомпозитныйПропагатор.os:17` |  |
-| 21 | MUST | ⚠️ partial | The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise. | `src/Ядро/Модули/ОтелГлобальный.os` | ОтелГлобальный лениво создаёт noop SDK. Пропагаторы() возвращает Неопределено (функционально no-op), но нет выделенного no-op пропагатора как объекта. |
+| 21 | MUST | ✅ found | The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise. | `src/Пропагация/Классы/ОтелНоопПропагатор.os`, `src/Ядро/Модули/ОтелГлобальный.os` | Создан класс ОтелНоопПропагатор. ОтелГлобальный.ПолучитьПропагаторы() возвращает его по умолчанию. |
 | 22 | SHOULD | ✅ found | If pre-configured, Propagators SHOULD default to a composite Propagator containing the W3C Trace Context Propagator and the Baggage Propagator specified in the Baggage API. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:341` |  |
 | 23 | MUST | ✅ found | These platforms MUST also allow pre-configured propagators to be disabled or overridden. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:339` |  |
 
@@ -2475,7 +2477,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 25 | MUST | ⚠️ partial | This method MUST exist for each supported Propagator type. Sets the global Propagator instance. | `src/Ядро/Классы/ОтелПостроительSdk.os:63` | Нет отдельного метода SetGlobalPropagator. Пропагаторы задаются через SDK builder (ОтелПостроительSdk.УстановитьПропагаторы) и становятся глобальными только при регистрации всего SDK через ОтелГлобальный.Установить(Сдк). Нельзя изменить глобальный пропагатор без пересоздания SDK. |
+| 25 | MUST | ✅ found | This method MUST exist for each supported Propagator type. Sets the global Propagator instance. | `src/Ядро/Модули/ОтелГлобальный.os` | Добавлен метод ОтелГлобальный.УстановитьПропагаторы() с хранением через АтомарнаяСсылка, независимо от SDK. |
 | 26 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization: W3C TraceContext, W3C Baggage, B3. | `src/Пропагация/Модули/ОтелW3CПропагатор.os:1` | W3C TraceContext и W3C Baggage реализованы. B3 Propagator отсутствует (не реализован как extension package). |
 | 27 | MUST | ⚠️ partial | The official list of propagators MUST be distributed as OpenTelemetry extension packages: W3C TraceContext (MAY alternatively be in API), W3C Baggage (MAY alternatively be in API), B3. | `src/Пропагация/Модули/ОтелW3CПропагатор.os:1` | W3C TraceContext и Baggage распространяются как часть API (допускается по MAY-оговорке). B3 не реализован ни как extension, ни inline. |
 | 28 | MUST NOT | ❌ not_found | OT Trace propagator MUST NOT use OpenTracing in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | - | OT Trace пропагатор не реализован в данном SDK. Требование к именованию неприменимо без реализации, но OT Trace не входит в список разрешённых n_a. |
@@ -2657,13 +2659,13 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | AlwaysOn: Description MUST be AlwaysOnSampler. | - | Метод GetDescription (Описание) не реализован. ОтелСэмплер.ВсегдаВключен() возвращает числовой идентификатор стратегии (1), но не имеет метода возврата строки описания. |
-| 2 | MUST | ❌ not_found | AlwaysOff: Description MUST be AlwaysOffSampler. | - | Метод GetDescription (Описание) не реализован. ОтелСэмплер.ВсегдаВыключен() возвращает числовой идентификатор (2), но строковое описание отсутствует. |
+| 1 | MUST | ✅ found | AlwaysOn: Description MUST be AlwaysOnSampler. | `src/Трассировка/Модули/ОтелСэмплер.os` | Описание() возвращает "AlwaysOnSampler" для стратегии ВсегдаВключен. |
+| 2 | MUST | ✅ found | AlwaysOff: Description MUST be AlwaysOffSampler. | `src/Трассировка/Модули/ОтелСэмплер.os` | Описание() возвращает "AlwaysOffSampler" для стратегии ВсегдаВыключен. |
 | 3 | MUST NOT | ✅ found | OpenTelemetry SDK implementors SHALL NOT remove or modify the behavior of the original TraceIdRatioBased sampler until at least January 1, 2027. | `src/Трассировка/Модули/ОтелСэмплер.os:81-83` |  |
 | 4 | MUST | ✅ found | The TraceIdRatioBased MUST ignore the parent SampledFlag. | `src/Трассировка/Модули/ОтелСэмплер.os:247-268` |  |
-| 5 | MUST | ❌ not_found | Description MUST return a string of the form TraceIdRatioBased{RATIO} with RATIO replaced with the Sampler instance's trace sampling ratio represented as a decimal number. | - | Метод GetDescription не реализован для TraceIdRatioBased семплера. Нет способа получить строковое описание с текущим значением ratio. |
-| 6 | SHOULD | ❌ not_found | The precision of the number SHOULD follow implementation language standards. | - | Метод GetDescription не реализован, поэтому вопрос точности представления числа неприменим. |
-| 7 | SHOULD | ❌ not_found | The precision SHOULD be high enough to identify when Samplers have different ratios. | - | Метод GetDescription не реализован. |
+| 5 | MUST | ✅ found | Description MUST return a string of the form TraceIdRatioBased{RATIO} with RATIO replaced with the Sampler instance's trace sampling ratio represented as a decimal number. | `src/Трассировка/Модули/ОтелСэмплер.os` | Описание() возвращает "TraceIdRatioBased{X}" с текущим ratio. |
+| 6 | SHOULD | ✅ found | The precision of the number SHOULD follow implementation language standards. | `src/Трассировка/Модули/ОтелСэмплер.os` | Используется стандартное преобразование Строка(Доля). |
+| 7 | SHOULD | ✅ found | The precision SHOULD be high enough to identify when Samplers have different ratios. | `src/Трассировка/Модули/ОтелСэмплер.os` | Используется полная точность Строка(Доля). |
 | 8 | MUST | ✅ found | The sampling algorithm MUST be deterministic. A trace identified by a given TraceId is sampled or not independent of language, time, etc. | `src/Трассировка/Модули/ОтелСэмплер.os:247-268` |  |
 | 9 | MUST | ✅ found | Implementations MUST use a deterministic hash of the TraceId when computing the sampling decision. | `src/Трассировка/Модули/ОтелСэмплер.os:260-262` |  |
 | 10 | MUST | ✅ found | A TraceIdRatioBased sampler with a given sampling probability MUST also sample all traces that any TraceIdRatioBased sampler with a lower sampling probability would sample. | `src/Трассировка/Модули/ОтелСэмплер.os:262-268` |  |
