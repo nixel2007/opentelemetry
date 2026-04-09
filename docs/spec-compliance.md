@@ -231,8 +231,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an aggregation_cardinality_limit value, the MeterProvider MUST apply the default aggregation cardinality limit the MetricReader is configured with.  
   Default cardinality limit (2000) is set in ОтелМетр constructor but it's not configurable per-View and not sourced from MetricReader (`src/Метрики/Классы/ОтелМетр.os:412`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] If the MeterProvider has no View registered, take the Instrument and apply the default Aggregation on the basis of instrument kind according to the MetricReader instance's aggregation property. Instrument advisory parameters, if any, MUST be honored.  
-  Default aggregation is applied when no View matches, but instrument advisory parameters are not implemented (`src/Метрики/Классы/ОтелМетр.os:51-59`)
+- ✅ **[Metrics Sdk]** [MUST] If the MeterProvider has no View registered, take the Instrument and apply the default Aggregation on the basis of instrument kind according to the MetricReader instance's aggregation property. Instrument advisory parameters, if any, MUST be honored.  
+  Advisory-параметры реализованы и применяются при отсутствии View. Метод ОпределитьГраницыГистограммы реализует приоритет: View > Advisory > Default. (`src/Метрики/Классы/ОтелМетр.os:513-525`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] Callback functions MUST be invoked for the specific MetricReader performing collection, such that observations made or produced by executing callbacks only apply to the intended MetricReader during collection.  
   Callbacks are invoked during collection (ВызватьМультиОбратныеВызовы + individual instrument callbacks via Собрать), but observations are not scoped per-MetricReader - all readers share the same instrument data (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:126-133`)
@@ -240,14 +240,14 @@
 - ⚠️ **[Metrics Sdk]** [MUST] Aggregators for synchronous instruments with cumulative temporality MUST continue to export all attribute sets that were observed prior to the beginning of overflow.  
   Реализация перенаправляет новые наборы атрибутов в overflow при достижении лимита, но при вызове ОчиститьТочкиДанных() (строка 131-136) полностью сбрасываются все аккумуляторы, включая ранее наблюдённые. Cumulative temporality не поддерживается явно - SDK реализует reset-based (delta-like) поведение. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:89`)
 
-- ❌ **[Metrics Sdk]** [MUST] If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate instrument registrations.  
-  Advisory parameters are not implemented. Duplicate instrument registration checks exist (ПроверитьКонфликтДескриптора in ОтелМетр.os:441), but only for name/kind/unit/description - not for advisory parameters. (-)
+- ✅ **[Metrics Sdk]** [MUST] If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate instrument registrations.  
+  ПроверитьКонфликтДескриптора сравнивает advisory-параметры через СоветыРавны и логирует предупреждение при расхождении. (`src/Метрики/Классы/ОтелМетр.os:536-553`)
 
-- ❌ **[Metrics Sdk]** [MUST] If both a View and advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters.  
-  Advisory parameters are not implemented. Views are implemented (ОтелПредставление.os), but since there are no advisory parameters, there is no precedence logic between Views and advisory params. (-)
+- ✅ **[Metrics Sdk]** [MUST] If both a View and advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters.  
+  ОпределитьГраницыГистограммы и ПрименитьПредставлениеКИнструменту реализуют приоритет View над advisory-параметрами. (`src/Метрики/Классы/ОтелМетр.os:489-525`)
 
-- ❌ **[Metrics Sdk]** [MUST] If no View matches, or if a matching View selects the default aggregation, the ExplicitBucketBoundaries advisory parameter MUST be used. If neither is provided, the default bucket boundaries apply.  
-  The ExplicitBucketBoundaries advisory parameter is not implemented. Instrument creation methods (e.g., СоздатьГистограмму in ОтелМетр.os:72) do not accept an advisory boundaries parameter. The histogram aggregator uses standard boundaries by default (ОтелАгрегаторГистограммы.os:118-135) or View-provided boundaries, but there is no advisory parameter path. (-)
+- ✅ **[Metrics Sdk]** [MUST] If no View matches, or if a matching View selects the default aggregation, the ExplicitBucketBoundaries advisory parameter MUST be used. If neither is provided, the default bucket boundaries apply.  
+  ОпределитьГраницыГистограммы реализует цепочку: View > Advisory > Default boundaries. СоздатьГистограмму принимает параметр Совет с ГраницыГистограммы. (`src/Метрики/Классы/ОтелМетр.os:76, 513-525`)
 
 - ✅ **[Metrics Sdk]** [MUST] A Metric SDK MUST allow exemplar sampling to leverage the configuration of metric aggregation. For example, Exemplar sampling of histograms should be able to leverage bucket boundaries.  
   Гистограммы используют ОтелВыровненныйРезервуарГистограммы с привязкой к границам бакетов. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`, `src/Метрики/Классы/ОтелМетр.os`)
@@ -524,14 +524,14 @@
 - ❌ **[Metrics Api]** [SHOULD] The API SHOULD be documented in a way to communicate to users that the name parameter needs to conform to the instrument name syntax (sync).  
   Документация методов СоздатьСчетчик и аналогов не упоминает синтаксис имен инструментов (правила ABNF). (-)
 
-- ❌ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate advisory parameters (sync).  
-  Advisory-параметры не реализованы в API синхронных инструментов, поэтому невозможно оценить валидацию. (-)
+- ✅ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate advisory parameters (sync).  
+  API не валидирует advisory-параметры - валидация выполняется в SDK (ПроверитьСовет). (`src/Метрики/Классы/ОтелМетр.os:44`)
 
 - ❌ **[Metrics Api]** [SHOULD] The API SHOULD be documented in a way to communicate to users that the name parameter needs to conform to the instrument name syntax (async).  
   Документация методов СоздатьНаблюдаемыйСчетчик и аналогов не упоминает синтаксис имен инструментов. (-)
 
-- ❌ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate advisory parameters (async).  
-  Advisory-параметры не реализованы в API асинхронных инструментов. (-)
+- ✅ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate advisory parameters (async).  
+  API не валидирует advisory-параметры - валидация выполняется в SDK (ПроверитьСовет). (`src/Метрики/Классы/ОтелМетр.os:225`)
 
 - ⚠️ **[Metrics Api]** [SHOULD] The API SHOULD support registration of callback functions associated with asynchronous instruments after they are created.  
   Мульти-callback регистрация через ЗарегистрироватьОбратныйВызов поддерживается на уровне Метра, но нет метода регистрации дополнительного callback на отдельном наблюдаемом инструменте после его создания. (`src/Метрики/Классы/ОтелМетр.os:348`)
@@ -572,8 +572,8 @@
 - ⚠️ **[Metrics Sdk]** [SHOULD] ForceFlush SHOULD complete or abort within some timeout.  
   СброситьБуфер() не принимает параметр таймаута и не имеет механизма прерывания по тайм-ауту. (`src/Метрики/Классы/ОтелПровайдерМетрик.os:112`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead.  
-  No advisory parameter support implemented; when no attribute_keys are set, all attributes are kept without checking instrument advisory (-)
+- ✅ **[Metrics Sdk]** [SHOULD] If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead.  
+  ПрименитьПредставлениеКИнструменту использует КлючиАтрибутов из advisory при отсутствии значения в View. (`src/Метрики/Классы/ОтелМетр.os:489-511`)
 
 - ✅ **[Metrics Sdk]** [SHOULD] Additionally, implementations SHOULD support configuring an exclude-list of attribute keys.  
   Поле ИсключенныеКлючиАтрибутов добавлено в ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
@@ -623,11 +623,11 @@
 - ❌ **[Metrics Sdk]** [SHOULD] If the instrument name does not conform to this syntax, the Meter SHOULD emit an error notifying the user about the invalid name.  
   Нет проверки синтаксиса имени инструмента и соответствующего предупреждения/ошибки при невалидном имени. (-)
 
-- ❌ **[Metrics Sdk]** [SHOULD] When a Meter creates an instrument, it SHOULD validate the instrument advisory parameters.  
-  Advisory parameters are not implemented in the SDK. The instrument creation methods (СоздатьСчетчик, СоздатьГистограмму, etc.) do not accept advisory parameters and there is no validation logic for them. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] When a Meter creates an instrument, it SHOULD validate the instrument advisory parameters.  
+  ПроверитьСовет валидирует advisory-параметры при создании инструмента: проверяет типы и содержимое. (`src/Метрики/Классы/ОтелМетр.os:616-650`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided.  
-  Advisory parameters are not implemented, so there is no validation or error emission for invalid advisory parameters. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided.  
+  ПроверитьСовет при невалидных параметрах логирует предупреждение и сбрасывает Совет в Неопределено. (`src/Метрики/Классы/ОтелМетр.os:616-650`)
 
 - ✅ **[Metrics Sdk]** [SHOULD] A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: ExemplarFilter: filter which measurements can become exemplars; ExemplarReservoir: storage and sampling of exemplars.  
   ExemplarFilter конфигурируется через ОтелПостроительПровайдераМетрик.УстановитьФильтрЭкземпляров(). ExemplarReservoir конфигурируется через View. (`src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os`, `src/Метрики/Классы/ОтелПредставление.os`)
@@ -1773,7 +1773,7 @@
 | 18 | MUST NOT | ✅ found | Users can provide a description, but it is up to their discretion. Therefore, this API needs to be structured to accept a description, but MUST NOT obligate a user to provide one (sync). | `src/Метрики/Классы/ОтелМетр.os:43` |  |
 | 19 | MUST | ✅ found | The description needs to support the instrument description rule. Meaning, the API MUST accept a string that supports at least BMP encoded characters and hold at least 1023 characters (sync). | `src/Метрики/Классы/ОтелМетр.os:43` |  |
 | 20 | MUST NOT | ✅ found | Users can provide advisory parameters, but its up to their discretion. Therefore, this API needs to be structured to accept advisory parameters, but MUST NOT obligate the user to provide it (sync). | `src/Метрики/Классы/ОтелМетр.os:43` |  |
-| 21 | SHOULD NOT | ❌ not_found | The API SHOULD NOT validate advisory parameters (sync). | - | Advisory-параметры не реализованы в API синхронных инструментов, поэтому невозможно оценить валидацию. |
+| 21 | SHOULD NOT | ✅ found | The API SHOULD NOT validate advisory parameters (sync). | `src/Метрики/Классы/ОтелМетр.os:44` | API не валидирует advisory - валидация в SDK (ПроверитьСовет). |
 | 22 | MUST | ✅ found | The API to construct asynchronous instruments MUST accept the following parameters: A name of the Instrument. | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 23 | SHOULD | ✅ found | The name needs to be provided by a user. If possible, the API SHOULD be structured so a user is obligated to provide this parameter (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 24 | MUST | ✅ found | If it is not possible to structurally enforce this obligation, the API MUST be documented in a way to communicate to users that this parameter is needed (async name). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
@@ -1785,7 +1785,7 @@
 | 30 | MUST NOT | ✅ found | Users can provide a description, but it is up to their discretion. Therefore, this API needs to be structured to accept a description, but MUST NOT obligate a user to provide one (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 31 | MUST | ✅ found | The description needs to support the instrument description rule. Meaning, the API MUST accept a string that supports at least BMP encoded characters and hold at least 1023 characters (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 32 | MUST NOT | ✅ found | Users can provide advisory parameters, but its up to their discretion. Therefore, this API needs to be structured to accept advisory parameters, but MUST NOT obligate the user to provide it (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
-| 33 | SHOULD NOT | ❌ not_found | The API SHOULD NOT validate advisory parameters (async). | - | Advisory-параметры не реализованы в API асинхронных инструментов. |
+| 33 | SHOULD NOT | ✅ found | The API SHOULD NOT validate advisory parameters (async). | `src/Метрики/Классы/ОтелМетр.os:225` | API не валидирует advisory - валидация в SDK (ПроверитьСовет). |
 | 34 | MUST | ✅ found | This API MUST be structured to accept a variable number of callback functions, including none. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os` |  |
 | 35 | MUST | ✅ found | The API MUST support creation of asynchronous instruments by passing zero or more callback functions to be permanently registered to the newly created instrument. | `src/Метрики/Классы/ОтелМетр.os` |  |
 | 36 | SHOULD | ⚠️ partial | The API SHOULD support registration of callback functions associated with asynchronous instruments after they are created. | `src/Метрики/Классы/ОтелМетр.os:348` | Мульти-callback регистрация через ЗарегистрироватьОбратныйВызов поддерживается на уровне Метра, но нет метода регистрации дополнительного callback на отдельном наблюдаемом инструменте после его создания. |
@@ -1971,7 +1971,7 @@
 | 35 | MUST | ✅ found | attribute_keys: This is, at a minimum, an allow-list of attribute keys for measurements captured in the metric stream. The allow-list contains attribute keys that identify the attributes that MUST be kept, and all other attributes MUST be ignored. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:242-251` |  |
 | 36 | MUST | ✅ found | The allow-list contains attribute keys that identify the attributes that MUST be kept, and all other attributes MUST be ignored (second MUST - ignored). | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:242-251` |  |
 | 37 | MUST NOT | ✅ found | The stream configuration parameter needs to be structured to accept attribute_keys, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелПредставление.os:91` |  |
-| 38 | SHOULD | ❌ not_found | If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead. | - | No advisory parameter support implemented; when no attribute_keys are set, all attributes are kept without checking instrument advisory |
+| 38 | SHOULD | ✅ found | If the user does not provide any value, the SDK SHOULD use the Attributes advisory parameter configured on the instrument instead. | `src/Метрики/Классы/ОтелМетр.os:489-511` | ПрименитьПредставлениеКИнструменту использует КлючиАтрибутов из advisory при отсутствии значения в View. |
 | 39 | MUST | ✅ found | If the Attributes advisory parameter is absent, all attributes MUST be kept. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:81-83` |  |
 | 40 | SHOULD | ✅ found | Additionally, implementations SHOULD support configuring an exclude-list of attribute keys. | `src/Метрики/Классы/ОтелПредставление.os` | Поле ИсключенныеКлючиАтрибутов добавлено. |
 | 41 | MUST | ✅ found | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os` | ИсключенныеКлючиАтрибутов реализовано. |
@@ -1990,7 +1990,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 49 | SHOULD | ✅ found | The SDK SHOULD use the following logic to determine how to process Measurements made with an Instrument: Determine the MeterProvider which owns the Instrument. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:151-174` |  |
-| 50 | MUST | ⚠️ partial | If the MeterProvider has no View registered, take the Instrument and apply the default Aggregation on the basis of instrument kind according to the MetricReader instance's aggregation property. Instrument advisory parameters, if any, MUST be honored. | `src/Метрики/Классы/ОтелМетр.os:51-59` | Default aggregation is applied when no View matches, but instrument advisory parameters are not implemented |
+| 50 | MUST | ✅ found | If the MeterProvider has no View registered, take the Instrument and apply the default Aggregation on the basis of instrument kind according to the MetricReader instance's aggregation property. Instrument advisory parameters, if any, MUST be honored. | `src/Метрики/Классы/ОтелМетр.os:513-525` | Advisory-параметры применяются при отсутствии View. |
 | 51 | SHOULD | ✅ found | If applying the View results in conflicting metric identities the implementation SHOULD apply the View and emit a warning. | `src/Метрики/Классы/ОтелМетр.os:441-454` |  |
 | 52 | SHOULD | ⚠️ partial | If it is not possible to apply the View without producing semantic errors the implementation SHOULD emit a warning and proceed as if the View did not exist. | `src/Метрики/Классы/ОтелМетр.os:441-454` | Warning is emitted for conflict, but no check for semantic errors like assigning histogram aggregation to async instrument |
 | 53 | MUST | ✅ found | If both a View and Instrument advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:425-434` |  |
@@ -2124,10 +2124,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 93 | SHOULD | ❌ not_found | When a Meter creates an instrument, it SHOULD validate the instrument advisory parameters. | - | Advisory parameters are not implemented in the SDK. The instrument creation methods (СоздатьСчетчик, СоздатьГистограмму, etc.) do not accept advisory parameters and there is no validation logic for them. |
-| 94 | SHOULD | ❌ not_found | If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided. | - | Advisory parameters are not implemented, so there is no validation or error emission for invalid advisory parameters. |
-| 95 | MUST | ❌ not_found | If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate instrument registrations. | - | Advisory parameters are not implemented. Duplicate instrument registration checks exist (ПроверитьКонфликтДескриптора in ОтелМетр.os:441), but only for name/kind/unit/description - not for advisory parameters. |
-| 96 | MUST | ❌ not_found | If both a View and advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters. | - | Advisory parameters are not implemented. Views are implemented (ОтелПредставление.os), but since there are no advisory parameters, there is no precedence logic between Views and advisory params. |
+| 93 | SHOULD | ✅ found | When a Meter creates an instrument, it SHOULD validate the instrument advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:616-650` | ПроверитьСовет валидирует типы и содержимое advisory-параметров. |
+| 94 | SHOULD | ✅ found | If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided. | `src/Метрики/Классы/ОтелМетр.os:616-650` | ПроверитьСовет логирует предупреждение и сбрасывает Совет в Неопределено. |
+| 95 | MUST | ✅ found | If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate instrument registrations. | `src/Метрики/Классы/ОтелМетр.os:536-553` | ПроверитьКонфликтДескриптора сравнивает advisory через СоветыРавны. |
+| 96 | MUST | ✅ found | If both a View and advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:489-525` | ОпределитьГраницыГистограммы и ПрименитьПредставлениеКИнструменту реализуют приоритет View > Advisory. |
 
 #### Instrument advisory parameter: `ExplicitBucketBoundaries`
 
@@ -2135,7 +2135,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 97 | MUST | ❌ not_found | If no View matches, or if a matching View selects the default aggregation, the ExplicitBucketBoundaries advisory parameter MUST be used. If neither is provided, the default bucket boundaries apply. | - | The ExplicitBucketBoundaries advisory parameter is not implemented. Instrument creation methods (e.g., СоздатьГистограмму in ОтелМетр.os:72) do not accept an advisory boundaries parameter. The histogram aggregator uses standard boundaries by default (ОтелАгрегаторГистограммы.os:118-135) or View-provided boundaries, but there is no advisory parameter path. |
+| 97 | MUST | ✅ found | If no View matches, or if a matching View selects the default aggregation, the ExplicitBucketBoundaries advisory parameter MUST be used. If neither is provided, the default bucket boundaries apply. | `src/Метрики/Классы/ОтелМетр.os:76, 513-525` | ОпределитьГраницыГистограммы реализует цепочку: View > Advisory > Default. |
 
 #### Exemplar
 
@@ -2797,7 +2797,7 @@
 | 3 | MUST | ✅ found | The API MUST treat it (description) as an opaque string. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:208` |  |
 | 4 | MUST | ✅ found | It (description) MUST support BMP (Unicode Plane 0), which is basically only the first three bytes of UTF-8 (or utf8mb3). | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:208` |  |
 | 5 | MUST | ✅ found | It (description) MUST support at least 1023 characters. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:208` |  |
-| 6 | MUST | ❌ not_found | OpenTelemetry SDKs MUST handle advisory parameters as described here. | - | Нет реализации advisory-параметров (ExplicitBucketBoundaries, Attributes) в API инструментов. Методы создания инструментов (СоздатьСчетчик, СоздатьГистограмму и т.д.) не принимают параметр advisory. |
+| 6 | MUST | ✅ found | OpenTelemetry SDKs MUST handle advisory parameters as described here. | `src/Метрики/Классы/ОтелМетр.os:44-340` | Все 8 фабричных методов принимают параметр Совет (Структура с ГраницыГистограммы и КлючиАтрибутов). Реализованы валидация, приоритет View > Advisory > Default, конфликтная проверка. |
 
 ### Metrics Sdk
 
