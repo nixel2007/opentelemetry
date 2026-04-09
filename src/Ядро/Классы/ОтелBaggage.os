@@ -40,7 +40,7 @@
 КонецФункции
 
 // Возвращает метаданные по ключу.
-// Per spec: Baggage MAY support metadata per entry.
+// Baggage MAY support metadata per entry.
 //
 // Параметры:
 //   Ключ - Строка - ключ
@@ -86,7 +86,7 @@
 КонецФункции
 
 // Возвращает новый пустой Baggage.
-// Per spec: Baggage API MUST implement clear operation.
+// Baggage API MUST implement clear operation.
 //
 // Возвращаемое значение:
 //   ОтелBaggage - новый пустой иммутабельный экземпляр

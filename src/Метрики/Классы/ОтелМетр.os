@@ -285,7 +285,7 @@
 КонецПроцедуры
 
 // Устанавливает агрегацию гистограмм по умолчанию.
-// Per spec: OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
+// OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
 //
 // Параметры:
 //   НоваяАгрегация - Строка - "explicit_bucket_histogram" или "base2_exponential_bucket_histogram"

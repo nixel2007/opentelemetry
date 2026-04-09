@@ -21,7 +21,7 @@
 КонецПроцедуры
 
 // Извлекает контекст из заголовков через все пропагаторы.
-// Per spec: extract chains context through propagators sequentially.
+// extract chains context through propagators sequentially.
 //
 // Параметры:
 //   Контекст - Соответствие - входной OTel Context

@@ -16,7 +16,7 @@
 Перем ЧитательМетрик;
 // Массив - Массив читателей метрик (поддержка нескольких reader'ов по спеке)
 Перем ЧитателиМетрик;
-// Строка - Агрегация гистограмм по умолчанию (per spec OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION)
+// Строка - Агрегация гистограмм по умолчанию
 Перем АгрегацияГистограммПоУмолчанию;
 
 #КонецОбласти
@@ -96,7 +96,7 @@
 КонецФункции
 
 // Возвращает массив всех зарегистрированных читателей метрик.
-// Per spec: MeterProvider MUST support multiple MetricReaders.
+// MeterProvider MUST support multiple MetricReaders.
 //
 // Возвращаемое значение:
 //   Массив - массив читателей метрик
@@ -187,7 +187,7 @@
 КонецФункции
 
 // Устанавливает агрегацию гистограмм по умолчанию.
-// Per spec: OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
+// OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION
 //
 // Параметры:
 //   НоваяАгрегация - Строка - "explicit_bucket_histogram" или "base2_exponential_bucket_histogram"

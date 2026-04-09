@@ -159,7 +159,7 @@
 КонецФункции
 
 // Фиксирует запись лога - делает её неизменяемой.
-// Per spec: LogRecord SHOULD be read-only after emit.
+// LogRecord SHOULD be read-only after emit.
 // После вызова все сеттеры становятся no-op.
 //
 Процедура Зафиксировать() Экспорт
@@ -392,7 +392,7 @@
         МаксДлинаЗначенияАтрибута = ЛимитыЗаписейЛога.МаксДлинаЗначенияАтрибута();
     КонецЕсли;
 
-    // Per spec: trace context fields populated from resolved Context at emit time
+    // trace context fields populated from resolved Context at emit time
     ИдТрассировки = "";
     ИдСпана = "";
     ФлагиТрассировки = 0;

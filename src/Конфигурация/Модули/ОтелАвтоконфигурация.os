@@ -189,7 +189,7 @@
 
     ИмяСэмплера = Менеджер.Параметр("otel.traces.sampler");
     Если ИмяСэмплера = Неопределено Тогда
-        // Per spec: default sampler MUST be ParentBased(root=AlwaysOn)
+        // default sampler MUST be ParentBased(root=AlwaysOn)
         СтратегияСэмплирования = ОтелСэмплер.НаОсновеРодителя();
         КорневаяСтратегия = ОтелСэмплер.ВсегдаВключен();
     Иначе
