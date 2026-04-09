@@ -15,12 +15,12 @@
 | Conditional keywords | 23 |
 | Development keywords | 156 |
 | Найдено требований (Stable universal) | 624 |
-| ✅ Реализовано (found) | 499 (80.0%) |
-| ⚠️ Частично (partial) | 68 (10.9%) |
-| ❌ Не реализовано (not_found) | 55 (8.8%) |
+| ✅ Реализовано (found) | 503 (80.6%) |
+| ⚠️ Частично (partial) | 69 (11.1%) |
+| ❌ Не реализовано (not_found) | 50 (8.0%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 343/377 (91.0%) |
-| **SHOULD/SHOULD NOT found** | 156/256 (60.9%) |
+| **MUST/MUST NOT found** | 346/377 (91.8%) |
+| **SHOULD/SHOULD NOT found** | 157/256 (61.3%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -30,7 +30,7 @@
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
 | Resource Sdk | 12 | 3 | 0 | 0 | 15 | 80.0% |
 | Trace Api | 105 | 11 | 4 | 0 | 120 | 87.5% |
-| Trace Sdk | 52 | 15 | 8 | 0 | 75 | 69.3% |
+| Trace Sdk | 56 | 16 | 3 | 0 | 75 | 74.7% |
 | Logs Api | 19 | 1 | 1 | 0 | 21 | 90.5% |
 | Logs Sdk | 40 | 10 | 5 | 0 | 55 | 72.7% |
 | Metrics Api | 63 | 5 | 6 | 0 | 74 | 85.1% |
@@ -446,8 +446,8 @@
 - ❌ **[Trace Sdk]** [SHOULD] There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute, event, or link was discarded due to such a limit.  
   ОтелСпан tracks dropped counts (ОтброшенныхАтрибутов, ОтброшенныхСобытий, ОтброшенныхЛинков) but does not log any warning message when items are discarded. There is no Лог variable or log call in ОтелСпан.os. (-)
 
-- ❌ **[Trace Sdk]** [SHOULD] The SpanProcessor interface SHOULD declare the following methods: OnEnding method.  
-  No OnEnding method exists in any span processor. The processors only have ПриНачале (OnStart) and ПриЗавершении (OnEnd). There is no intermediate step between span End() being called and OnEnd being invoked. (-)
+- ✅ **[Trace Sdk]** [SHOULD] The SpanProcessor interface SHOULD declare the following methods: OnEnding method.  
+  ИнтерфейсПроцессорСпанов содержит метод ПередЗавершением(Спан). (`src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os`)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] Shutdown SHOULD be called only once for each SpanProcessor instance. After the call to Shutdown, subsequent calls to OnStart, OnEnd, or ForceFlush are not allowed. SDKs SHOULD ignore these calls gracefully, if possible.  
   BatchSpanProcessor (via ОтелБазовыйПакетныйПроцессор) checks Закрыт flag in Обработать() and returns early, which prevents OnEnd from processing. However SimpleSpanProcessor has no such guard - after Закрыть() it can still receive ПриЗавершении() calls (it just won't have an exporter if it was closed). Also no protection against double Shutdown calls. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:42-44`)
@@ -1365,7 +1365,7 @@
 | 40 | MUST | ✅ found | SDK MUST allow to end each pipeline with individual exporter. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:63-65` |  |
 | 41 | MUST | ✅ found | SDK MUST allow users to implement and configure custom processors. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:76-78` |  |
 | 42 | MUST | ✅ found | The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os` |  |
-| 43 | SHOULD | ❌ not_found | The SpanProcessor interface SHOULD declare the following methods: OnEnding method. | - | No OnEnding method exists in any span processor. The processors only have ПриНачале (OnStart) and ПриЗавершении (OnEnd). There is no intermediate step between span End() being called and OnEnd being invoked. |
+| 43 | SHOULD | ✅ found | The SpanProcessor interface SHOULD declare the following methods: OnEnding method. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os` | Метод ПередЗавершением(Спан) объявлен в интерфейсе и реализован во всех процессорах. |
 | 44 | SHOULD | ✅ found | It SHOULD be possible to keep a reference to this span object and updates to the span SHOULD be reflected in it. | `src/Трассировка/Классы/ОтелСпан.os:592` |  |
 | 45 | SHOULD | ✅ found | It SHOULD be possible to keep a reference to this span object and updates to the span SHOULD be reflected in it (OnStart span parameter is read/write). | `src/Трассировка/Классы/ОтелКомпозитныйПроцессорСпанов.os:18-26` |  |
 
@@ -2693,10 +2693,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | The end timestamp MUST have been computed (the OnEnding method duration is not included in the span duration). | - | OnEnding is not implemented. In ОтелСпан.Завершить(), the end timestamp is set and then Завершен=Истина is immediately set before calling Процессор.ПриЗавершении (OnEnd). There is no intermediate OnEnding callback. |
-| 2 | MUST | ❌ not_found | The Span object MUST still be mutable (i.e., SetAttribute, AddLink, AddEvent can be called) while OnEnding is called. | - | OnEnding is not implemented. By the time ПриЗавершении (OnEnd) is called, Завершен is already Истина, making the span immutable. |
-| 3 | MUST | ❌ not_found | This method MUST be called synchronously within the Span.End() API, therefore it should not block or throw an exception. | - | OnEnding method does not exist in any processor implementation. |
-| 4 | MUST | ❌ not_found | The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking OnEnding of the first SpanProcessor. | - | OnEnding is not implemented. The span uses a simple Завершен flag without thread-safety guarantees for the transition from mutable to OnEnding state. |
+| 1 | MUST | ✅ found | The end timestamp MUST have been computed (the OnEnding method duration is not included in the span duration). | `src/Трассировка/Классы/ОтелСпан.os:449-453` | ВремяОкончания вычисляется до вызова ПередЗавершением. |
+| 2 | MUST | ✅ found | The Span object MUST still be mutable (i.e., SetAttribute, AddLink, AddEvent can be called) while OnEnding is called. | `src/Трассировка/Классы/ОтелСпан.os:454-456` | Флаг Завершен устанавливается после вызова ПередЗавершением - спан мутабелен. |
+| 3 | MUST | ✅ found | This method MUST be called synchronously within the Span.End() API, therefore it should not block or throw an exception. | `src/Трассировка/Классы/ОтелСпан.os:454-456` | ПередЗавершением вызывается синхронно внутри Завершить(). |
+| 4 | MUST | ⚠️ partial | The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking OnEnding of the first SpanProcessor. | `src/Трассировка/Классы/ОтелСпан.os:448` | OnEnding вызывается до установки Завершен. Флаг Завершен - АтомарноеБулево, но нет блокировки других потоков от модификации спана во время OnEnding. |
 
 ### Logs Api
 
