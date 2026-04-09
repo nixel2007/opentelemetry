@@ -15,12 +15,12 @@
 | Conditional keywords | 23 |
 | Development keywords | 156 |
 | Найдено требований (Stable universal) | 624 |
-| ✅ Реализовано (found) | 478 (76.6%) |
-| ⚠️ Частично (partial) | 81 (13.0%) |
-| ❌ Не реализовано (not_found) | 63 (10.1%) |
+| ✅ Реализовано (found) | 488 (78.2%) |
+| ⚠️ Частично (partial) | 76 (12.2%) |
+| ❌ Не реализовано (not_found) | 58 (9.3%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 327/377 (86.7%) |
-| **SHOULD/SHOULD NOT found** | 151/256 (59.0%) |
+| **MUST/MUST NOT found** | 334/377 (88.6%) |
+| **SHOULD/SHOULD NOT found** | 154/256 (60.2%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -36,7 +36,7 @@
 | Metrics Api | 63 | 5 | 6 | 0 | 74 | 85.1% |
 | Metrics Sdk | 122 | 20 | 24 | 1 | 167 | 73.1% |
 | Otlp Exporter | 14 | 5 | 5 | 1 | 25 | 56.0% |
-| Propagators | 19 | 7 | 6 | 0 | 32 | 59.4% |
+| Propagators | 29 | 2 | 1 | 0 | 32 | 90.6% |
 | Env Vars | 8 | 3 | 4 | 0 | 15 | 53.3% |
 
 ## Ключевые несоответствия (Stable)
@@ -333,26 +333,26 @@
 - ✅ **[Otlp Exporter]** [MUST] This retry strategy MUST implement an exponential back-off with jitter to avoid overwhelming the destination until the network is restored or the destination has recovered.  
   Реализована экспоненциальная задержка Pow(2, НомерПопытки - 1) с jitter-фактором (0.5 + случайное/2000) в HTTP и gRPC транспортах. (`src/Экспорт/Классы/ОтелHttpТранспорт.os`, `src/Экспорт/Классы/ОтелGrpcТранспорт.os`)
 
-- ⚠️ **[Propagators]** [MUST] Getter and Setter MUST be stateless and allowed to be saved as constants, in order to effectively avoid runtime allocations.  
-  There are no separate Getter or Setter objects/interfaces in the codebase. Propagators directly work with Соответствие (Map) as carriers - reading via iteration (Для Каждого КлючИЗначение Из Заголовки) and writing via Заголовки.Вставить(). The Getter/Setter abstraction as separate stateless objects does not exist. (-)
+- ✅ **[Propagators]** [MUST] Getter and Setter MUST be stateless and allowed to be saved as constants, in order to effectively avoid runtime allocations.  
+  Реализованы ОтелГеттерТекстовойКарты и ОтелСеттерТекстовойКарты - статeless объекты без внутреннего состояния. Пропагаторы хранят экземпляры по умолчанию как поля класса. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`, `src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os`)
 
-- ⚠️ **[Propagators]** [MUST] The implementation MUST preserve casing if the used protocol is not case insensitive.  
-  Casing is preserved in practice (keys written as literal strings), but there is no Setter interface that formally guarantees casing preservation as a contract. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:51`)
+- ✅ **[Propagators]** [MUST] The implementation MUST preserve casing if the used protocol is not case insensitive.  
+  ОтелСеттерТекстовойКарты.Установить() сохраняет регистр ключа при записи в Соответствие. (`src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os`)
 
-- ❌ **[Propagators]** [MUST] The Keys function MUST return the list of all the keys in the carrier.  
-  There is no Getter interface or Keys function. Propagators iterate over the carrier (Соответствие) directly using Для Каждого instead of using a Getter.Keys() abstraction. (-)
+- ✅ **[Propagators]** [MUST] The Keys function MUST return the list of all the keys in the carrier.  
+  ОтелГеттерТекстовойКарты.Ключи() возвращает массив всех ключей носителя с сохранением оригинального регистра. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
-- ❌ **[Propagators]** [MUST] The Get function MUST return the first value of the given propagation key or return null if the key doesn't exist.  
-  There is no Getter.Get() function. The propagators iterate over all headers manually (Для Каждого КлючИЗначение Из Заголовки) checking НРег(КлючИЗначение.Ключ) to find keys, instead of using a Get function. (-)
+- ✅ **[Propagators]** [MUST] The Get function MUST return the first value of the given propagation key or return null if the key doesn't exist.  
+  ОтелГеттерТекстовойКарты.Получить() возвращает первое значение с регистро-независимым поиском или Неопределено. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
-- ⚠️ **[Propagators]** [MUST] The Get function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive.  
-  Case-insensitive lookup IS implemented inline (НРег(КлючИЗначение.Ключ) = 'traceparent'), but it is not in a separate Getter.Get() function - it's inline in each propagator's Extract method. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:71`)
+- ✅ **[Propagators]** [MUST] The Get function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive.  
+  Получить() использует НРег() для регистро-независимого сравнения ключей. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
-- ❌ **[Propagators]** [MUST] If explicitly implemented, the GetAll function MUST return all values of the given propagation key.  
-  There is no GetAll function or Getter interface. The inline iteration in propagators only finds the last matching header value (overwriting on each match), not all values. (-)
+- ✅ **[Propagators]** [MUST] If explicitly implemented, the GetAll function MUST return all values of the given propagation key.  
+  ОтелГеттерТекстовойКарты.ПолучитьВсе() возвращает массив всех значений по ключу. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
-- ⚠️ **[Propagators]** [MUST] The GetAll function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive.  
-  Case-insensitive lookup is implemented inline via НРег() in each propagator's Extract, but there is no separate GetAll function or Getter interface. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:71`)
+- ✅ **[Propagators]** [MUST] The GetAll function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive.  
+  ПолучитьВсе() использует НРег() для регистро-независимого поиска. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
 - ✅ **[Propagators]** [MUST] The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise.  
   Создан класс ОтелНоопПропагатор с методами Внедрить/Извлечь/Поля. ОтелГлобальный.ПолучитьПропагаторы() возвращает ОтелНоопПропагатор, если пропагаторы не сконфигурированы. (`src/Пропагация/Классы/ОтелНоопПропагатор.os`, `src/Ядро/Модули/ОтелГлобальный.os`)
@@ -719,14 +719,14 @@
 - ❌ **[Otlp Exporter]** [SHOULD] The resulting User-Agent SHOULD include the exporter's default User-Agent string when a product identifier configuration option is used.  
   User-Agent заголовок не реализован вообще, конфигурация product identifier также отсутствует. (-)
 
-- ⚠️ **[Propagators]** [SHOULD] The implementation SHOULD preserve casing (e.g. it should not transform Content-Type to content-type) if the used protocol is case insensitive, otherwise it MUST preserve casing.  
-  Casing is preserved for injected keys (e.g. 'traceparent', 'tracestate', 'baggage' are lowercase constants). However, there is no explicit Setter interface - values are written directly via Заголовки.Вставить(), which preserves the key as-is. The implementation effectively preserves casing but lacks the Setter abstraction. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:51`)
+- ✅ **[Propagators]** [SHOULD] The implementation SHOULD preserve casing (e.g. it should not transform Content-Type to content-type) if the used protocol is case insensitive, otherwise it MUST preserve casing.  
+  ОтелСеттерТекстовойКарты.Установить() сохраняет регистр ключа при записи. (`src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os`)
 
-- ❌ **[Propagators]** [SHOULD] GetAll SHOULD return values in the same order as they appear in the carrier.  
-  No GetAll function exists. See above - no Getter interface is implemented. (-)
+- ✅ **[Propagators]** [SHOULD] GetAll SHOULD return values in the same order as they appear in the carrier.  
+  ОтелГеттерТекстовойКарты.ПолучитьВсе() итерирует носитель в порядке вставки и возвращает значения в том же порядке. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
-- ❌ **[Propagators]** [SHOULD] If the key doesn't exist, GetAll SHOULD return an empty collection.  
-  No GetAll function exists. No Getter interface is implemented. (-)
+- ✅ **[Propagators]** [SHOULD] If the key doesn't exist, GetAll SHOULD return an empty collection.  
+  ПолучитьВсе() возвращает пустой массив если ключ не найден. (`src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os`)
 
 - ⚠️ **[Env Vars]** [SHOULD] They SHOULD also follow the common configuration specification.  
   Автоконфигурация использует configor (МенеджерПараметров) для чтения переменных окружения, что соответствует общему подходу конфигурации. Однако не все аспекты common configuration specification реализованы (например, нет поддержки OTEL_CONFIG_FILE). (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:59`)
