@@ -43,23 +43,23 @@
 
 ### MUST/MUST NOT нарушения
 
-- ⚠️ **[Context]** [MUST] A Context MUST be immutable  
-  Context is represented as Соответствие (Map) which is mutable in OneScript. The API follows copy-on-write pattern via СкопироватьКонтекстОбъект(), but the underlying object can be mutated directly by callers since there is no immutable wrapper. (`src/Ядро/Модули/ОтелКонтекст.os:298`)
+- ✅ **[Context]** [MUST] A Context MUST be immutable  
+  Контекст реализован как ФиксированноеСоответствие (иммутабельный). Все операции создают новую копию. (`src/Ядро/Модули/ОтелКонтекст.os`)
 
-- ❌ **[Context]** [MUST] The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key.  
-  No CreateKey API exists. Context keys are hardcoded string constants (КлючСпан = "otel-span", КлючBaggage = "otel-baggage") defined at module initialization, not created via a key-creation API. (-)
+- ✅ **[Context]** [MUST] The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key.  
+  ОтелКонтекст.СоздатьКлюч(Имя) - создает ОтелКлючКонтекста с именем для отладки. (`src/Ядро/Модули/ОтелКонтекст.os:35`)
 
-- ❌ **[Context]** [MUST] The API MUST return an opaque object representing the newly created key  
-  No CreateKey API exists. Keys are plain strings (e.g. "otel-span"), not opaque objects. Any code can access or collide with these keys. (-)
+- ✅ **[Context]** [MUST] The API MUST return an opaque object representing the newly created key  
+  Возвращает ОтелКлючКонтекста - непрозрачный объект, сравнение по ссылке. (`src/Ядро/Классы/ОтелКлючКонтекста.os`)
 
-- ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: The Context. The key.  
-  Получить(Ключ) accepts only Key parameter and uses the implicit current context. The spec requires accepting an explicit Context object as a parameter. There is no generic get-value API that accepts both Context and Key. (`src/Ядро/Модули/ОтелКонтекст.os:45`)
+- ✅ **[Context]** [MUST] The API MUST accept the following parameters: The Context. The key.  
+  ПолучитьИзКонтекста(Контекст, Ключ) - generic get с явным контекстом и ОтелКлючКонтекста. (`src/Ядро/Модули/ОтелКонтекст.os`)
 
-- ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: The Context. The key. The value to be set.  
-  УстановитьЗначение(Ключ, Значение) accepts Key and Value but not an explicit Context parameter - it uses the implicit current context. КонтекстСоСпаном(Контекст, Спан) and КонтекстСBaggage(Контекст, Багаж) accept Context but are domain-specific, not generic set-value operations. (`src/Ядро/Модули/ОтелКонтекст.os:147`)
+- ✅ **[Context]** [MUST] The API MUST accept the following parameters: The Context. The key. The value to be set.  
+  КонтекстСоЗначением(Контекст, Ключ, Значение) - generic set с явным контекстом. (`src/Ядро/Модули/ОтелКонтекст.os`)
 
-- ⚠️ **[Context]** [MUST] The API MUST return a new Context containing the new value  
-  УстановитьЗначение() creates a new context internally but returns ОтелОбласть (Scope), not the new Context object. КонтекстСоСпаном() and КонтекстСBaggage() do return new Context but are specialized for Span/Baggage, not generic. (`src/Ядро/Модули/ОтелКонтекст.os:151`)
+- ✅ **[Context]** [MUST] The API MUST return a new Context containing the new value  
+  КонтекстСоЗначением() возвращает новый ФиксированноеСоответствие. (`src/Ядро/Модули/ОтелКонтекст.os`)
 
 - ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: The Context.  
   There is no generic Attach(Context) method that accepts a Context (Соответствие) as a single parameter. Instead, the code provides specialized methods: УстановитьЗначение(Ключ, Значение) at line 147, СделатьСпанТекущим(Спан) at line 163, and СделатьBaggageТекущим(Багаж) at line 176 — none of which accept a whole Context object as the spec requires. (`src/Ядро/Модули/ОтелКонтекст.os:147`)
@@ -377,8 +377,8 @@
 
 ### SHOULD/SHOULD NOT несоответствия
 
-- ❌ **[Context]** [SHOULD NOT] Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise  
-  No CreateKey function exists. Keys are plain strings, so identical names always produce identical keys - there is no mechanism to generate unique opaque keys. (-)
+- ✅ **[Context]** [SHOULD NOT] Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise  
+  Каждый вызов СоздатьКлюч() создает новый объект ОтелКлючКонтекста, сравнение по ссылке. (`src/Ядро/Модули/ОтелКонтекст.os:35`)
 
 - ⚠️ **[Resource Sdk]** [SHOULD] An error that occurs during an attempt to detect resource information SHOULD be considered an error.  
   Errors during resource detection are caught via Попытка/Исключение but logged at Лог.Отладка (debug) level instead of error level. Per spec, detection errors SHOULD be treated as errors, but they are silently suppressed to debug log. (`src/Ядро/Классы/ОтелРесурс.os:121`)
@@ -756,7 +756,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ⚠️ partial | A Context MUST be immutable | `src/Ядро/Модули/ОтелКонтекст.os:298` | Context is represented as Соответствие (Map) which is mutable in OneScript. The API follows copy-on-write pattern via СкопироватьКонтекстОбъект(), but the underlying object can be mutated directly by callers since there is no immutable wrapper. |
+| 1 | MUST | ✅ ok | A Context MUST be immutable | `src/Ядро/Модули/ОтелКонтекст.os` | Контекст реализован как ФиксированноеСоответствие (иммутабельный). Все операции создают новую копию. |
 | 2 | MUST | ✅ found | its write operations MUST result in the creation of a new Context containing the original values and the specified values updated | `src/Ядро/Модули/ОтелКонтекст.os:114` |  |
 | 3 | MUST | ✅ found | OpenTelemetry MUST provide its own Context implementation | `src/Ядро/Модули/ОтелКонтекст.os:1` |  |
 
@@ -766,9 +766,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 4 | MUST | ❌ not_found | The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key. | - | No CreateKey API exists. Context keys are hardcoded string constants (КлючСпан = "otel-span", КлючBaggage = "otel-baggage") defined at module initialization, not created via a key-creation API. |
-| 5 | SHOULD NOT | ❌ not_found | Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise | - | No CreateKey function exists. Keys are plain strings, so identical names always produce identical keys - there is no mechanism to generate unique opaque keys. |
-| 6 | MUST | ❌ not_found | The API MUST return an opaque object representing the newly created key | - | No CreateKey API exists. Keys are plain strings (e.g. "otel-span"), not opaque objects. Any code can access or collide with these keys. |
+| 4 | MUST | ✅ ok | The API MUST accept the following parameter: The key name. The key name exists for debugging purposes and does not uniquely identify the key. | `src/Ядро/Модули/ОтелКонтекст.os:35` | ОтелКонтекст.СоздатьКлюч(Имя) создает ОтелКлючКонтекста с именем для отладки. |
+| 5 | SHOULD NOT | ✅ ok | Multiple calls to CreateKey with the same name SHOULD NOT return the same value unless language constraints dictate otherwise | `src/Ядро/Модули/ОтелКонтекст.os:35` | Каждый вызов СоздатьКлюч() создает новый объект, сравнение по ссылке. |
+| 6 | MUST | ✅ ok | The API MUST return an opaque object representing the newly created key | `src/Ядро/Классы/ОтелКлючКонтекста.os` | Возвращает ОтелКлючКонтекста - непрозрачный объект. |
 
 #### Get value
 
@@ -776,7 +776,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 7 | MUST | ⚠️ partial | The API MUST accept the following parameters: The Context. The key. | `src/Ядро/Модули/ОтелКонтекст.os:45` | Получить(Ключ) accepts only Key parameter and uses the implicit current context. The spec requires accepting an explicit Context object as a parameter. There is no generic get-value API that accepts both Context and Key. |
+| 7 | MUST | ✅ ok | The API MUST accept the following parameters: The Context. The key. | `src/Ядро/Модули/ОтелКонтекст.os` | ПолучитьИзКонтекста(Контекст, Ключ) - generic get с явным контекстом и ОтелКлючКонтекста. |
 | 8 | MUST | ✅ found | The API MUST return the value in the Context for the specified key | `src/Ядро/Модули/ОтелКонтекст.os:47` |  |
 
 #### Set value
@@ -785,8 +785,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ⚠️ partial | The API MUST accept the following parameters: The Context. The key. The value to be set. | `src/Ядро/Модули/ОтелКонтекст.os:147` | УстановитьЗначение(Ключ, Значение) accepts Key and Value but not an explicit Context parameter - it uses the implicit current context. КонтекстСоСпаном(Контекст, Спан) and КонтекстСBaggage(Контекст, Багаж) accept Context but are domain-specific, not generic set-value operations. |
-| 10 | MUST | ⚠️ partial | The API MUST return a new Context containing the new value | `src/Ядро/Модули/ОтелКонтекст.os:151` | УстановитьЗначение() creates a new context internally but returns ОтелОбласть (Scope), not the new Context object. КонтекстСоСпаном() and КонтекстСBaggage() do return new Context but are specialized for Span/Baggage, not generic. |
+| 9 | MUST | ✅ ok | The API MUST accept the following parameters: The Context. The key. The value to be set. | `src/Ядро/Модули/ОтелКонтекст.os` | КонтекстСоЗначением(Контекст, Ключ, Значение) - generic set с явным контекстом. |
+| 10 | MUST | ✅ ok | The API MUST return a new Context containing the new value | `src/Ядро/Модули/ОтелКонтекст.os` | КонтекстСоЗначением() возвращает новый ФиксированноеСоответствие. |
 
 #### Optional Global operations
 
