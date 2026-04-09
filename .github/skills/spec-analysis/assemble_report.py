@@ -105,10 +105,10 @@ def validate_completeness(sections, sections_index, merged):
                 f"Секция {key}: "
                 f"0 требований (ожидалось ~{expected})"
             )
-        elif expected > 0 and abs(actual_count - expected) > expected * 0.5:
+        elif expected > 0 and actual_count != expected:
             warnings.append(
                 f"Секция {key}: "
-                f"{actual_count} требований (ожидалось ~{expected})"
+                f"{actual_count} требований (ожидалось ровно {expected})"
             )
 
     return warnings

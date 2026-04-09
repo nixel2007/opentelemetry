@@ -25,6 +25,9 @@ description: >
 Формулировки пояснений могут отличаться (генеративная природа агентов), но статусы - нет.
 
 Это достигается за счёт:
+- **Строгого правила `1 keyword = 1 requirement`**: каждое вхождение MUST/SHOULD = отдельная запись
+- **Динамического `expected_keywords`**: regex считает ключевые слова в тексте секции (пропуская код-блоки)
+- **Валидации и ретрая**: агенты с несовпавшим count перезапускаются (до 2 раз)
 - **Структурированного JSON-вывода** от агентов (не свободный текст)
 - **Строгих критериев статуса** в промптах (определённые условия для found/partial/not_found)
 - **Детерминированной сборки** скриптом (JSON → markdown без потерь)
@@ -120,15 +123,58 @@ for agent in agents:
 
 Агенты работают параллельно. Каждый:
 1. Читает полный текст секций из промпта
-2. Ищет реализацию в коде (grep/view по указанным каталогам)
-3. Определяет статус каждого MUST/SHOULD
-4. Записывает результат в `/tmp/otel-specs/results/<agent>.json`
+2. Извлекает РОВНО `expected_keywords` требований на секцию (сверху вниз)
+3. Ищет реализацию в коде (grep/view по указанным каталогам)
+4. Определяет статус каждого MUST/SHOULD
+5. Записывает результат в `/tmp/otel-specs/results/<agent>.json`
 
 После завершения всех агентов проверь, что все файлы результатов существуют:
 
 ```bash
 ls /tmp/otel-specs/results/*.json | wc -l  # должно совпадать с количеством агентов
 ```
+
+### Шаг 3.5: Валидация и повторный запуск
+
+После завершения всех агентов **обязательно** проверь количество требований:
+
+```python
+# Псевдокод валидации
+import json
+
+with open("/tmp/otel-specs/agents.json") as f:
+    agents = json.load(f)
+
+failed_agents = []
+for agent in agents:
+    name = agent["name"]
+    result_path = f"/tmp/otel-specs/results/{name}.json"
+    with open(result_path) as f:
+        result = json.load(f)
+
+    mismatches = []
+    for section in result["sections"]:
+        expected = section["expected_keywords"]
+        actual = len(section.get("requirements", []))
+        if actual != expected:
+            mismatches.append((section["section_id"], expected, actual))
+
+    if mismatches:
+        failed_agents.append((name, mismatches))
+```
+
+Для каждого агента с несовпадениями:
+1. Удали его результат: `rm /tmp/otel-specs/results/<agent>.json`
+2. Перезапусти агента с **дополнительной инструкцией** в начале промпта:
+
+```
+⚠️ ПОВТОРНЫЙ ЗАПУСК: В предыдущей попытке количество требований не совпало с expected_keywords.
+Ошибки:
+- Секция <section_id>: ожидалось <expected>, получено <actual>
+Перечитай текст секции ВНИМАТЕЛЬНО и убедись, что ты нашёл РОВНО expected_keywords ключевых слов.
+```
+
+Повтори до 2 раз. Если после 2 повторов count не совпадает - зафиксируй расхождение в предупреждениях.
 
 ## Шаг 4: Сборка итогового документа
 

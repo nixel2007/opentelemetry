@@ -89,16 +89,37 @@ DOMAIN_CONFIG = [
 AGENT_INSTRUCTIONS = r"""
 **Ты проводишь детальный анализ соответствия кода спецификации OpenTelemetry.**
 
-Для каждой секции спецификации ниже:
+### КРИТИЧЕСКИ ВАЖНО: Детерминированность
 
-1. **Внимательно прочитай весь текст секции** - не по диагонали, а каждое предложение
-2. **Найди каждое** предложение, содержащее MUST, MUST NOT, SHOULD, SHOULD NOT
-3. Для каждого найденного требования:
-   - Определи уровень (MUST/MUST NOT/SHOULD/SHOULD NOT)
-   - Найди в коде реализацию (grep по ключевым словам, просмотр файлов)
-   - Определи статус: found / partial / not_found / n_a
-   - Укажи файл:строка для found/partial
-   - Укажи URL секции спецификации (поле `url` из sections.json)
+Каждая секция содержит поле `expected_keywords` - **точное** количество ключевых слов
+MUST / MUST NOT / SHOULD / SHOULD NOT в тексте секции (блоки кода исключены из подсчёта).
+
+**Количество записей requirements в твоём результате ОБЯЗАНО точно совпадать с `expected_keywords`.**
+
+### Алгоритм извлечения (СТРОГО следуй)
+
+1. Читай текст секции **строго сверху вниз**
+2. При каждом появлении MUST NOT, SHOULD NOT, MUST или SHOULD создавай **ровно одну** запись:
+   - MUST NOT - одно ключевое слово (не MUST + NOT отдельно)
+   - SHOULD NOT - одно ключевое слово (не SHOULD + NOT отдельно)
+   - `level` = тип ключевого слова (MUST / MUST NOT / SHOULD / SHOULD NOT)
+   - `spec_text` = предложение или пункт списка с этим ключевым словом.
+     **Цитируй дословно из спецификации**, не перефразируй.
+3. Два ключевых слова в одном предложении = **два** требования (одинаковый spec_text, разные level)
+4. **Пропускай** ключевые слова внутри блоков кода (``` ... ```) - они исключены из expected_keywords
+
+> ⚠️ Если твой счёт не совпал с expected_keywords - ты ошибся. Перечитай текст:
+> - Не пропустил ли ключевое слово?
+> - Не посчитал ли слово из блока кода?
+> - Правильно ли обработал MUST NOT / SHOULD NOT как одно слово?
+
+### Верификация каждого требования
+
+Для каждого извлечённого требования:
+1. Найди в коде реализацию (grep по ключевым словам, просмотр файлов)
+2. Определи статус: found / partial / not_found / n_a
+3. Укажи файл:строка для found/partial
+4. Укажи URL секции спецификации (поле `url`)
 
 ### Строгие критерии статуса
 
@@ -159,11 +180,10 @@ AGENT_INSTRUCTIONS = r"""
 
 ### Общие правила
 
-- НЕ ПРОПУСКАЙ ни одного MUST/SHOULD. Даже если в одном абзаце три MUST - это три отдельных требования
-- Если MUST/SHOULD находится внутри bullet-point (списка) - это тоже отдельное требование
-- Если в одном предложении и MUST и SHOULD - это два требования
-- Поле `expected_keywords` секции показывает ожидаемое количество требований - твой результат должен быть близок к нему
-- Текст требования в `spec_text` должен быть достаточно полным, чтобы понять суть без обращения к спецификации
+- **Количество требований ОБЯЗАНО точно совпадать с `expected_keywords` секции**
+- Каждый MUST / MUST NOT / SHOULD / SHOULD NOT вне блоков кода - отдельное требование
+- Два ключевых слова в одном предложении - два требования
+- Текст в `spec_text` - **дословная цитата** из спецификации, не перефразируй
 - **При каждом `partial` или `not_found` - добавь пояснение ПОЧЕМУ** в поле `explanation`
 - Для `found` поле `explanation` оставь пустой строкой
 
@@ -278,7 +298,16 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
         )
         sections_block += f"section_id: {section_id}\n"
         sections_block += f"url: {s['url']}\n"
-        sections_block += f"expected_keywords: {s['keywords']['total']}\n"
+        kw = s["keywords"]
+        sections_block += (
+            f"expected_keywords: {kw['total']}"
+            f" (MUST: {kw['must']}, MUST NOT: {kw['must_not']},"
+            f" SHOULD: {kw['should']}, SHOULD NOT: {kw['should_not']})\n"
+        )
+        sections_block += (
+            f"⚠️ Ожидается РОВНО {kw['total']} записей"
+            f" requirements для этой секции.\n"
+        )
         sections_block += f"{'=' * 60}\n\n"
         sections_block += s["text"] + "\n"
 
@@ -294,6 +323,12 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
             "stability": s["stability"],
             "scope": s["scope"],
             "expected_keywords": s["keywords"]["total"],
+            "keywords_breakdown": {
+                "MUST": s["keywords"]["must"],
+                "MUST NOT": s["keywords"]["must_not"],
+                "SHOULD": s["keywords"]["should"],
+                "SHOULD NOT": s["keywords"]["should_not"],
+            },
         })
 
     prompt = f"""
@@ -304,7 +339,7 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
 ## Твоё задание
 
 Ты - агент **{agent_name}**.
-Тебе назначены {len(agent_sections)} секций спецификации (~{total_keywords} keywords MUST/SHOULD).
+Тебе назначены {len(agent_sections)} секций спецификации (ровно {total_keywords} keywords MUST/SHOULD).
 
 ### Каталоги исходного кода для поиска
 
@@ -345,13 +380,14 @@ print(f"Записано {{len(results['sections'])}} секций")
 ### Порядок работы
 
 1. Для каждой секции ниже:
-   a. Прочитай полный текст секции
-   b. Найди все MUST/SHOULD предложения
-   c. Для каждого - проверь код через grep/view
-   d. Определи статус (found/partial/not_found/n_a)
-   e. Запомни результат
-2. После анализа ВСЕХ секций - запиши JSON-файл через Python
-3. Выведи краткую сводку: сколько found/partial/not_found/n_a
+   a. Прочитай полный текст секции **строго сверху вниз**
+   b. Извлеки ВСЕ MUST / MUST NOT / SHOULD / SHOULD NOT ключевые слова (пропуская блоки кода)
+   c. **Проверь**: количество найденных = `expected_keywords`. Если нет - перечитай и исправь
+   d. Для каждого ключевого слова найди реализацию в коде через grep/view
+   e. Определи статус (found/partial/not_found/n_a)
+2. После анализа ВСЕХ секций - **перед записью проверь** количество requirements в каждой секции = expected_keywords
+3. Запиши JSON-файл через Python
+4. Выведи сводку в формате: `Секция <id>: expected=<N>, actual=<M>, found=<X>, partial=<Y>, not_found=<Z>, n_a=<W>`
 
 ---
 

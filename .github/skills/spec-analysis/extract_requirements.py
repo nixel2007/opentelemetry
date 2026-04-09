@@ -120,11 +120,13 @@ def _classify_subsection(subsection):
 
 
 def _count_keywords(text):
-    """Считает MUST/SHOULD ключевые слова в тексте."""
-    must = len(re.findall(r"\bMUST\b", text))
-    must_not = len(re.findall(r"\bMUST NOT\b", text))
-    should = len(re.findall(r"\bSHOULD\b", text))
-    should_not = len(re.findall(r"\bSHOULD NOT\b", text))
+    """Считает MUST/SHOULD ключевые слова в тексте (пропуская блоки кода)."""
+    # Убираем блоки кода - они не содержат нормативных требований
+    clean = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    must = len(re.findall(r"\bMUST\b", clean))
+    must_not = len(re.findall(r"\bMUST NOT\b", clean))
+    should = len(re.findall(r"\bSHOULD\b", clean))
+    should_not = len(re.findall(r"\bSHOULD NOT\b", clean))
     return {
         "must": must - must_not,  # MUST без MUST NOT
         "must_not": must_not,
