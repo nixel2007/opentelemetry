@@ -294,11 +294,11 @@
 - ⚠️ **[Metrics Sdk]** [MUST NOT] Export MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (Failure).  
   Метод Экспортировать() вызывает Транспорт.Отправить() синхронно. Таймаут задан на уровне HTTP-транспорта (ТаймаутСекунд), но в самом экспортере нет явного ограничения. Не всегда гарантируется error result при timeout. (`src/Экспорт/Классы/ОтелЭкспортерМетрик.os:19`)
 
-- ❌ **[Metrics Sdk]** [MUST] A MetricFilter MUST support the following functions (TestMetric, TestAttributes).  
-  No MetricFilter interface or class exists in the codebase. No TestMetric or TestAttributes operations are implemented. (-)
+- ✅ **[Metrics Sdk]** [MUST] A MetricFilter MUST support the following functions (TestMetric, TestAttributes).  
+  Реализован ОтелФильтрМетрик с методами ТестМетрики/ТестАтрибутов через делегаты. (`src/Метрики/Классы/ОтелФильтрМетрик.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] A MetricFilter MUST support the following functions (TestMetric, TestAttributes).  
-  No MetricFilter interface or class exists in the codebase. No TestMetric or TestAttributes operations are implemented. (-)
+- ✅ **[Metrics Sdk]** [MUST] A MetricFilter MUST support the following functions (TestMetric, TestAttributes).  
+  Реализован ОтелФильтрМетрик с методами ТестМетрики/ТестАтрибутов через делегаты. (`src/Метрики/Классы/ОтелФильтрМетрик.os`)
 
 - ❌ **[Metrics Sdk]** [MUST] The SDK MUST provide configuration according to the SDK environment variables specification.  
   The SDK does provide environment variable configuration through ОтелАвтоконфигурация module, supporting OTEL_METRICS_EXPORTER, OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE, OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION and other OTEL_ variables. However, several metrics-specific SDK env variables from the spec (like OTEL_METRIC_EXPORT_INTERVAL, OTEL_METRIC_EXPORT_TIMEOUT) are not implemented - only a subset is covered. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:1`)
@@ -2280,7 +2280,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 158 | MUST | ❌ not_found | A MetricFilter MUST support the following functions (TestMetric, TestAttributes). | - | No MetricFilter interface or class exists in the codebase. No TestMetric or TestAttributes operations are implemented. |
+| 158 | MUST | ✅ done | A MetricFilter MUST support the following functions (TestMetric, TestAttributes). | src/Метрики/Классы/ОтелФильтрМетрик.os | Реализован ОтелФильтрМетрик с методами ТестМетрики/ТестАтрибутов через делегаты. |
 
 #### Interface Definition
 
@@ -2288,7 +2288,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 159 | MUST | ❌ not_found | A MetricFilter MUST support the following functions (TestMetric, TestAttributes). | - | No MetricFilter interface or class exists in the codebase. No TestMetric or TestAttributes operations are implemented. |
+| 159 | MUST | ✅ done | A MetricFilter MUST support the following functions (TestMetric, TestAttributes). | src/Метрики/Классы/ОтелФильтрМетрик.os | Реализован ОтелФильтрМетрик с методами ТестМетрики/ТестАтрибутов через делегаты. |
 
 #### TestMetric
 
@@ -2883,7 +2883,7 @@
 | 4 | SHOULD | ⚠️ partial | The output temporality (optional), a function of instrument kind, SHOULD be obtained from the exporter. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:62` | Экспортер имеет СелекторВременнойАгрегации, но MetricReader не запрашивает его и не использует для конвертации. Селектор используется только при формировании OTLP данных в экспортере. |
 | 5 | SHOULD | ⚠️ partial | If not configured, the Cumulative temporality SHOULD be used. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:65` | Дефолт Cumulative есть в конструкторе экспортера (ОтелСелекторВременнойАгрегации.ВсегдаКумулятивная()), но это в экспортере, а не в читателе. |
 | 6 | SHOULD | ✅ found | The default aggregation cardinality limit (optional) to use, a function of instrument kind. If not configured, a default value of 2000 SHOULD be used. | `src/Метрики/Классы/ОтелМетр.os:412` |  |
-| 7 | SHOULD | ❌ not_found | A MetricReader SHOULD provide the MetricFilter to the SDK or registered MetricProducer(s) when calling the Produce operation. | - | Нет реализации MetricFilter. Нет реализации MetricProducer. Нет метода Produce. |
+| 7 | SHOULD | ✅ done | A MetricReader SHOULD provide the MetricFilter to the SDK or registered MetricProducer(s) when calling the Produce operation. | src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os | ОтелПериодическийЧитательМетрик и ОтелПрометеусЧитательМетрик интегрируют ФильтрМетрик в конвейер сбора. |
 | 8 | SHOULD | ✅ found | A common implementation of MetricReader, the periodic exporting MetricReader SHOULD be provided to be used typically with push-based metrics collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:1` |  |
 | 9 | MUST | ⚠️ partial | The MetricReader MUST ensure that data points from OpenTelemetry instruments are output in the configured aggregation temporality for each instrument kind. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:62` | Временная агрегация поддерживается на уровне экспортера (СелекторВременнойАгрегации), но MetricReader не выполняет конвертацию Delta<->Cumulative. Нет логики конвертации между типами агрегации. |
 | 10 | MUST | ❌ not_found | For synchronous instruments with Cumulative aggregation temporality, MetricReader.Collect MUST receive data points exposed in previous collections regardless of whether new measurements have been recorded. | - | Нет логики управления кумулятивной/дельта семантикой в MetricReader. Данные очищаются после каждого экспорта (ОчиститьТочкиДанных), что является Delta-поведением, не Cumulative. |
@@ -2904,7 +2904,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ❌ not_found | Produce MUST return a batch of Metric Points, filtered by the optional metricFilter parameter. | - | No Produce method exists as a separate MetricProducer interface. The MetricReader classes collect data internally but do not expose a Produce method with metricFilter parameter. |
-| 2 | SHOULD | ❌ not_found | Implementation SHOULD use the filter as early as possible to gain as much performance gain possible (memory allocation, internal metric fetching, etc). | - | No MetricFilter or metricFilter parameter is implemented. No filtering mechanism exists in the collection pipeline. |
+| 2 | SHOULD | ✅ done | Implementation SHOULD use the filter as early as possible to gain as much performance gain possible (memory allocation, internal metric fetching, etc). | src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os | Фильтр применяется сразу после сбора данных инструмента, до агрегации в общий результат. |
 | 3 | SHOULD | ❌ not_found | If the batch of Metric Points includes resource information, Produce SHOULD require a resource as a parameter. | - | No Produce method exists. Resource is passed indirectly through Meter objects, not as a Produce parameter. |
 | 4 | SHOULD | ❌ not_found | Produce SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | No Produce method exists. The internal collection in MetricReader does not return success/failure status to the caller - errors are logged but not propagated. |
 | 5 | SHOULD | ❌ not_found | If a batch of Metric Points can include InstrumentationScope information, Produce SHOULD include a single InstrumentationScope which identifies the MetricProducer. | - | No Produce method or MetricProducer exists. InstrumentationScope is included per-instrument via Meter, not per-MetricProducer. |
