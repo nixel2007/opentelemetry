@@ -15,12 +15,12 @@
 | Conditional keywords | 23 |
 | Development keywords | 156 |
 | Найдено требований (Stable universal) | 624 |
-| ✅ Реализовано (found) | 488 (78.2%) |
-| ⚠️ Частично (partial) | 76 (12.2%) |
-| ❌ Не реализовано (not_found) | 58 (9.3%) |
+| ✅ Реализовано (found) | 499 (80.0%) |
+| ⚠️ Частично (partial) | 68 (10.9%) |
+| ❌ Не реализовано (not_found) | 55 (8.8%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 334/377 (88.6%) |
-| **SHOULD/SHOULD NOT found** | 154/256 (60.2%) |
+| **MUST/MUST NOT found** | 343/377 (91.0%) |
+| **SHOULD/SHOULD NOT found** | 156/256 (60.9%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -34,7 +34,7 @@
 | Logs Api | 19 | 1 | 1 | 0 | 21 | 90.5% |
 | Logs Sdk | 40 | 10 | 5 | 0 | 55 | 72.7% |
 | Metrics Api | 63 | 5 | 6 | 0 | 74 | 85.1% |
-| Metrics Sdk | 122 | 20 | 24 | 1 | 167 | 73.1% |
+| Metrics Sdk | 133 | 12 | 21 | 1 | 167 | 79.6% |
 | Otlp Exporter | 14 | 5 | 5 | 1 | 25 | 56.0% |
 | Propagators | 29 | 2 | 1 | 0 | 32 | 90.6% |
 | Env Vars | 8 | 3 | 4 | 0 | 15 | 53.3% |
@@ -237,8 +237,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] Callback functions MUST be invoked for the specific MetricReader performing collection, such that observations made or produced by executing callbacks only apply to the intended MetricReader during collection.  
   Callbacks are invoked during collection (ВызватьМультиОбратныеВызовы + individual instrument callbacks via Собрать), but observations are not scoped per-MetricReader - all readers share the same instrument data (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:126-133`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] Aggregators for synchronous instruments with cumulative temporality MUST continue to export all attribute sets that were observed prior to the beginning of overflow.  
-  Реализация перенаправляет новые наборы атрибутов в overflow при достижении лимита, но при вызове ОчиститьТочкиДанных() (строка 131-136) полностью сбрасываются все аккумуляторы, включая ранее наблюдённые. Cumulative temporality не поддерживается явно - SDK реализует reset-based (delta-like) поведение. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:89`)
+- ✅ **[Metrics Sdk]** [MUST] Aggregators for synchronous instruments with cumulative temporality MUST continue to export all attribute sets that were observed prior to the beginning of overflow.  
+  ОчиститьТочкиДанных при кумулятивной временности сохраняет все аккумуляторы и ВремяСтарта, переданные через параметр Временность. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148`)
 
 - ✅ **[Metrics Sdk]** [MUST] If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate instrument registrations.  
   ПроверитьКонфликтДескриптора сравнивает advisory-параметры через СоветыРавны и логирует предупреждение при расхождении. (`src/Метрики/Классы/ОтелМетр.os:536-553`)
@@ -2057,7 +2057,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 75 | MUST | ⚠️ partial | Aggregators for synchronous instruments with cumulative temporality MUST continue to export all attribute sets that were observed prior to the beginning of overflow. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:89` | Реализация перенаправляет новые наборы атрибутов в overflow при достижении лимита, но при вызове ОчиститьТочкиДанных() (строка 131-136) полностью сбрасываются все аккумуляторы, включая ранее наблюдённые. Cumulative temporality не поддерживается явно - SDK реализует reset-based (delta-like) поведение. |
+| 75 | MUST | ✅ found | Aggregators for synchronous instruments with cumulative temporality MUST continue to export all attribute sets that were observed prior to the beginning of overflow. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | При кумулятивной временности ОчиститьТочкиДанных сохраняет все аккумуляторы, обеспечивая продолжение экспорта всех наблюдённых наборов атрибутов. |
 | 76 | MUST | ✅ found | Regardless of aggregation temporality, the SDK MUST ensure that every Measurement is reflected in exactly one Aggregator, which is either an Aggregator associated with the correct attribute set or an aggregator associated with the overflow attribute set. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:87` |  |
 | 77 | MUST NOT | ✅ found | Measurements MUST NOT be double-counted or dropped during an overflow. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:87` |  |
 
@@ -2835,9 +2835,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ⚠️ partial | For delta aggregations, the start timestamp MUST equal the previous collection interval's timestamp, or the creation time of the instrument if this is the first collection interval for the instrument. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:215` | ВремяСтарта is initialized at instrument creation and reset after ОчиститьТочкиДанных(), which partially matches delta semantics, but this is always set regardless of aggregation temporality |
-| 2 | MUST | ⚠️ partial | This implies that all data points with delta temporality aggregation for an instrument MUST share the same start timestamp. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:226-237` | All data points from ПолучитьТочкиДанных share the same ВремяСтарта, but there's no explicit delta vs cumulative distinction |
-| 3 | MUST | ⚠️ partial | Cumulative timeseries MUST use a consistent start timestamp for all collection intervals. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:215` | ВремяСтарта is always reset after each export (ОчиститьТочкиДанных), which is correct for delta but breaks cumulative requirement of a consistent start timestamp |
+| 1 | MUST | ✅ found | For delta aggregations, the start timestamp MUST equal the previous collection interval's timestamp, or the creation time of the instrument if this is the first collection interval for the instrument. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | ОчиститьТочкиДанных при дельта-временности сбрасывает ВремяСтарта на текущее время, при первом сборе используется время создания инструмента. |
+| 2 | MUST | ✅ found | This implies that all data points with delta temporality aggregation for an instrument MUST share the same start timestamp. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:226-237` | Все точки данных из ПолучитьТочкиДанных разделяют единое ВремяСтарта инструмента. |
+| 3 | MUST | ✅ found | Cumulative timeseries MUST use a consistent start timestamp for all collection intervals. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | При кумулятивной временности ОчиститьТочкиДанных сохраняет ВремяСтарта без изменений. |
 | 4 | SHOULD | ❌ not_found | For synchronous instruments, the start timestamp SHOULD be the time of the first measurement for the series. | - | Start timestamp is set at instrument creation, not at the time of the first measurement for each series |
 | 5 | SHOULD | ❌ not_found | For asynchronous instruments, the start timestamp SHOULD be: the creation time of the instrument if the first series measurement occurred in the first collection interval, otherwise the timestamp of the collection interval prior to the first series measurement. | - | Asynchronous instruments (ОтелБазовыйНаблюдаемыйИнструмент) set startTimeUnixNano to current time in ПреобразоватьЗаписиВТочки, not implementing the specified logic |
 
@@ -2880,17 +2880,17 @@
 | 1 | SHOULD | ✅ found | To construct a MetricReader when setting up an SDK, at least the exporter to use, which is a MetricExporter instance, SHOULD be provided. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:208` |  |
 | 2 | SHOULD | ⚠️ partial | The default output aggregation (optional), a function of instrument kind, SHOULD be obtained from the exporter. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:208` | Читатель не запрашивает агрегацию у экспортера. Агрегация задается на уровне MeterProvider/View, а не читателя. |
 | 3 | SHOULD | ⚠️ partial | If not configured, the default aggregation SHOULD be used. | `src/Метрики/Модули/ОтелАгрегация.os:9` | Дефолтная агрегация существует (ОтелАгрегация.ПоУмолчанию()), но она не интегрирована через MetricReader - она применяется на уровне инструментов. |
-| 4 | SHOULD | ⚠️ partial | The output temporality (optional), a function of instrument kind, SHOULD be obtained from the exporter. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:62` | Экспортер имеет СелекторВременнойАгрегации, но MetricReader не запрашивает его и не использует для конвертации. Селектор используется только при формировании OTLP данных в экспортере. |
-| 5 | SHOULD | ⚠️ partial | If not configured, the Cumulative temporality SHOULD be used. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:65` | Дефолт Cumulative есть в конструкторе экспортера (ОтелСелекторВременнойАгрегации.ВсегдаКумулятивная()), но это в экспортере, а не в читателе. |
+| 4 | SHOULD | ✅ found | The output temporality (optional), a function of instrument kind, SHOULD be obtained from the exporter. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:160-163` | MetricReader вызывает Экспортер.ПолучитьВременнуюАгрегацию() для определения временности каждого инструмента. |
+| 5 | SHOULD | ✅ found | If not configured, the Cumulative temporality SHOULD be used. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:65` | Дефолт - ОтелСелекторВременнойАгрегации.ВсегдаКумулятивная() в конструкторе экспортера. |
 | 6 | SHOULD | ✅ found | The default aggregation cardinality limit (optional) to use, a function of instrument kind. If not configured, a default value of 2000 SHOULD be used. | `src/Метрики/Классы/ОтелМетр.os:412` |  |
 | 7 | SHOULD | ✅ done | A MetricReader SHOULD provide the MetricFilter to the SDK or registered MetricProducer(s) when calling the Produce operation. | src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os | ОтелПериодическийЧитательМетрик и ОтелПрометеусЧитательМетрик интегрируют ФильтрМетрик в конвейер сбора. |
 | 8 | SHOULD | ✅ found | A common implementation of MetricReader, the periodic exporting MetricReader SHOULD be provided to be used typically with push-based metrics collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:1` |  |
-| 9 | MUST | ⚠️ partial | The MetricReader MUST ensure that data points from OpenTelemetry instruments are output in the configured aggregation temporality for each instrument kind. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:62` | Временная агрегация поддерживается на уровне экспортера (СелекторВременнойАгрегации), но MetricReader не выполняет конвертацию Delta<->Cumulative. Нет логики конвертации между типами агрегации. |
-| 10 | MUST | ❌ not_found | For synchronous instruments with Cumulative aggregation temporality, MetricReader.Collect MUST receive data points exposed in previous collections regardless of whether new measurements have been recorded. | - | Нет логики управления кумулятивной/дельта семантикой в MetricReader. Данные очищаются после каждого экспорта (ОчиститьТочкиДанных), что является Delta-поведением, не Cumulative. |
-| 11 | MUST | ⚠️ partial | For synchronous instruments with Delta aggregation temporality, MetricReader.Collect MUST only receive data points with measurements recorded since the previous collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:140` | Фактически реализовано Delta-поведение - после экспорта данные очищаются (ОчиститьТочкиДанных). Но это не управляется конфигурацией temporality, а является поведением по умолчанию. |
+| 9 | MUST | ✅ found | The MetricReader MUST ensure that data points from OpenTelemetry instruments are output in the configured aggregation temporality for each instrument kind. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:156-167` | MetricReader запрашивает временность у экспортера через ПолучитьВременнуюАгрегацию и передает её в ОчиститьТочкиДанных каждого инструмента. |
+| 10 | MUST | ✅ found | For synchronous instruments with Cumulative aggregation temporality, MetricReader.Collect MUST receive data points exposed in previous collections regardless of whether new measurements have been recorded. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | При кумулятивной временности аккумуляторы сохраняются между сборами, обеспечивая наличие всех ранее наблюдённых данных. |
+| 11 | MUST | ✅ found | For synchronous instruments with Delta aggregation temporality, MetricReader.Collect MUST only receive data points with measurements recorded since the previous collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:156-167` | При дельта-временности аккумуляторы полностью сбрасываются после экспорта через ОчиститьТочкиДанных. |
 | 12 | MUST | ⚠️ partial | For asynchronous instruments with Delta or Cumulative aggregation temporality, MetricReader.Collect MUST only receive data points with measurements recorded since the previous collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:127` | Callback-вызовы для асинхронных инструментов выполняются при каждом сборе (ВызватьМультиОбратныеВызовы), данные собираются свежие, но управление через temporality отсутствует. |
-| 13 | MUST | ❌ not_found | For instruments with Cumulative aggregation temporality, successive data points received by successive calls to MetricReader.Collect MUST repeat the same starting timestamps. | - | Нет управления StartTimeUnixNano для кумулятивной временной агрегации. Нет логики, которая бы хранила и повторяла начальный timestamp. |
-| 14 | MUST | ❌ not_found | For instruments with Delta aggregation temporality, successive data points received by successive calls to MetricReader.Collect MUST advance the starting timestamp. | - | Нет управления StartTimeUnixNano для дельта временной агрегации. Нет логики продвижения начального timestamp. |
+| 13 | MUST | ✅ found | For instruments with Cumulative aggregation temporality, successive data points received by successive calls to MetricReader.Collect MUST repeat the same starting timestamps. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | При кумулятивной временности ВремяСтарта не сбрасывается, сохраняя одинаковый timestamp для всех сборов. |
+| 14 | MUST | ✅ found | For instruments with Delta aggregation temporality, successive data points received by successive calls to MetricReader.Collect MUST advance the starting timestamp. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:132-148` | При дельта-временности ВремяСтарта сбрасывается на текущее время после каждого сбора. |
 | 15 | MUST | ❌ not_found | The ending timestamp (i.e. TimeUnixNano) MUST always be equal to time the metric data point took effect, which is equal to when MetricReader.Collect was invoked. | - | Нет явной установки TimeUnixNano = время вызова Collect в MetricReader. Timestamps управляются на уровне инструментов/агрегаторов, но не централизованно при Collect. |
 | 16 | MUST | ✅ found | The SDK MUST support multiple MetricReader instances to be registered on the same MeterProvider. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:97` |  |
 | 17 | SHOULD NOT | ⚠️ partial | The MetricReader.Collect invocation on one MetricReader instance SHOULD NOT introduce side-effects to other MetricReader instances. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:112` | Реализована попытка изоляции: при нескольких читателях все кроме последнего вызывают СброситьБуферБезОчистки(). Однако вызов последнего читателя с очисткой данных влияет на все инструменты, что является side-effect для других читателей. |
