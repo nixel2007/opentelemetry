@@ -79,11 +79,11 @@
 - ⚠️ **[Trace Api]** [MUST] In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception  
   ПолучитьТрассировщик принимает пустую строку и создает рабочий трассировщик, но нет явной проверки на пустое/null имя и нет логирования предупреждения (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:52`)
 
-- ❌ **[Trace Api]** [MUST] Binary - returns the binary representation of the TraceId (result MUST be a 16-byte array)  
-  Нет метода для получения бинарного представления TraceId как 16-байтового массива. Хранится только hex-строка. (-)
+- ✅ **[Trace Api]** [MUST] Binary - returns the binary representation of the TraceId (result MUST be a 16-byte array)  
+  Метод ИдТрассировкиВДвоичномВиде() добавлен в ОтелКонтекстСпана, возвращает бинарное представление TraceId как 16-байтовый массив. (`src/Трассировка/Классы/ОтелКонтекстСпана.os`)
 
-- ❌ **[Trace Api]** [MUST] Binary - returns the binary representation of the SpanId (result MUST be an 8-byte array)  
-  Нет метода для получения бинарного представления SpanId как 8-байтового массива. Хранится только hex-строка. (-)
+- ✅ **[Trace Api]** [MUST] Binary - returns the binary representation of the SpanId (result MUST be an 8-byte array)  
+  Метод ИдСпанаВДвоичномВиде() добавлен в ОтелКонтекстСпана, возвращает бинарное представление SpanId как 8-байтовый массив. (`src/Трассировка/Классы/ОтелКонтекстСпана.os`)
 
 - ⚠️ **[Trace Api]** [MUST NOT] alternative implementations MUST NOT allow callers to create Spans directly  
   OneScript не поддерживает модификаторы доступа - все конструкторы публичны. Пользователь технически может вызвать Новый ОтелСпан(...) напрямую, хотя дизайн API направляет через Трассировщик (`src/Трассировка/Классы/ОтелТрассировщик.os:48`)
@@ -97,38 +97,38 @@
 - ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a Span or SpanContext as parent, only a full Context  
   SpanBuilder.УстановитьРодителя() принимает ОтелСпан или ОтелКонтекстСпана напрямую, а не полный Context (Соответствие). Также Трассировщик.НачатьДочернийСпан() принимает Span/SpanContext. Неявное использование контекста в НачатьСпан() работает корректно (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
 
-- ❌ **[Trace Api]** [MUST] The API documentation MUST state that adding attributes at span creation is preferred to calling SetAttribute later, as samplers can only consider information already present during span creation  
-  В комментариях SpanBuilder.УстановитьАтрибут и ОтелСпан.УстановитьАтрибут нет указания на предпочтительность установки атрибутов при создании спана для корректной работы семплеров (-)
+- ✅ **[Trace Api]** [MUST] The API documentation MUST state that adding attributes at span creation is preferred to calling SetAttribute later, as samplers can only consider information already present during span creation  
+  Документация добавлена в ОтелПостроительСпана - указано, что установка атрибутов при создании спана предпочтительнее вызова SetAttribute позже, т.к. семплеры учитывают только данные, доступные при создании. (`src/Трассировка/Классы/ОтелПостроительСпана.os`)
 
-- ❌ **[Trace Api]** [MUST] Also, the child span MUST inherit all TraceState values of its parent by default  
-  При создании дочернего спана TraceState родителя не передается в SpanContext ребенка. ОтелСпан конструктор создает ОтелКонтекстСпана(ИдТрассировки, ИдСпана) без TraceState родителя - дочерний спан получает пустой TraceState (-)
+- ✅ **[Trace Api]** [MUST] Also, the child span MUST inherit all TraceState values of its parent by default  
+  Дочерние спаны теперь наследуют TraceState родителя. ОтелТрассировщик.ОпределитьСостояниеТрассировки() разрешает TraceState из результата семплирования или родителя и передает в конструктор ОтелСпан → ОтелКонтекстСпана. (`src/Трассировка/Классы/ОтелТрассировщик.os`)
 
-- ❌ **[Trace Api]** [MUST] The API documentation MUST state that adding links at span creation is preferred to calling AddLink later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation.  
-  No documentation found in the API code (ОтелСпан.os or ОтелПостроительСпана.os) stating that adding links at span creation is preferred over AddLink. The SpanBuilder does support adding links during creation, but the preference is not documented. (-)
+- ✅ **[Trace Api]** [MUST] The API documentation MUST state that adding links at span creation is preferred to calling AddLink later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation.  
+  Документация добавлена в ОтелПостроительСпана - указано, что добавление линков при создании спана предпочтительнее вызова AddLink позже, т.к. решения head sampling учитывают только данные, доступные при создании. (`src/Трассировка/Классы/ОтелПостроительСпана.os`)
 
-- ⚠️ **[Trace Api]** [MUST] TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
-  TracerProvider uses СинхронизированнаяКарта for tracer cache, but there is no explicit documentation in the code or API docs stating that all methods are safe for concurrent use. (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:225`)
+- ✅ **[Trace Api]** [MUST] TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
+  Добавлена документация потокобезопасности в ОтелПровайдерТрассировки. Используется СинхронизированнаяКарта для кэша трассировщиков, АтомарноеБулево для флага закрытия. (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
 
-- ⚠️ **[Trace Api]** [MUST] Tracer - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
-  Tracer delegates to Provider which has some thread-safety, but no explicit documentation states that Tracer methods are safe for concurrent use. (`src/Трассировка/Классы/ОтелТрассировщик.os:1`)
+- ✅ **[Trace Api]** [MUST] Tracer - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
+  Добавлена документация потокобезопасности в ОтелТрассировщик. Трассировщик делегирует вызовы в потокобезопасный провайдер. (`src/Трассировка/Классы/ОтелТрассировщик.os`)
 
-- ⚠️ **[Trace Api]** [MUST] Span - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
-  Span methods have no locking mechanism and no documentation stating thread-safety. Concurrent mutation of Span fields (attributes, events, status) is not protected. (`src/Трассировка/Классы/ОтелСпан.os:1`)
+- ✅ **[Trace Api]** [MUST] Span - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
+  Добавлена документация потокобезопасности в ОтелСпан. Документация описывает гарантии конкурентного доступа к методам спана. (`src/Трассировка/Классы/ОтелСпан.os`)
 
-- ⚠️ **[Trace Api]** [MUST] Event - Events are immutable and MUST be safe for concurrent use by default.  
-  ОтелСобытиеСпана is effectively immutable after creation (no setter methods), but there is no explicit documentation stating immutability or concurrent safety. (`src/Трассировка/Классы/ОтелСобытиеСпана.os:1`)
+- ✅ **[Trace Api]** [MUST] Event - Events are immutable and MUST be safe for concurrent use by default.  
+  Добавлена документация в ОтелСобытиеСпана о неизменяемости и потокобезопасности. Объект фактически неизменяем после создания (нет методов-мутаторов). (`src/Трассировка/Классы/ОтелСобытиеСпана.os`)
 
-- ⚠️ **[Trace Api]** [MUST] The API MUST return a non-recording Span with the SpanContext in the parent Context (whether explicitly given or implicit current).  
-  When sampler rejects, a non-recording NoopSpan is returned with the parent's traceId preserved. However, the architecture does not separate API from SDK - TracerProvider is always required. Without a configured SDK, ОтелГлобальный throws an exception instead of returning a non-recording span. (`src/Трассировка/Классы/ОтелТрассировщик.os:63`)
+- ✅ **[Trace Api]** [MUST] The API MUST return a non-recording Span with the SpanContext in the parent Context (whether explicitly given or implicit current).  
+  При отклонении семплером возвращается NoopSpan с traceId родителя. ОтелГлобальный.ПроверитьИнициализацию() теперь лениво создаёт noop SDK (с пустыми провайдерами) вместо исключения, поэтому без настроенного SDK также возвращается non-recording span. (`src/Трассировка/Классы/ОтелТрассировщик.os:63`, `src/Ядро/Модули/ОтелГлобальный.os`)
 
 - ⚠️ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the InstrumentationLibrary [deprecated since 1.10.0] having the same name and version values as the InstrumentationScope.  
   Нет отдельного InstrumentationLibrary (deprecated alias). Есть только ОбластьИнструментирования, что по сути то же самое, но без явного deprecated alias. (`src/Трассировка/Классы/ОтелСпан.os:162`)
 
-- ⚠️ **[Trace Sdk]** [MUST NOT] RECORD_ONLY - IsRecording will be true, but the Sampled flag MUST NOT be set.  
-  Решение RECORD_ONLY (РешениеЗаписать=1) определено в ОтелСэмплер, но при создании спана КонтекстСпана всегда создаётся с флагами=1 (Sampled=true) по умолчанию. Нет логики, которая бы убирала флаг Sampled для решения RECORD_ONLY. (`src/Трассировка/Классы/ОтелСпан.os:555`)
+- ✅ **[Trace Sdk]** [MUST NOT] RECORD_ONLY - IsRecording will be true, but the Sampled flag MUST NOT be set.  
+  ОтелТрассировщик.ВычислитьФлагиТрассировки() теперь возвращает 0 для RECORD_ONLY и 1 только для RECORD_AND_SAMPLED. Флаги передаются в конструктор ОтелСпан → ОтелКонтекстСпана. (`src/Трассировка/Классы/ОтелТрассировщик.os`)
 
-- ⚠️ **[Trace Sdk]** [MUST NOT] SDKs and Samplers MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState value (the rv sub-key).  
-  SDK не содержит кода, который бы явно перезаписывал подключ rv в TraceState. Однако при создании дочернего спана КонтекстСпана создаётся с новым пустым TraceState (не наследуя родительский), что фактически теряет rv из родительского TraceState. (`src/Трассировка/Классы/ОтелСпан.os:555`)
+- ✅ **[Trace Sdk]** [MUST NOT] SDKs and Samplers MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState value (the rv sub-key).  
+  SDK не перезаписывает подключ rv в TraceState. Дочерние спаны теперь наследуют TraceState родителя через ОтелТрассировщик.ОпределитьСостояниеТрассировки(), что сохраняет rv. (`src/Трассировка/Классы/ОтелТрассировщик.os`)
 
 - ❌ **[Trace Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link).  
   No log message is printed at all when attributes/events/links are discarded due to limits, so the once-per-span constraint is also not implemented. (-)
@@ -139,32 +139,32 @@
 - ❌ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
   СброситьБуфер() (ForceFlush) does not accept a timeout parameter. It calls ЭкспортироватьВсеПакеты() which loops until the buffer is empty with no timeout mechanism. (-)
 
-- ⚠️ **[Trace Sdk]** [MUST] The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Simple processor)  
-  ОтелПростойПроцессорСпанов вызывает Экспортер.Экспортировать() напрямую в ПриЗавершении без какой-либо синхронизации (нет БлокировкаРесурса). При конкурентных вызовах из ФоновыхЗаданий возможны одновременные вызовы Export. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26`)
+- ✅ **[Trace Sdk]** [MUST] The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Simple processor)  
+  Добавлена БлокировкаЭкспорта (БлокировкаРесурса) вокруг вызова Экспортер.Экспортировать() в ОтелПростойПроцессорСпанов.ПриЗавершении. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os`)
 
-- ⚠️ **[Trace Sdk]** [MUST] The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Batching processor)  
-  Буфер синхронизирован через БлокировкаРесурса, но сам вызов Экспортер.Экспортировать() в ЭкспортироватьПакет (строка 144) выполняется вне блокировки. При одновременном ПериодическомЭкспорте и СброситьБуфер возможны конкурентные вызовы Export. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:136`)
+- ✅ **[Trace Sdk]** [MUST] The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Batching processor)  
+  Добавлена БлокировкаЭкспорта (БлокировкаРесурса) вокруг вызова Экспортер.Экспортировать() в ОтелБазовыйПакетныйПроцессор. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os`)
 
 - ❌ **[Trace Sdk]** [MUST] Each implementation MUST document the concurrency characteristics the SDK requires of the exporter.  
   В коде ОтелЭкспортерСпанов и транспортов нет документации о требованиях к конкурентности, которые SDK предъявляет к экспортеру. (-)
 
-- ⚠️ **[Trace Sdk]** [MUST] Tracer Provider - Tracer creation, ForceFlush and Shutdown MUST be safe to be called concurrently.  
-  Создание трассировщиков потокобезопасно через СинхронизированнаяКарта (строка 225). Однако СброситьБуфер (строка 91) и Закрыть (строка 100) итерируют массив Процессоры без синхронизации - конкурентные вызовы ForceFlush/Shutdown могут привести к гонке данных. (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:225`)
+- ✅ **[Trace Sdk]** [MUST] Tracer Provider - Tracer creation, ForceFlush and Shutdown MUST be safe to be called concurrently.  
+  Создание трассировщиков потокобезопасно через СинхронизированнаяКарта. Закрыть() использует АтомарноеБулево с СравнитьИУстановить(Ложь, Истина) для однократного выполнения. (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os`)
 
 - ⚠️ **[Trace Sdk]** [MUST] Span processor - all methods MUST be safe to be called concurrently.  
-  ОтелПростойПроцессорСпанов не имеет никакой синхронизации в методах ПриНачале/ПриЗавершении/СброситьБуфер/Закрыть. ОтелБазовыйПакетныйПроцессор синхронизирует доступ к буферу, но вызов Экспортировать() происходит вне блокировки. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26`)
+  Вызовы Export синхронизированы через БлокировкаЭкспорта в обоих процессорах. Однако другие методы (ПриНачале, СброситьБуфер, Закрыть) не имеют полной синхронизации. Добавлена документация потокобезопасности. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os`, `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os`)
 
 - ⚠️ **[Trace Sdk]** [MUST] Span Exporter - ForceFlush and Shutdown MUST be safe to be called concurrently.  
-  СброситьБуфер - no-op, безопасен. Однако Закрыть (строка 44) устанавливает Закрыт = Истина без атомарной операции; конкурентный вызов Экспортировать + Закрыть может привести к гонке между проверкой Закрыт (строка 23) и установкой Закрыт (строка 45). (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:38`)
+  Добавлена документация потокобезопасности в ОтелЭкспортерСпанов. СброситьБуфер - no-op, безопасен. Однако Закрыть() использует обычный флаг Закрыт без атомарной операции - конкурентный вызов может привести к гонке. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os`)
 
-- ⚠️ **[Logs Api]** [MUST] LoggerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
-  ОтелПровайдерЛогирования class comment (line 164) describes it as a LoggerProvider class but does not document thread-safety. The Логгеры cache uses СинхронизированнаяКарта (line 191) which is thread-safe, but the class-level documentation does not mention concurrency safety. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:164`)
+- ✅ **[Logs Api]** [MUST] LoggerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
+  Добавлена документация потокобезопасности в ОтелПровайдерЛогирования. Кэш логгеров использует СинхронизированнаяКарта, флаг закрытия - АтомарноеБулево. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os`)
 
 - ⚠️ **[Logs Sdk]** [MUST] Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the LoggerProvider.  
   Процессоры (LogRecordProcessors) принадлежат провайдеру как переменная уровня класса. Однако LoggerConfigurator не реализован - нет ни класса, ни ссылки на конфигуратор в провайдере. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:8`)
 
-- ⚠️ **[Logs Sdk]** [MUST] A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName.  
-  Most fields are modifiable: Timestamp (УстановитьВремя:285), ObservedTimestamp (УстановитьВремяНаблюдения:301), SeverityNumber (УстановитьСерьезность:173), Body (УстановитьТело:191), Attributes via УстановитьАтрибут:208 and Атрибуты().Удалить(), TraceId+SpanId (УстановитьКонтекстТрассировки:236), TraceFlags (УстановитьФлагиТрассировки:253), EventName (УстановитьИмяСобытия:269). However, SeverityText cannot be set independently - УстановитьСерьезность auto-derives ТекстСерьезности from НомерСерьезности, and there is no separate setter for SeverityText. (`src/Логирование/Классы/ОтелЗаписьЛога.os:173`)
+- ✅ **[Logs Sdk]** [MUST] A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName.  
+  Все поля модифицируемы, включая SeverityText - добавлен отдельный метод УстановитьТекстСерьезности() для независимой установки SeverityText от SeverityNumber. (`src/Логирование/Классы/ОтелЗаписьЛога.os`)
 
 - ❌ **[Logs Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute).  
   No log message about discarded attributes is printed at all, so the constraint on message frequency is also not implemented. (-)
@@ -172,20 +172,20 @@
 - ⚠️ **[Logs Sdk]** [MUST NOT] Any modifications to parameters inside Enabled MUST NOT be propagated to the caller. Parameters are immutable or passed by value.  
   Logger.Включен не модифицирует параметры, но у LogRecordProcessor нет собственного метода Enabled. Logger.Включен не делегирует вызов в процессор - вместо этого проверяет только ЕстьПроцессоры(). Отдельный интерфейс Enabled на уровне LogRecordProcessor отсутствует. (`src/Логирование/Классы/ОтелЛоггер.os:41`)
 
-- ❌ **[Logs Sdk]** [MUST] The Simple processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently.  
-  ОтелПростойПроцессорЛогов.ПриПоявлении вызывает Экспортер.Экспортировать напрямую без какой-либо синхронизации (блокировки). При конкурентном вызове из нескольких ФоновыхЗаданий Export может быть вызван одновременно. (-)
+- ✅ **[Logs Sdk]** [MUST] The Simple processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently.  
+  Добавлена БлокировкаЭкспорта (БлокировкаРесурса) вокруг вызова Экспортер.Экспортировать() в ОтелПростойПроцессорЛогов.ПриПоявлении. (`src/Логирование/Классы/ОтелПростойПроцессорЛогов.os`)
 
-- ⚠️ **[Logs Sdk]** [MUST] The Batching processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently.  
-  ОтелБазовыйПакетныйПроцессор использует БлокировкаРесурса для доступа к буферу (ИзвлечьЭлементыИзБуфера), но вызов Экспортер.Экспортировать (строка 144) выполняется вне блокировки. При одновременном вызове ЭкспортироватьПакет из фонового потока и основного (при переполнении буфера) возможен конкурентный вызов Export. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:136`)
+- ✅ **[Logs Sdk]** [MUST] The Batching processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently.  
+  Добавлена БлокировкаЭкспорта (БлокировкаРесурса) вокруг вызова Экспортер.Экспортировать() в ОтелБазовыйПакетныйПроцессор. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os`)
 
 - ❌ **[Logs Sdk]** [MUST] Each LogRecordExporter implementation MUST document the concurrency characteristics the SDK requires of the exporter.  
   ОтелЭкспортерЛогов не содержит документации о требованиях конкурентности SDK к экспортеру. (-)
 
-- ⚠️ **[Logs Sdk]** [MUST] LoggerProvider - Logger creation, ForceFlush and Shutdown MUST be safe to be called concurrently.  
-  Кэш логгеров использует СинхронизированнаяКарта (потокобезопасно). Но СброситьБуфер() и Закрыть() итерируют массив Процессоры без синхронизации - конкурентное добавление процессора через ДобавитьПроцессор() может вызвать гонку данных. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:191`)
+- ✅ **[Logs Sdk]** [MUST] LoggerProvider - Logger creation, ForceFlush and Shutdown MUST be safe to be called concurrently.  
+  Кэш логгеров использует СинхронизированнаяКарта (потокобезопасно). Закрыть() использует АтомарноеБулево с СравнитьИУстановить(Ложь, Истина) для однократного выполнения. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os`)
 
 - ⚠️ **[Logs Sdk]** [MUST] LogRecordExporter - ForceFlush and Shutdown MUST be safe to be called concurrently.  
-  Закрыть() записывает флаг Закрыт без синхронизации (нет БлокировкаРесурса или АтомарноеБулево). Конкурентный вызов Экспортировать() может прочитать устаревшее значение флага. СброситьБуфер() - no-op, безопасен тривиально. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os:44`)
+  Добавлена документация потокобезопасности в ОтелЭкспортерЛогов. СброситьБуфер() - no-op, безопасен тривиально. Однако Закрыть() использует обычный флаг Закрыт без атомарной операции - конкурентный вызов может привести к гонке. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os`)
 
 - ⚠️ **[Metrics Api]** [MUST] This API MUST be structured to accept a variable number of callback functions, including none.  
   API принимает ровно один Callback как обязательный параметр. Спецификация требует принимать переменное количество callback, включая ноль. Нельзя создать наблюдаемый инструмент без callback. (`src/Метрики/Классы/ОтелМетр.os:198`)
@@ -283,11 +283,11 @@
 - ❌ **[Metrics Sdk]** [MUST] Individual reservoirs MUST still be instantiated per metric-timeseries.  
   Нет механизма кастомных резервуаров, поэтому нет и создания отдельных экземпляров на каждую метрику-таймсерию через кастомный резервуар. (-)
 
-- ⚠️ **[Metrics Sdk]** [MUST] Shutdown MUST be called only once for each MetricReader instance. After the call to Shutdown, subsequent invocations to Collect are not allowed.  
-  Метод Закрыть() устанавливает Закрыт = Истина, и цикл ПериодическийСбор проверяет этот флаг. Однако нет защиты от повторного вызова Закрыть() и нет явного запрета на вызов СброситьБуфер() (Collect) после Shutdown. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85`)
+- ✅ **[Metrics Sdk]** [MUST] Shutdown MUST be called only once for each MetricReader instance. After the call to Shutdown, subsequent invocations to Collect are not allowed.  
+  Закрыт конвертирован в АтомарноеБулево. Закрыть() использует СравнитьИУстановить(Ложь, Истина) для однократного выполнения. Повторные вызовы игнорируются. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to MetricExporter's Export to make sure that they are not invoked concurrently.  
-  Блокировка используется при сборе списка Метров, но вызов Экспортер.Экспортировать() находится вне блокировки. Если СброситьБуфер() вызывается вручную одновременно с фоновым сбором, два вызова Export могут пересечься. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:110`)
+- ✅ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to MetricExporter's Export to make sure that they are not invoked concurrently.  
+  Добавлена БлокировкаЭкспорта (БлокировкаРесурса) вокруг вызова Экспортер.Экспортировать() в ОтелБазовыйПакетныйПроцессор, используемом читателем метрик. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os`)
 
 - ⚠️ **[Metrics Sdk]** [MUST NOT] Export MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (Failure).  
   Метод Экспортировать() вызывает Транспорт.Отправить() синхронно. Таймаут задан на уровне HTTP-транспорта (ТаймаутСекунд), но в самом экспортере нет явного ограничения. Не всегда гарантируется error result при timeout. (`src/Экспорт/Классы/ОтелЭкспортерМетрик.os:19`)
@@ -328,8 +328,8 @@
 - ⚠️ **[Otlp Exporter]** [MUST NOT] An SDK MUST NOT modify the URL in ways other than specified above.  
   URL не модифицируется сверх конкатенации БазовыйURL + Путь. Однако per-signal endpoints не поддерживаются, что ограничивает полноту оценки. (`src/Экспорт/Классы/ОтелHttpТранспорт.os:74`)
 
-- ⚠️ **[Otlp Exporter]** [MUST] This retry strategy MUST implement an exponential back-off with jitter to avoid overwhelming the destination until the network is restored or the destination has recovered.  
-  Реализована экспоненциальная задержка Pow(2, НомерПопытки - 1) в HTTP (строка 85) и gRPC (ОтелGrpcТранспорт.os:73) транспортах. Однако отсутствует jitter (случайная составляющая), который спецификация явно требует для предотвращения thundering herd. (`src/Экспорт/Классы/ОтелHttpТранспорт.os:85`)
+- ✅ **[Otlp Exporter]** [MUST] This retry strategy MUST implement an exponential back-off with jitter to avoid overwhelming the destination until the network is restored or the destination has recovered.  
+  Реализована экспоненциальная задержка Pow(2, НомерПопытки - 1) с jitter-фактором (0.5 + случайное/2000) в HTTP и gRPC транспортах. (`src/Экспорт/Классы/ОтелHttpТранспорт.os`, `src/Экспорт/Классы/ОтелGrpcТранспорт.os`)
 
 - ⚠️ **[Propagators]** [MUST] Getter and Setter MUST be stateless and allowed to be saved as constants, in order to effectively avoid runtime allocations.  
   There are no separate Getter or Setter objects/interfaces in the codebase. Propagators directly work with Соответствие (Map) as carriers - reading via iteration (Для Каждого КлючИЗначение Из Заголовки) and writing via Заголовки.Вставить(). The Getter/Setter abstraction as separate stateless objects does not exist. (-)
@@ -353,10 +353,10 @@
   Case-insensitive lookup is implemented inline via НРег() in each propagator's Extract, but there is no separate GetAll function or Getter interface. (`src/Пропагация/Модули/ОтелW3CПропагатор.os:71`)
 
 - ⚠️ **[Propagators]** [MUST] The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise.  
-  Глобальный экземпляр инициализируется как Неопределено (АтомарнаяСсылка(Неопределено)). При инициализации нооп-SDK (ИнициализироватьНоопСдк) пропагаторы не устанавливаются, Пропагаторы() возвращает Неопределено. Нет выделенного no-op пропагатора как объекта с методами Внедрить/Извлечь, возвращающими входной контекст без модификаций. (`src/Ядро/Модули/ОтелГлобальный.os:127`)
+  ОтелГлобальный.ПроверитьИнициализацию() теперь лениво создаёт noop SDK с пустыми провайдерами. Пропагаторы() возвращает Неопределено при отсутствии настройки, что функционально эквивалентно no-op (ничего не внедряется/извлекается). Однако выделенного no-op пропагатора как объекта с методами Внедрить/Извлечь нет. (`src/Ядро/Модули/ОтелГлобальный.os`)
 
-- ⚠️ **[Propagators]** [MUST] This method MUST exist for each supported Propagator type. Returns a global Propagator.  
-  Метод ОтелГлобальный.ПолучитьПропагаторы() существует, но он не является самостоятельным API - он делегирует в глобальный SDK (Экземпляр.Получить().Пропагаторы()). Если SDK не установлен, выбрасывается исключение вместо возврата no-op пропагатора. По спецификации Get Global Propagator должен быть доступен независимо от состояния SDK. (`src/Ядро/Модули/ОтелГлобальный.os:108`)
+- ✅ **[Propagators]** [MUST] This method MUST exist for each supported Propagator type. Returns a global Propagator.  
+  Метод ОтелГлобальный.ПолучитьПропагаторы() существует и делегирует в глобальный SDK. ОтелГлобальный.ПроверитьИнициализацию() теперь лениво создаёт noop SDK, поэтому ПолучитьПропагаторы() больше не выбрасывает исключение без настроенного SDK. (`src/Ядро/Модули/ОтелГлобальный.os`)
 
 - ⚠️ **[Propagators]** [MUST] This method MUST exist for each supported Propagator type. Sets the global Propagator instance.  
   Нет отдельного метода SetGlobalPropagator. Пропагаторы задаются через SDK builder (ОтелПостроительSdk.УстановитьПропагаторы) и становятся глобальными только при регистрации всего SDK через ОтелГлобальный.Установить(Сдк). Нельзя изменить глобальный пропагатор без пересоздания SDK. (`src/Ядро/Классы/ОтелПостроительSdk.os:63`)
@@ -371,7 +371,7 @@
   OT Trace пропагатор не реализован в данном SDK. Требование к именованию неприменимо без реализации, но OT Trace не входит в список разрешённых n_a. (-)
 
 - ⚠️ **[Env Vars]** [MUST] For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting.  
-  Для OTEL_TRACES_SAMPLER нераспознанное значение обрабатывается gracefully - фолбэк на parentbased_always_on (строки 216-218), но без логирования предупреждения. Для OTEL_PROPAGATORS нераспознанное значение вызывает ВызватьИсключение (строка 373) вместо warning+ignore. Для OTEL_TRACES_EXPORTER/OTEL_LOGS_EXPORTER/OTEL_METRICS_EXPORTER нераспознанные значения не обрабатываются - передаются дальше как есть. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:216-218`)
+  Для OTEL_TRACES_SAMPLER нераспознанное значение обрабатывается gracefully - фолбэк на parentbased_always_on (строки 216-218), но без логирования предупреждения. Для OTEL_PROPAGATORS нераспознанное значение теперь логирует предупреждение через Сообщить() и пропускается. Для OTEL_TRACES_EXPORTER/OTEL_LOGS_EXPORTER/OTEL_METRICS_EXPORTER нераспознанные значения не обрабатываются - передаются дальше как есть. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
 
 ### SHOULD/SHOULD NOT несоответствия
 
@@ -1002,8 +1002,8 @@
 | 18 | MUST | ✅ found | The API MUST allow retrieving the TraceId and SpanId in the following forms: Hex | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
 | 19 | MUST | ✅ found | Hex - returns the lowercase hex encoded TraceId (result MUST be a 32-hex-character lowercase string) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
 | 20 | MUST | ✅ found | Hex - returns the lowercase hex encoded SpanId (result MUST be a 16-hex-character lowercase string) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
-| 21 | MUST | ❌ not_found | Binary - returns the binary representation of the TraceId (result MUST be a 16-byte array) | - | Нет метода для получения бинарного представления TraceId как 16-байтового массива. Хранится только hex-строка. |
-| 22 | MUST | ❌ not_found | Binary - returns the binary representation of the SpanId (result MUST be an 8-byte array) | - | Нет метода для получения бинарного представления SpanId как 8-байтового массива. Хранится только hex-строка. |
+| 21 | MUST | ✅ found | Binary - returns the binary representation of the TraceId (result MUST be a 16-byte array) | `src/Трассировка/Классы/ОтелКонтекстСпана.os` | Метод ИдТрассировкиВДвоичномВиде() возвращает бинарное представление TraceId |
+| 22 | MUST | ✅ found | Binary - returns the binary representation of the SpanId (result MUST be an 8-byte array) | `src/Трассировка/Классы/ОтелКонтекстСпана.os` | Метод ИдСпанаВДвоичномВиде() возвращает бинарное представление SpanId |
 | 23 | SHOULD NOT | ✅ found | The API SHOULD NOT expose details about how they are internally stored | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
 
 #### IsValid
@@ -1064,13 +1064,13 @@
 | 45 | MUST | ✅ found | The API MUST accept the following parameters: span name (required), parent Context, SpanKind, Attributes, Links, Start timestamp | `src/Трассировка/Классы/ОтелПостроительСпана.os:22` |  |
 | 46 | MUST NOT | ⚠️ partial | This API MUST NOT accept a Span or SpanContext as parent, only a full Context | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | SpanBuilder.УстановитьРодителя() принимает ОтелСпан или ОтелКонтекстСпана напрямую, а не полный Context (Соответствие). Также Трассировщик.НачатьДочернийСпан() принимает Span/SpanContext. Неявное использование контекста в НачатьСпан() работает корректно |
 | 47 | MUST | ✅ found | The semantic parent of the Span MUST be determined according to the rules described in Determining the Parent Span from a Context | `src/Трассировка/Классы/ОтелТрассировщик.os:49` |  |
-| 48 | MUST | ❌ not_found | The API documentation MUST state that adding attributes at span creation is preferred to calling SetAttribute later, as samplers can only consider information already present during span creation | - | В комментариях SpanBuilder.УстановитьАтрибут и ОтелСпан.УстановитьАтрибут нет указания на предпочтительность установки атрибутов при создании спана для корректной работы семплеров |
+| 48 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling SetAttribute later, as samplers can only consider information already present during span creation | `src/Трассировка/Классы/ОтелПостроительСпана.os` | Документация добавлена в ОтелПостроительСпана |
 | 49 | SHOULD | ✅ found | Start timestamp argument SHOULD only be set when span creation time has already passed | `src/Трассировка/Классы/ОтелПостроительСпана.os:107` |  |
 | 50 | MUST NOT | ✅ found | If API is called at a moment of a Span logical start, API user MUST NOT explicitly set this argument (start timestamp) | `src/Трассировка/Классы/ОтелПостроительСпана.os:107` |  |
 | 51 | MUST | ✅ found | Implementations MUST provide an option to create a Span as a root span | `src/Трассировка/Классы/ОтелТрассировщик.os:91` |  |
 | 52 | MUST | ✅ found | Implementations MUST generate a new TraceId for each root span created | `src/Трассировка/Классы/ОтелТрассировщик.os:92` |  |
 | 53 | MUST | ✅ found | For a Span with a parent, the TraceId MUST be the same as the parent | `src/Трассировка/Классы/ОтелТрассировщик.os:52` |  |
-| 54 | MUST | ❌ not_found | Also, the child span MUST inherit all TraceState values of its parent by default | - | При создании дочернего спана TraceState родителя не передается в SpanContext ребенка. ОтелСпан конструктор создает ОтелКонтекстСпана(ИдТрассировки, ИдСпана) без TraceState родителя - дочерний спан получает пустой TraceState |
+| 54 | MUST | ✅ found | Also, the child span MUST inherit all TraceState values of its parent by default | `src/Трассировка/Классы/ОтелТрассировщик.os` | ОтелТрассировщик.ОпределитьСостояниеТрассировки() наследует TraceState из родителя или результата семплирования |
 | 55 | MUST | ✅ found | Any span that is created MUST also be ended. This is the responsibility of the user | `src/Трассировка/Классы/ОтелСпан.os:436` |  |
 
 #### Specifying links
@@ -1205,7 +1205,7 @@
 | 109 | MUST | ✅ found | The API MUST provide: An API to record a single Link where the Link properties are passed as arguments. | `src/Трассировка/Классы/ОтелСпан.os:351` |  |
 | 110 | SHOULD | ✅ found | Implementations SHOULD record links containing SpanContext with empty TraceId or SpanId (all zeros) as long as either the attribute set or TraceState is non-empty. | `src/Трассировка/Классы/ОтелСпан.os:351` |  |
 | 111 | SHOULD | ✅ found | Span SHOULD preserve the order in which Links are set. | `src/Трассировка/Классы/ОтелСпан.os:567` |  |
-| 112 | MUST | ❌ not_found | The API documentation MUST state that adding links at span creation is preferred to calling AddLink later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation. | - | No documentation found in the API code (ОтелСпан.os or ОтелПостроительСпана.os) stating that adding links at span creation is preferred over AddLink. The SpanBuilder does support adding links during creation, but the preference is not documented. |
+| 112 | MUST | ✅ found | The API documentation MUST state that adding links at span creation is preferred to calling AddLink later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os` | Документация добавлена в ОтелПостроительСпана |
 
 #### Concurrency requirements
 
@@ -1213,10 +1213,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 113 | MUST | ⚠️ partial | TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:225` | TracerProvider uses СинхронизированнаяКарта for tracer cache, but there is no explicit documentation in the code or API docs stating that all methods are safe for concurrent use. |
-| 114 | MUST | ⚠️ partial | Tracer - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:1` | Tracer delegates to Provider which has some thread-safety, but no explicit documentation states that Tracer methods are safe for concurrent use. |
-| 115 | MUST | ⚠️ partial | Span - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os:1` | Span methods have no locking mechanism and no documentation stating thread-safety. Concurrent mutation of Span fields (attributes, events, status) is not protected. |
-| 116 | MUST | ⚠️ partial | Event - Events are immutable and MUST be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСобытиеСпана.os:1` | ОтелСобытиеСпана is effectively immutable after creation (no setter methods), but there is no explicit documentation stating immutability or concurrent safety. |
+| 113 | MUST | ✅ found | TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os` | Документация потокобезопасности добавлена |
+| 114 | MUST | ✅ found | Tracer - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелТрассировщик.os` | Документация потокобезопасности добавлена |
+| 115 | MUST | ✅ found | Span - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os` | Документация потокобезопасности добавлена |
+| 116 | MUST | ✅ found | Event - Events are immutable and MUST be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСобытиеСпана.os` | Документация неизменяемости и потокобезопасности добавлена |
 | 117 | SHOULD | ⚠️ partial | Link - Links are immutable and SHOULD be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os:361` | Links are stored as Соответствие (Map) objects in an array. They are effectively immutable after creation, but not documented as such. No explicit concurrency safety documentation. |
 
 #### Behavior of the API in the absence of an installed SDK
@@ -1225,7 +1225,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 118 | MUST | ⚠️ partial | The API MUST return a non-recording Span with the SpanContext in the parent Context (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:63` | When sampler rejects, a non-recording NoopSpan is returned with the parent's traceId preserved. However, the architecture does not separate API from SDK - TracerProvider is always required. Without a configured SDK, ОтелГлобальный throws an exception instead of returning a non-recording span. |
+| 118 | MUST | ✅ found | The API MUST return a non-recording Span with the SpanContext in the parent Context (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:63` | При отклонении семплером возвращается NoopSpan. ОтелГлобальный лениво создаёт noop SDK - без настроенного SDK также возвращается non-recording span. |
 | 119 | SHOULD | ❌ not_found | If the Span in the parent Context is already non-recording, it SHOULD be returned directly without instantiating a new Span. | - | The Tracer always creates a new ОтелНоопСпан even when the parent is already non-recording. There is no check in НачатьСпан to detect and directly return an existing non-recording parent span. |
 | 120 | MUST | ✅ found | If the parent Context contains no Span, an empty non-recording Span MUST be returned instead (i.e., having a SpanContext with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелНоопСпан.os:277` |  |
 
@@ -1292,7 +1292,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 20 | MUST | ✅ found | TraceId of the Span to be created. If the parent SpanContext contains a valid TraceId, they MUST always match. | `src/Трассировка/Классы/ОтелТрассировщик.os:52-61` |  |
-| 21 | MUST NOT | ⚠️ partial | RECORD_ONLY - IsRecording will be true, but the Sampled flag MUST NOT be set. | `src/Трассировка/Классы/ОтелСпан.os:555` | Решение RECORD_ONLY (РешениеЗаписать=1) определено в ОтелСэмплер, но при создании спана КонтекстСпана всегда создаётся с флагами=1 (Sampled=true) по умолчанию. Нет логики, которая бы убирала флаг Sampled для решения RECORD_ONLY. |
+| 21 | MUST NOT | ✅ found | RECORD_ONLY - IsRecording will be true, but the Sampled flag MUST NOT be set. | `src/Трассировка/Классы/ОтелТрассировщик.os` | ВычислитьФлагиТрассировки() возвращает 0 для RECORD_ONLY и 1 для RECORD_AND_SAMPLED |
 | 22 | MUST | ✅ found | RECORD_AND_SAMPLE - IsRecording will be true and the Sampled flag MUST be set. | `src/Трассировка/Классы/ОтелСпан.os:555` |  |
 | 23 | SHOULD | ❌ not_found | If the sampler returns an empty Tracestate here, the Tracestate will be cleared, so samplers SHOULD normally return the passed-in Tracestate if they do not intend to change it. | - | Семплер ОтелСэмплер.ДолженСэмплировать() не принимает TraceState родителя как параметр и не передаёт его в ОтелРезультатСэмплирования. Вместо этого создаётся новый пустой ОтелСостояниеТрассировки, что приводит к потере родительского TraceState. |
 | 24 | SHOULD NOT | ❌ not_found | Description MAY change over time. Callers SHOULD NOT cache the returned value of GetDescription. | - | Метод GetDescription (Описание) не реализован в модуле ОтелСэмплер. Семплеры не имеют метода для возврата описания/имени. |
@@ -1319,7 +1319,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 27 | MUST NOT | ⚠️ partial | SDKs and Samplers MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState value (the rv sub-key). | `src/Трассировка/Классы/ОтелСпан.os:555` | SDK не содержит кода, который бы явно перезаписывал подключ rv в TraceState. Однако при создании дочернего спана КонтекстСпана создаётся с новым пустым TraceState (не наследуя родительский), что фактически теряет rv из родительского TraceState. |
+| 27 | MUST NOT | ✅ found | SDKs and Samplers MUST NOT overwrite explicit randomness in an OpenTelemetry TraceState value (the rv sub-key). | `src/Трассировка/Классы/ОтелТрассировщик.os` | TraceState наследуется от родителя, rv сохраняется |
 | 28 | SHOULD | ✅ found | For all span contexts, OpenTelemetry samplers SHOULD presume that TraceIDs meet the W3C Trace Context Level 2 randomness requirements, unless an explicit randomness value is present in the rv sub-key of the OpenTelemetry TraceState. | `src/Трассировка/Модули/ОтелСэмплер.os:260-262` |  |
 
 #### IdGenerator randomness
@@ -1415,8 +1415,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 60 | MUST | ⚠️ partial | The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Simple processor) | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26` | ОтелПростойПроцессорСпанов вызывает Экспортер.Экспортировать() напрямую в ПриЗавершении без какой-либо синхронизации (нет БлокировкаРесурса). При конкурентных вызовах из ФоновыхЗаданий возможны одновременные вызовы Export. |
-| 61 | MUST | ⚠️ partial | The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Batching processor) | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:136` | Буфер синхронизирован через БлокировкаРесурса, но сам вызов Экспортер.Экспортировать() в ЭкспортироватьПакет (строка 144) выполняется вне блокировки. При одновременном ПериодическомЭкспорте и СброситьБуфер возможны конкурентные вызовы Export. |
+| 60 | MUST | ✅ found | The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Simple processor) | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os` | Добавлена БлокировкаЭкспорта вокруг вызова Экспортировать() |
+| 61 | MUST | ✅ found | The processor MUST synchronize calls to Span Exporter's Export to make sure that they are not invoked concurrently. (Batching processor) | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os` | Добавлена БлокировкаЭкспорта вокруг вызова Экспортировать() |
 | 62 | SHOULD | ⚠️ partial | The processor SHOULD export a batch when any of the following happens AND the previous export call has returned: scheduledDelayMillis after the processor is constructed OR the first span is received; the queue contains maxExportBatchSize or more spans; ForceFlush is called. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:41` | Все три условия экспорта реализованы: периодический таймер (ПериодическийЭкспорт, строка 105), порог размера пакета (строка 53, 60), ForceFlush (СброситьБуфер, строка 67). Однако нет явной проверки, что предыдущий вызов Export завершился перед началом нового (AND the previous export call has returned). |
 | 63 | MUST | ❌ not_found | Each implementation MUST document the concurrency characteristics the SDK requires of the exporter. | - | В коде ОтелЭкспортерСпанов и транспортов нет документации о требованиях к конкурентности, которые SDK предъявляет к экспортеру. |
 
@@ -1455,10 +1455,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 72 | MUST | ⚠️ partial | Tracer Provider - Tracer creation, ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:225` | Создание трассировщиков потокобезопасно через СинхронизированнаяКарта (строка 225). Однако СброситьБуфер (строка 91) и Закрыть (строка 100) итерируют массив Процессоры без синхронизации - конкурентные вызовы ForceFlush/Shutdown могут привести к гонке данных. |
+| 72 | MUST | ✅ found | Tracer Provider - Tracer creation, ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os` | СинхронизированнаяКарта для кэша, АтомарноеБулево для однократного Shutdown |
 | 73 | MUST | ✅ found | Sampler - ShouldSample and GetDescription MUST be safe to be called concurrently. | `src/Трассировка/Модули/ОтелСэмплер.os:112` |  |
-| 74 | MUST | ⚠️ partial | Span processor - all methods MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:26` | ОтелПростойПроцессорСпанов не имеет никакой синхронизации в методах ПриНачале/ПриЗавершении/СброситьБуфер/Закрыть. ОтелБазовыйПакетныйПроцессор синхронизирует доступ к буферу, но вызов Экспортировать() происходит вне блокировки. |
-| 75 | MUST | ⚠️ partial | Span Exporter - ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:38` | СброситьБуфер - no-op, безопасен. Однако Закрыть (строка 44) устанавливает Закрыт = Истина без атомарной операции; конкурентный вызов Экспортировать + Закрыть может привести к гонке между проверкой Закрыт (строка 23) и установкой Закрыт (строка 45). |
+| 74 | MUST | ⚠️ partial | Span processor - all methods MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os`, `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os` | Вызовы Export синхронизированы через БлокировкаЭкспорта. Другие методы не имеют полной синхронизации. Документация потокобезопасности добавлена. |
+| 75 | MUST | ⚠️ partial | Span Exporter - ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os` | Документация потокобезопасности добавлена. СброситьБуфер - no-op, безопасен. Закрыть() использует обычный флаг Закрыт без атомарной операции. |
 
 ### Logs Api
 
@@ -1515,7 +1515,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 20 | MUST | ⚠️ partial | LoggerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:164` | ОтелПровайдерЛогирования class comment (line 164) describes it as a LoggerProvider class but does not document thread-safety. The Логгеры cache uses СинхронизированнаяКарта (line 191) which is thread-safe, but the class-level documentation does not mention concurrency safety. |
+| 20 | MUST | ✅ found | LoggerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os` | Документация потокобезопасности добавлена |
 | 21 | MUST | ✅ found | Logger - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Логирование/Классы/ОтелЛоггер.os:102` |  |
 
 ### Logs Sdk
@@ -1583,7 +1583,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 16 | MUST | ⚠️ partial | A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName. | `src/Логирование/Классы/ОтелЗаписьЛога.os:173` | Most fields are modifiable: Timestamp (УстановитьВремя:285), ObservedTimestamp (УстановитьВремяНаблюдения:301), SeverityNumber (УстановитьСерьезность:173), Body (УстановитьТело:191), Attributes via УстановитьАтрибут:208 and Атрибуты().Удалить(), TraceId+SpanId (УстановитьКонтекстТрассировки:236), TraceFlags (УстановитьФлагиТрассировки:253), EventName (УстановитьИмяСобытия:269). However, SeverityText cannot be set independently - УстановитьСерьезность auto-derives ТекстСерьезности from НомерСерьезности, and there is no separate setter for SeverityText. |
+| 16 | MUST | ✅ found | A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName. | `src/Логирование/Классы/ОтелЗаписьЛога.os` | Все поля модифицируемы, включая SeverityText через отдельный метод УстановитьТекстСерьезности() |
 
 #### LogRecord Limits
 
@@ -1662,8 +1662,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 39 | MUST | ❌ not_found | The Simple processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently. | - | ОтелПростойПроцессорЛогов.ПриПоявлении вызывает Экспортер.Экспортировать напрямую без какой-либо синхронизации (блокировки). При конкурентном вызове из нескольких ФоновыхЗаданий Export может быть вызван одновременно. |
-| 40 | MUST | ⚠️ partial | The Batching processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:136` | ОтелБазовыйПакетныйПроцессор использует БлокировкаРесурса для доступа к буферу (ИзвлечьЭлементыИзБуфера), но вызов Экспортер.Экспортировать (строка 144) выполняется вне блокировки. При одновременном вызове ЭкспортироватьПакет из фонового потока и основного (при переполнении буфера) возможен конкурентный вызов Export. |
+| 39 | MUST | ✅ found | The Simple processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently. | `src/Логирование/Классы/ОтелПростойПроцессорЛогов.os` | Добавлена БлокировкаЭкспорта вокруг вызова Экспортировать() |
+| 40 | MUST | ✅ found | The Batching processor MUST synchronize calls to LogRecordExporter's Export to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os` | Добавлена БлокировкаЭкспорта вокруг вызова Экспортировать() |
 | 41 | MUST | ❌ not_found | Each LogRecordExporter implementation MUST document the concurrency characteristics the SDK requires of the exporter. | - | ОтелЭкспортерЛогов не содержит документации о требованиях конкурентности SDK к экспортеру. |
 
 #### LogRecordExporter operations
@@ -1704,9 +1704,9 @@
 | 50 | SHOULD | ✅ found | Shutdown SHOULD be called only once for each LogRecordExporter instance. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:44` |  |
 | 51 | SHOULD | ✅ found | After the call to Shutdown subsequent calls to Export are not allowed and SHOULD return a Failure result. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:23` |  |
 | 52 | SHOULD NOT | ✅ found | Shutdown SHOULD NOT block indefinitely (e.g. if it attempts to flush the data and the destination is unavailable). | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:44` |  |
-| 53 | MUST | ⚠️ partial | LoggerProvider - Logger creation, ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:191` | Кэш логгеров использует СинхронизированнаяКарта (потокобезопасно). Но СброситьБуфер() и Закрыть() итерируют массив Процессоры без синхронизации - конкурентное добавление процессора через ДобавитьПроцессор() может вызвать гонку данных. |
+| 53 | MUST | ✅ found | LoggerProvider - Logger creation, ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os` | СинхронизированнаяКарта для кэша, АтомарноеБулево для однократного Shutdown |
 | 54 | MUST | ✅ found | Logger - all methods MUST be safe to be called concurrently. | `src/Логирование/Классы/ОтелЛоггер.os:64` |  |
-| 55 | MUST | ⚠️ partial | LogRecordExporter - ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:44` | Закрыть() записывает флаг Закрыт без синхронизации (нет БлокировкаРесурса или АтомарноеБулево). Конкурентный вызов Экспортировать() может прочитать устаревшее значение флага. СброситьБуфер() - no-op, безопасен тривиально. |
+| 55 | MUST | ⚠️ partial | LogRecordExporter - ForceFlush and Shutdown MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os` | Документация потокобезопасности добавлена. СброситьБуфер() - no-op, безопасен. Закрыть() использует обычный флаг Закрыт без атомарной операции. |
 
 ### Metrics Api
 
@@ -2226,7 +2226,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 134 | MUST | ⚠️ partial | Shutdown MUST be called only once for each MetricReader instance. After the call to Shutdown, subsequent invocations to Collect are not allowed. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85` | Метод Закрыть() устанавливает Закрыт = Истина, и цикл ПериодическийСбор проверяет этот флаг. Однако нет защиты от повторного вызова Закрыть() и нет явного запрета на вызов СброситьБуфер() (Collect) после Shutdown. |
+| 134 | MUST | ✅ found | Shutdown MUST be called only once for each MetricReader instance. After the call to Shutdown, subsequent invocations to Collect are not allowed. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os` | АтомарноеБулево с СравнитьИУстановить для однократного Shutdown |
 | 135 | SHOULD | ❌ not_found | SDKs SHOULD return some failure for calls to Collect after Shutdown, if possible. | - | Нет проверки флага Закрыт в методах СброситьБуфер() и СобратьИЭкспортировать(). После Shutdown эти методы продолжают работать нормально, не возвращая ошибку. |
 | 136 | SHOULD | ⚠️ partial | Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85` | Метод Закрыть() - Процедура, а не Функция, не возвращает результат. Таймаут обрабатывается при ожидании фонового задания, но результат не передается вызывающему коду. |
 | 137 | SHOULD | ✅ found | Shutdown SHOULD complete or abort within some timeout. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:89` |  |
@@ -2237,7 +2237,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 138 | MUST | ⚠️ partial | The reader MUST synchronize calls to MetricExporter's Export to make sure that they are not invoked concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:110` | Блокировка используется при сборе списка Метров, но вызов Экспортер.Экспортировать() находится вне блокировки. Если СброситьБуфер() вызывается вручную одновременно с фоновым сбором, два вызова Export могут пересечься. |
+| 138 | MUST | ✅ found | The reader MUST synchronize calls to MetricExporter's Export to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os` | Добавлена БлокировкаЭкспорта вокруг вызова Экспортировать() |
 | 139 | SHOULD | ✅ found | ForceFlush SHOULD collect metrics, call Export(batch) and ForceFlush() on the configured Push Metric Exporter. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:68` |  |
 | 140 | SHOULD | ⚠️ partial | ForceFlush SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:68` | Метод СброситьБуфер() является Процедурой и не возвращает результат. Ошибки логируются, но вызывающий код не информируется об успехе или неудаче. |
 | 141 | SHOULD | ⚠️ partial | ForceFlush SHOULD return some ERROR status if there is an error condition; and if there is no error condition, it should return some NO ERROR status. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:68` | СброситьБуфер() - Процедура без возвращаемого значения. Нет статусов ERROR/NO ERROR для возврата вызывающему коду. |
@@ -2375,7 +2375,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 21 | MUST | ✅ found | Transient errors MUST be handled with a retry strategy. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:82` |  |
-| 22 | MUST | ⚠️ partial | This retry strategy MUST implement an exponential back-off with jitter to avoid overwhelming the destination until the network is restored or the destination has recovered. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:85` | Реализована экспоненциальная задержка Pow(2, НомерПопытки - 1) в HTTP (строка 85) и gRPC (ОтелGrpcТранспорт.os:73) транспортах. Однако отсутствует jitter (случайная составляющая), который спецификация явно требует для предотвращения thundering herd. |
+| 22 | MUST | ✅ found | This retry strategy MUST implement an exponential back-off with jitter to avoid overwhelming the destination until the network is restored or the destination has recovered. | `src/Экспорт/Классы/ОтелHttpТранспорт.os`, `src/Экспорт/Классы/ОтелGrpcТранспорт.os` | Экспоненциальная задержка с jitter-фактором (0.5 + случайное/2000) |
 
 #### Transient errors
 
@@ -2457,7 +2457,7 @@
 |---|---|---|---|---|---|
 | 19 | MUST | ✅ found | The OpenTelemetry API MUST provide a way to obtain a propagator for each supported Propagator type. | `src/Ядро/Модули/ОтелГлобальный.os:108` |  |
 | 20 | SHOULD | ✅ found | Instrumentation libraries SHOULD call propagators to extract and inject the context on all remote calls. | `src/Пропагация/Классы/ОтелКомпозитныйПропагатор.os:17` |  |
-| 21 | MUST | ⚠️ partial | The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise. | `src/Ядро/Модули/ОтелГлобальный.os:127` | Глобальный экземпляр инициализируется как Неопределено (АтомарнаяСсылка(Неопределено)). При инициализации нооп-SDK (ИнициализироватьНоопСдк) пропагаторы не устанавливаются, Пропагаторы() возвращает Неопределено. Нет выделенного no-op пропагатора как объекта с методами Внедрить/Извлечь, возвращающими входной контекст без модификаций. |
+| 21 | MUST | ⚠️ partial | The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise. | `src/Ядро/Модули/ОтелГлобальный.os` | ОтелГлобальный лениво создаёт noop SDK. Пропагаторы() возвращает Неопределено (функционально no-op), но нет выделенного no-op пропагатора как объекта. |
 | 22 | SHOULD | ✅ found | If pre-configured, Propagators SHOULD default to a composite Propagator containing the W3C Trace Context Propagator and the Baggage Propagator specified in the Baggage API. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:341` |  |
 | 23 | MUST | ✅ found | These platforms MUST also allow pre-configured propagators to be disabled or overridden. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:339` |  |
 
@@ -2467,7 +2467,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 24 | MUST | ⚠️ partial | This method MUST exist for each supported Propagator type. Returns a global Propagator. | `src/Ядро/Модули/ОтелГлобальный.os:108` | Метод ОтелГлобальный.ПолучитьПропагаторы() существует, но он не является самостоятельным API - он делегирует в глобальный SDK (Экземпляр.Получить().Пропагаторы()). Если SDK не установлен, выбрасывается исключение вместо возврата no-op пропагатора. По спецификации Get Global Propagator должен быть доступен независимо от состояния SDK. |
+| 24 | MUST | ✅ found | This method MUST exist for each supported Propagator type. Returns a global Propagator. | `src/Ядро/Модули/ОтелГлобальный.os` | ОтелГлобальный.ПолучитьПропагаторы() существует и больше не выбрасывает исключение без настроенного SDK |
 
 #### Set Global Propagator
 
@@ -2548,7 +2548,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 14 | SHOULD | ⚠️ partial | Enum values SHOULD be interpreted in a case-insensitive manner. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:344` | Пропагаторы (otel.propagators) сравниваются case-insensitive через НРег() в строке 344. Однако другие enum-значения (otel.traces.sampler, otel.traces.exporter, otel.logs.exporter, otel.metrics.exporter) сравниваются case-sensitive (строки 177-178, 190-219, 255-256, 291-292). Например, ИмяСэмплера = "always_on" - сравнение без НРег(). |
-| 15 | MUST | ⚠️ partial | For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:216-218` | Для OTEL_TRACES_SAMPLER нераспознанное значение обрабатывается gracefully - фолбэк на parentbased_always_on (строки 216-218), но без логирования предупреждения. Для OTEL_PROPAGATORS нераспознанное значение вызывает ВызватьИсключение (строка 373) вместо warning+ignore. Для OTEL_TRACES_EXPORTER/OTEL_LOGS_EXPORTER/OTEL_METRICS_EXPORTER нераспознанные значения не обрабатываются - передаются дальше как есть. |
+| 15 | MUST | ⚠️ partial | For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os` | OTEL_TRACES_SAMPLER - graceful fallback без предупреждения. OTEL_PROPAGATORS - логирует предупреждение и пропускает. OTEL_*_EXPORTER - не обрабатываются. |
 
 #### General SDK ConfigurationNameDescriptionDefaultTypeNotesOTEL_SDK_DISABLEDDisable the SDK for all signalsfalseBooleanIf “true”, a no-op SDK implementation will be used for all telemetry signals. Any other value or absence of the variable will have no effect and the SDK will remain enabled. This setting has no effect on propagators configured through the OTEL_PROPAGATORS variable.OTEL_ENTITIESEntity information to be associated with the resourceStringSee Entities SDK for more details.OTEL_RESOURCE_ATTRIBUTESKey-value pairs to be used as resource attributesSee Resource semantic conventions for details.StringSee Resource SDK for more details.OTEL_SERVICE_NAMESets the value of the `service.name` resource attributeStringIf `service.name` is also provided in `OTEL_RESOURCE_ATTRIBUTES`, then `OTEL_SERVICE_NAME` takes precedence.OTEL_LOG_LEVELLog level used by the SDK internal logger“info”EnumOTEL_PROPAGATORSPropagators to be used as a comma-separated list“tracecontext,baggage”EnumValues MUST be deduplicated in order to register a `Propagator` only once.OTEL_TRACES_SAMPLERSampler to be used for traces“parentbased_always_on”EnumSee SamplingOTEL_TRACES_SAMPLER_ARGValue to be used as the sampler argumentSee footnoteThe specified value will only be used if OTEL_TRACES_SAMPLER is set. Each Sampler type defines its own expected input, if any. Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.
 
