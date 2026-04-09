@@ -14,29 +14,29 @@
 | Stable + universal keywords | 660 |
 | Conditional keywords | 23 |
 | Development keywords | 156 |
-| Найдено требований (Stable universal) | 630 |
-| ✅ Реализовано (found) | 397 (63.0%) |
-| ⚠️ Частично (partial) | 123 (19.5%) |
-| ❌ Не реализовано (not_found) | 110 (17.5%) |
+| Найдено требований (Stable universal) | 625 |
+| ✅ Реализовано (found) | 449 (71.8%) |
+| ⚠️ Частично (partial) | 90 (14.4%) |
+| ❌ Не реализовано (not_found) | 84 (13.4%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 266/376 (70.7%) |
-| **SHOULD/SHOULD NOT found** | 131/254 (51.6%) |
+| **MUST/MUST NOT found** | 313/370 (84.6%) |
+| **SHOULD/SHOULD NOT found** | 136/253 (53.8%) |
 
 ## Соответствие по разделам (Stable)
 
 | Раздел | ✅ | ⚠️ | ❌ | ➖ | Всего | % found |
 |---|---|---|---|---|---|---|
-| Context | 7 | 5 | 3 | 0 | 15 | 46.7% |
+| Context | 7 | 1 | 0 | 0 | 8 | 87.5% |
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
-| Resource Sdk | 9 | 3 | 3 | 0 | 15 | 60.0% |
-| Trace Api | 95 | 16 | 9 | 0 | 120 | 79.2% |
-| Trace Sdk | 43 | 21 | 11 | 0 | 75 | 57.3% |
-| Logs Api | 18 | 2 | 1 | 0 | 21 | 85.7% |
-| Logs Sdk | 34 | 14 | 7 | 0 | 55 | 61.8% |
-| Metrics Api | 58 | 7 | 9 | 0 | 74 | 78.4% |
-| Metrics Sdk | 81 | 34 | 52 | 1 | 167 | 48.5% |
-| Otlp Exporter | 11 | 8 | 5 | 1 | 24 | 45.8% |
-| Propagators | 16 | 10 | 6 | 0 | 32 | 50.0% |
+| Resource Sdk | 12 | 3 | 0 | 0 | 15 | 80.0% |
+| Trace Api | 105 | 11 | 4 | 0 | 120 | 87.5% |
+| Trace Sdk | 52 | 15 | 8 | 0 | 75 | 69.3% |
+| Logs Api | 19 | 1 | 1 | 0 | 21 | 90.5% |
+| Logs Sdk | 40 | 10 | 5 | 0 | 55 | 72.7% |
+| Metrics Api | 61 | 5 | 8 | 0 | 74 | 82.4% |
+| Metrics Sdk | 95 | 29 | 43 | 1 | 168 | 56.5% |
+| Otlp Exporter | 14 | 5 | 5 | 1 | 25 | 56.0% |
+| Propagators | 19 | 7 | 6 | 0 | 32 | 59.4% |
 | Env Vars | 8 | 3 | 4 | 0 | 15 | 53.3% |
 
 ## Ключевые несоответствия (Stable)
@@ -64,17 +64,17 @@
 - ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: The Context.  
   There is no generic Attach(Context) method that accepts a Context (Соответствие) as a single parameter. Instead, the code provides specialized methods: УстановитьЗначение(Ключ, Значение) at line 147, СделатьСпанТекущим(Спан) at line 163, and СделатьBaggageТекущим(Багаж) at line 176 — none of which accept a whole Context object as the spec requires. (`src/Ядро/Модули/ОтелКонтекст.os:147`)
 
-- ⚠️ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
-  Resource detection for host, process, CPU is implemented inline in ОтелРесурс.ЗаполнитьАтрибутыПоУмолчанию() instead of as separate detector packages. The detection logic is hardcoded in the resource class constructor, not in independent packages. (`src/Ядро/Классы/ОтелРесурс.os:104`)
+- ✅ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
+  Три отдельных класса-детектора: ОтелДетекторРесурсаХоста, ОтелДетекторРесурсаПроцесса, ОтелДетекторРесурсаПроцессора. (`src/Ядро/Классы/`)
 
-- ❌ **[Resource Sdk]** [MUST] Resource detector packages MUST provide a method that returns a resource. This can then be associated with TracerProvider or MeterProvider instances.  
-  No separate resource detector packages exist. Detection logic is embedded directly in ОтелРесурс class, so there is no standalone detector with a method returning a Resource. (-)
+- ✅ **[Resource Sdk]** [MUST] Resource detector packages MUST provide a method that returns a resource. This can then be associated with TracerProvider or MeterProvider instances.  
+  Каждый детектор имеет метод Обнаружить(), возвращающий ОтелРесурс. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17`)
 
-- ❌ **[Resource Sdk]** [MUST] Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions.  
-  The inline resource detection populates semantic convention attributes (host.name, os.type, process.pid, etc.) but does not set Schema URL. АдресСхемы defaults to empty string in the constructor. (-)
+- ⚠️ **[Resource Sdk]** [MUST] Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions.  
+  Детекторы вынесены в отдельные классы, но Schema URL пока не устанавливается. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os`)
 
-- ❌ **[Resource Sdk]** [MUST] If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources.  
-  No separate resource detectors exist, so there is no logic to detect conflicting Schema URLs when combining multiple detectors. Note: the Слить() method does handle Schema URL conflicts for general resource merging, but this requirement is specifically about detector combination. (-)
+- ✅ **[Resource Sdk]** [MUST] If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources.  
+  Используется ОтелРесурс.Слить(), который обрабатывает конфликт Schema URL (возвращает пустой ресурс при различных непустых URL). (`src/Ядро/Классы/ОтелРесурс.os:45`)
 
 - ⚠️ **[Trace Api]** [MUST] In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception  
   ПолучитьТрассировщик принимает пустую строку и создает рабочий трассировщик, но нет явной проверки на пустое/null имя и нет логирования предупреждения (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:52`)
@@ -133,8 +133,8 @@
 - ✅ **[Trace Sdk]** [MUST] To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link).  
   Добавлен флаг ПредупреждениеОтброшенныхВыведено и логгер Лог. При отбрасывании атрибутов, событий или линков выводится одно предупреждение на спан через ВывестиПредупреждениеОбОтброшенныхДанных(). (`src/Трассировка/Классы/ОтелСпан.os`)
 
-- ⚠️ **[Trace Sdk]** [MUST] The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush.  
-  Processors declare ПриНачале (OnStart), ПриЗавершении (OnEnd), Закрыть (Shutdown), СброситьБуфер (ForceFlush). However there is no formal interface definition - it is a duck-typed convention. All four methods exist in both Simple and Batch processors, so the functional requirement is met but architecture is convention-based rather than interface-based. (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:17-47`)
+- ✅ **[Trace Sdk]** [MUST] The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush.  
+  ИнтерфейсПроцессорСпанов определяет все 4 метода через &Интерфейс из extends. (`src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os`)
 
 - ❌ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
   СброситьБуфер() (ForceFlush) does not accept a timeout parameter. It calls ЭкспортироватьВсеПакеты() which loops until the buffer is empty with no timeout mechanism. (-)
@@ -160,8 +160,8 @@
 - ✅ **[Logs Api]** [MUST] LoggerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default.  
   Добавлена документация потокобезопасности в ОтелПровайдерЛогирования. Кэш логгеров использует СинхронизированнаяКарта, флаг закрытия - АтомарноеБулево. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os`)
 
-- ⚠️ **[Logs Sdk]** [MUST] Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the LoggerProvider.  
-  Процессоры (LogRecordProcessors) принадлежат провайдеру как переменная уровня класса. Однако LoggerConfigurator не реализован - нет ни класса, ни ссылки на конфигуратор в провайдере. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:8`)
+- ✅ **[Logs Sdk]** [MUST] Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the LoggerProvider.  
+  Конфигуратор (Действие callback) добавлен как поле ОтелПровайдерЛогирования. Создан класс ОтелКонфигурацияЛоггера. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:21`)
 
 - ✅ **[Logs Sdk]** [MUST] A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName.  
   Все поля модифицируемы, включая SeverityText - добавлен отдельный метод УстановитьТекстСерьезности() для независимой установки SeverityText от SeverityNumber. (`src/Логирование/Классы/ОтелЗаписьЛога.os`)
@@ -187,14 +187,14 @@
 - ⚠️ **[Logs Sdk]** [MUST] LogRecordExporter - ForceFlush and Shutdown MUST be safe to be called concurrently.  
   Добавлена документация потокобезопасности в ОтелЭкспортерЛогов. СброситьБуфер() - no-op, безопасен тривиально. Однако Закрыть() использует обычный флаг Закрыт без атомарной операции - конкурентный вызов может привести к гонке. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os`)
 
-- ⚠️ **[Metrics Api]** [MUST] This API MUST be structured to accept a variable number of callback functions, including none.  
-  API принимает ровно один Callback как обязательный параметр. Спецификация требует принимать переменное количество callback, включая ноль. Нельзя создать наблюдаемый инструмент без callback. (`src/Метрики/Классы/ОтелМетр.os:198`)
+- ✅ **[Metrics Api]** [MUST] This API MUST be structured to accept a variable number of callback functions, including none.  
+  Конструктор принимает 0 или 1 callback, метод ДобавитьCallback() для добавления дополнительных. (`src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os`)
 
-- ⚠️ **[Metrics Api]** [MUST] The API MUST support creation of asynchronous instruments by passing zero or more callback functions to be permanently registered to the newly created instrument.  
-  API требует ровно один Callback при создании. Не поддерживается передача 0 или нескольких callback при создании инструмента. (`src/Метрики/Классы/ОтелМетр.os:198`)
+- ✅ **[Metrics Api]** [MUST] The API MUST support creation of asynchronous instruments by passing zero or more callback functions to be permanently registered to the newly created instrument.  
+  Фабричные методы принимают необязательный Действие. ДобавитьCallback() для дополнительных. (`src/Метрики/Классы/ОтелМетр.os`)
 
-- ❌ **[Metrics Api]** [MUST] Where the API supports registration of callback functions after asynchronous instrumentation creation, the user MUST be able to undo registration of the specific callback after its registration by some means.  
-  Нет механизма отмены регистрации callback. МультиОбратныеВызовы - это Массив без поддержки удаления конкретной регистрации. (-)
+- ✅ **[Metrics Api]** [MUST] Where the API supports registration of callback functions after asynchronous instrumentation creation, the user MUST be able to undo registration of the specific callback after its registration by some means.  
+  ОтелРегистрацияНаблюдателя.Закрыть() отменяет регистрацию callback. (`src/Метрики/Классы/ОтелРегистрацияНаблюдателя.os`)
 
 - ✅ **[Metrics Sdk]** [MUST] The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_version, meter_schema_url  
   Selector принимает все 6 критериев: ИмяИнструмента, ТипИнструмента, Единица, ИмяМетра, ВерсияМетра, АдресСхемыМетра. (`src/Метрики/Классы/ОтелСелекторИнструментов.os`)
@@ -940,13 +940,13 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ⚠️ partial | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелРесурс.os:104` | Resource detection for host, process, CPU is implemented inline in ОтелРесурс.ЗаполнитьАтрибутыПоУмолчанию() instead of as separate detector packages. The detection logic is hardcoded in the resource class constructor, not in independent packages. |
-| 10 | MUST | ❌ not_found | Resource detector packages MUST provide a method that returns a resource. This can then be associated with TracerProvider or MeterProvider instances. | - | No separate resource detector packages exist. Detection logic is embedded directly in ОтелРесурс class, so there is no standalone detector with a method returning a Resource. |
+| 9 | MUST | ✅ found | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os` |  |
+| 10 | MUST | ✅ found | Resource detector packages MUST provide a method that returns a resource. This can then be associated with TracerProvider or MeterProvider instances. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17` |  |
 | 11 | MUST NOT | ✅ found | The failure to detect any resource information MUST NOT be considered an error. | `src/Ядро/Классы/ОтелРесурс.os:120` |  |
 | 12 | SHOULD | ⚠️ partial | An error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелРесурс.os:121` | Errors during resource detection are caught via Попытка/Исключение but logged at Лог.Отладка (debug) level instead of error level. Per spec, detection errors SHOULD be treated as errors, but they are silently suppressed to debug log. |
-| 13 | MUST | ❌ not_found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | - | The inline resource detection populates semantic convention attributes (host.name, os.type, process.pid, etc.) but does not set Schema URL. АдресСхемы defaults to empty string in the constructor. |
+| 13 | MUST | ⚠️ partial | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os` | Детекторы вынесены в отдельные классы, но Schema URL пока не устанавливается. |
 | 14 | SHOULD | ⚠️ partial | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate. | `src/Ядро/Классы/ОтелРесурс.os:98` | The resource uses empty Schema URL (АдресСхемы defaults to ''), but the inline detection DOES populate known semantic convention attributes (host.name, os.type, process.pid). Per spec, empty URL is for detectors that don't know what they populate - this detector knows exactly what it populates, so it should set a schema URL per the previous MUST requirement. |
-| 15 | MUST | ❌ not_found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | - | No separate resource detectors exist, so there is no logic to detect conflicting Schema URLs when combining multiple detectors. Note: the Слить() method does handle Schema URL conflicts for general resource merging, but this requirement is specifically about detector combination. |
+| 15 | MUST | ✅ found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:45` |  |
 
 ### Trace Api
 
@@ -1364,7 +1364,7 @@
 |---|---|---|---|---|---|
 | 40 | MUST | ✅ found | SDK MUST allow to end each pipeline with individual exporter. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:63-65` |  |
 | 41 | MUST | ✅ found | SDK MUST allow users to implement and configure custom processors. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:76-78` |  |
-| 42 | MUST | ⚠️ partial | The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:17-47` | Processors declare ПриНачале (OnStart), ПриЗавершении (OnEnd), Закрыть (Shutdown), СброситьБуфер (ForceFlush). However there is no formal interface definition - it is a duck-typed convention. All four methods exist in both Simple and Batch processors, so the functional requirement is met but architecture is convention-based rather than interface-based. |
+| 42 | MUST | ✅ found | The SpanProcessor interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os` |  |
 | 43 | SHOULD | ❌ not_found | The SpanProcessor interface SHOULD declare the following methods: OnEnding method. | - | No OnEnding method exists in any span processor. The processors only have ПриНачале (OnStart) and ПриЗавершении (OnEnd). There is no intermediate step between span End() being called and OnEnd being invoked. |
 | 44 | SHOULD | ✅ found | It SHOULD be possible to keep a reference to this span object and updates to the span SHOULD be reflected in it. | `src/Трассировка/Классы/ОтелСпан.os:592` |  |
 | 45 | SHOULD | ✅ found | It SHOULD be possible to keep a reference to this span object and updates to the span SHOULD be reflected in it (OnStart span parameter is read/write). | `src/Трассировка/Классы/ОтелКомпозитныйПроцессорСпанов.os:18-26` |  |
@@ -1553,7 +1553,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 5 | MUST | ⚠️ partial | Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the LoggerProvider. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:8` | Процессоры (LogRecordProcessors) принадлежат провайдеру как переменная уровня класса. Однако LoggerConfigurator не реализован - нет ни класса, ни ссылки на конфигуратор в провайдере. |
+| 5 | MUST | ✅ found | Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the LoggerProvider. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:21` |  |
 | 6 | MUST | ✅ found | If configuration is updated (e.g., adding a LogRecordProcessor), the updated configuration MUST also apply to all already returned Loggers. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:75` |  |
 | 7 | MUST NOT | ✅ found | It MUST NOT matter whether a Logger was obtained from the LoggerProvider before or after the configuration change. | `src/Логирование/Классы/ОтелЛоггер.os:87` |  |
 
@@ -1786,10 +1786,10 @@
 | 31 | MUST | ✅ found | The description needs to support the instrument description rule. Meaning, the API MUST accept a string that supports at least BMP encoded characters and hold at least 1023 characters (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 32 | MUST NOT | ✅ found | Users can provide advisory parameters, but its up to their discretion. Therefore, this API needs to be structured to accept advisory parameters, but MUST NOT obligate the user to provide it (async). | `src/Метрики/Классы/ОтелМетр.os:198` |  |
 | 33 | SHOULD NOT | ❌ not_found | The API SHOULD NOT validate advisory parameters (async). | - | Advisory-параметры не реализованы в API асинхронных инструментов. |
-| 34 | MUST | ⚠️ partial | This API MUST be structured to accept a variable number of callback functions, including none. | `src/Метрики/Классы/ОтелМетр.os:198` | API принимает ровно один Callback как обязательный параметр. Спецификация требует принимать переменное количество callback, включая ноль. Нельзя создать наблюдаемый инструмент без callback. |
-| 35 | MUST | ⚠️ partial | The API MUST support creation of asynchronous instruments by passing zero or more callback functions to be permanently registered to the newly created instrument. | `src/Метрики/Классы/ОтелМетр.os:198` | API требует ровно один Callback при создании. Не поддерживается передача 0 или нескольких callback при создании инструмента. |
+| 34 | MUST | ✅ found | This API MUST be structured to accept a variable number of callback functions, including none. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os` |  |
+| 35 | MUST | ✅ found | The API MUST support creation of asynchronous instruments by passing zero or more callback functions to be permanently registered to the newly created instrument. | `src/Метрики/Классы/ОтелМетр.os` |  |
 | 36 | SHOULD | ⚠️ partial | The API SHOULD support registration of callback functions associated with asynchronous instruments after they are created. | `src/Метрики/Классы/ОтелМетр.os:348` | Мульти-callback регистрация через ЗарегистрироватьОбратныйВызов поддерживается на уровне Метра, но нет метода регистрации дополнительного callback на отдельном наблюдаемом инструменте после его создания. |
-| 37 | MUST | ❌ not_found | Where the API supports registration of callback functions after asynchronous instrumentation creation, the user MUST be able to undo registration of the specific callback after its registration by some means. | - | Нет механизма отмены регистрации callback. МультиОбратныеВызовы - это Массив без поддержки удаления конкретной регистрации. |
+| 37 | MUST | ✅ found | Where the API supports registration of callback functions after asynchronous instrumentation creation, the user MUST be able to undo registration of the specific callback after its registration by some means. | `src/Метрики/Классы/ОтелРегистрацияНаблюдателя.os` |  |
 | 38 | MUST | ✅ found | Every currently registered Callback associated with a set of instruments MUST be evaluated exactly once during collection prior to reading data for that instrument set. | `src/Метрики/Классы/ОтелМетр.os:355` |  |
 | 39 | MUST | ✅ found | Callback functions MUST be documented as follows for the end user. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:97` |  |
 | 40 | SHOULD | ❌ not_found | Callback functions SHOULD be reentrant safe. The SDK expects to evaluate callbacks for each MetricReader independently. | - | Нет документации для пользователей о том, что callback-функции должны быть реентерабельными. |
@@ -2723,7 +2723,7 @@
 | 4 | MUST | ✅ found | In the case where an invalid name (null or empty string) is specified, a working Logger MUST be returned as a fallback rather than returning null or throwing an exception. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:46` |  |
 | 5 | SHOULD | ✅ found | Its name SHOULD keep the original invalid value. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:57` |  |
 | 6 | SHOULD | ❌ not_found | A message reporting that the specified value is invalid SHOULD be logged. | - | ПолучитьЛоггер() не проверяет ИмяБиблиотеки на пустую строку/null и не логирует предупреждение при невалидном имени. |
-| 7 | MUST | ❌ not_found | The LoggerProvider MUST compute the relevant LoggerConfig using the configured LoggerConfigurator, and create a Logger whose behavior conforms to that LoggerConfig. | - | LoggerConfigurator и LoggerConfig не реализованы. Grep по коду не находит ни одного упоминания LoggerConfig/LoggerConfigurator/ЛоггерКонфиг/КонфигураторЛоггера. |
+| 7 | MUST | ✅ found | The LoggerProvider MUST compute the relevant LoggerConfig using the configured LoggerConfigurator, and create a Logger whose behavior conforms to that LoggerConfig. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:66` | Конфигуратор (callback) вызывается в ПолучитьЛоггер(), результат передается в конструктор ОтелЛоггер. |
 
 #### LoggerConfigurator
 
@@ -2731,8 +2731,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | The LoggerConfigurator function MUST accept the following parameter: logger_scope - the InstrumentationScope of the Logger. | - | LoggerConfigurator не реализован. Нет ни класса, ни функции-конфигуратора, принимающей InstrumentationScope. |
-| 2 | MUST | ❌ not_found | The LoggerConfigurator function MUST return the relevant LoggerConfig, or some signal indicating that the default LoggerConfig should be used. | - | LoggerConfigurator не реализован, LoggerConfig как сущность отсутствует в кодовой базе. |
+| 1 | MUST | ✅ found | The LoggerConfigurator function MUST accept the following parameter: logger_scope - the InstrumentationScope of the Logger. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:69` | Конфигуратор - Действие (callback), вызывается с ОбластьИнструментирования как параметром. |
+| 2 | MUST | ✅ found | The LoggerConfigurator function MUST return the relevant LoggerConfig, or some signal indicating that the default LoggerConfig should be used. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:69` | Конфигуратор возвращает ОтелКонфигурацияЛоггера или Неопределено (default). |
 | 3 | MUST | ⚠️ partial | Shutdown MUST be called only once for each LoggerProvider instance. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:99` | Метод Закрыть() существует, но не содержит защиты от повторного вызова (нет проверки 'Если Закрыт Тогда Возврат'). При повторном вызове Процессор.Закрыть() будет вызван повторно на всех процессорах. |
 | 4 | SHOULD | ✅ found | After the call to Shutdown, subsequent attempts to get a Logger are not allowed. SDKs SHOULD return a valid no-op Logger for these calls, if possible. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:51` |  |
 | 5 | SHOULD | ⚠️ partial | Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:99` | Синхронный Закрыть() - Процедура (void), не возвращает статус. ЗакрытьАсинхронно() возвращает Обещание, но основной синхронный метод не сигнализирует об успехе/ошибке/таймауте. |
@@ -2745,8 +2745,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | Logger MUST behave according to the LoggerConfig computed during logger creation. | - | No LoggerConfig concept exists. The Logger (ОтелЛоггер) has no config-based behavior - no enabled flag, no minimum_severity filtering, no trace_based filtering. |
-| 2 | MUST | ❌ not_found | If the LoggerProvider supports updating the LoggerConfigurator, then upon update the Logger MUST be updated to behave according to the new LoggerConfig. | - | No LoggerConfig, no LoggerConfigurator, and no mechanism to update Logger behavior dynamically. |
+| 1 | MUST | ✅ found | Logger MUST behave according to the LoggerConfig computed during logger creation. | `src/Логирование/Классы/ОтелЛоггер.os:49` | Включен() проверяет Конфигурация.Включен() и МинимальнаяСтепеньСерьезности(). |
+| 2 | MUST | ✅ found | If the LoggerProvider supports updating the LoggerConfigurator, then upon update the Logger MUST be updated to behave according to the new LoggerConfig. | `src/Логирование/Классы/ОтелЛоггер.os:112` | УстановитьКонфигурацию() обновляет конфигурацию логгера. |
 
 #### LoggerConfig
 
@@ -2754,13 +2754,13 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ❌ not_found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Loggers are enabled by default). | - | No LoggerConfig class exists. The Logger has no 'enabled' configuration parameter. |
-| 2 | MUST | ❌ not_found | If a Logger is disabled, it MUST behave equivalently to No-op Logger. | - | No LoggerConfig.enabled exists, so there is no mechanism to disable a Logger and have it behave as no-op. |
-| 3 | MUST | ❌ not_found | If not explicitly set, the minimum_severity parameter MUST default to 0. | - | No LoggerConfig class exists. There is no minimum_severity parameter on the Logger. |
-| 4 | MUST | ❌ not_found | If a log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped by the Logger. | - | No minimum_severity filtering is implemented anywhere in the Logger or emit path. |
-| 5 | MUST | ❌ not_found | If not explicitly set, the trace_based parameter MUST default to false. | - | No LoggerConfig class exists. There is no trace_based parameter on the Logger. |
-| 6 | MUST | ❌ not_found | If trace_based is true, log records associated with unsampled traces MUST be dropped by the Logger. | - | No trace_based filtering is implemented. The Logger does not check trace sampling status when processing log records. |
-| 7 | MUST | ❌ not_found | It is not necessary for implementations to ensure that changes to any of these parameters are immediately visible to callers of Enabled. However, the changes MUST be eventually visible. | - | No LoggerConfig parameters exist, so there is no change propagation mechanism to evaluate. |
+| 1 | SHOULD | ✅ found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Loggers are enabled by default). | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:42` | Конструктор по умолчанию: НовыйВключен = Истина. |
+| 2 | MUST | ✅ found | If a Logger is disabled, it MUST behave equivalently to No-op Logger. | `src/Логирование/Классы/ОтелЛоггер.os:50` | Включен() возвращает Ложь если Конфигурация.Включен() = Ложь. |
+| 3 | MUST | ✅ found | If not explicitly set, the minimum_severity parameter MUST default to 0. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:42` | Конструктор по умолчанию: НоваяМинимальнаяСтепеньСерьезности = 0. |
+| 4 | MUST | ✅ found | If a log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped by the Logger. | `src/Логирование/Классы/ОтелЛоггер.os:53` | Включен() проверяет НомерСерьезности < МинимальнаяСтепеньСерьезности(). |
+| 5 | MUST | ⚠️ partial | If not explicitly set, the trace_based parameter MUST default to false. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os` | ОтелКонфигурацияЛоггера не содержит параметра trace_based. |
+| 6 | MUST | ❌ not_found | If trace_based is true, log records associated with unsampled traces MUST be dropped by the Logger. | - | Фильтрация trace_based не реализована. |
+| 7 | MUST | ✅ found | It is not necessary for implementations to ensure that changes to any of these parameters are immediately visible to callers of Enabled. However, the changes MUST be eventually visible. | `src/Логирование/Классы/ОтелЛоггер.os:112` | УстановитьКонфигурацию() обновляет поле Конфигурация напрямую, изменения видны при следующем вызове Включен(). |
 
 #### Emit a LogRecord
 
@@ -2772,8 +2772,8 @@
 | 2 | MUST | ❌ not_found | If an Exception is provided, the SDK MUST by default set attributes from the exception on the LogRecord with the conventions outlined in the exception semantic conventions. | - | The Записать (emit) method has no exception handling logic. No exception semantic convention attributes (exception.type, exception.message, exception.stacktrace) are set automatically. |
 | 3 | MUST | ❌ not_found | User-provided attributes MUST take precedence over exception-derived attributes. | - | No exception-derived attribute logic exists, so precedence rules are not applicable but also not implemented. |
 | 4 | MUST NOT | ❌ not_found | User-provided attributes MUST NOT be overwritten by exception-derived attributes. | - | No exception-derived attribute logic exists, so the protection against overwriting is not implemented. |
-| 5 | MUST | ❌ not_found | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case Enabled was not called prior to emitting the record). | - | No LoggerConfig filtering rules are applied in the Записать (emit) method. The method directly passes the log record to the processor without any filtering. |
-| 6 | MUST | ❌ not_found | Minimum severity: If the log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped. | - | No minimum_severity filtering in the emit path. All log records are passed to the processor regardless of severity. |
+| 5 | MUST | ⚠️ partial | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case Enabled was not called prior to emitting the record). | `src/Логирование/Классы/ОтелЛоггер.os:53` | Фильтрация реализована в Включен(), но не дублируется в Записать(). Если вызвать Записать() без предварительного Включен(), фильтрация не применяется. |
+| 6 | MUST | ⚠️ partial | Minimum severity: If the log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:53` | Фильтрация по minimum_severity реализована в Включен(), но не в Записать(). |
 | 7 | MUST | ❌ not_found | Trace-based: If trace_based is true, and if the log record has a SpanId and the TraceFlags SAMPLED flag is unset, the log record MUST be dropped. | - | No trace_based filtering in the emit path. Log records are never dropped based on trace sampling status. |
 
 #### Enabled
