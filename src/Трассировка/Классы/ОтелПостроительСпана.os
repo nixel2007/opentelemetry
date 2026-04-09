@@ -63,6 +63,8 @@
 КонецФункции
 
 // Устанавливает атрибут на создаваемом спане.
+// Per spec: атрибуты SHOULD предпочтительно устанавливать при создании спана
+// через SpanBuilder, а не через Span.SetAttribute() после создания.
 // Аналог Java SDK: SpanBuilder.setAttribute(key, value)
 //
 // Параметры:
@@ -78,6 +80,8 @@
 КонецФункции
 
 // Добавляет линк к создаваемому спану.
+// Per spec: линки SHOULD предпочтительно устанавливать при создании спана
+// через SpanBuilder, а не через Span.AddLink() после создания.
 // Аналог Java SDK: SpanBuilder.addLink(spanContext, attributes)
 //
 // Параметры:
