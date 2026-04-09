@@ -180,7 +180,6 @@
 КонецФункции
 
 // Устанавливает текст серьезности независимо от номера.
-// Per spec: MUST support setting SeverityText independently from SeverityNumber.
 //
 // Параметры:
 //   НовыйТекстСерьезности - Строка - произвольный текст серьезности
