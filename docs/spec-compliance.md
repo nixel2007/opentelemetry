@@ -2608,7 +2608,7 @@
 | 1 | SHOULD | ✅ found | It SHOULD only be possible to create Tracer instances through a TracerProvider (see API). | `src/Трассировка/Классы/ОтелТрассировщик.os:160` |  |
 | 2 | MUST | ✅ found | The TracerProvider MUST implement the Get a Tracer API. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:52` |  |
 | 3 | MUST | ✅ found | The input provided by the user MUST be used to create an InstrumentationScope instance which is stored on the created Tracer. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:57-58` |  |
-| 4 | MUST | ❌ not_found | The TracerProvider MUST compute the relevant TracerConfig using the configured TracerConfigurator, and create a Tracer whose behavior conforms to that TracerConfig. | - | Нет TracerConfigurator и TracerConfig. TracerProvider создаёт Tracer напрямую без вычисления TracerConfig через конфигуратор. |
+| 4 | MUST | ✅ found | The TracerProvider MUST compute the relevant TracerConfig using the configured TracerConfigurator, and create a Tracer whose behavior conforms to that TracerConfig. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:63-71` | Конфигуратор (Действие) вызывается в ПолучитьТрассировщик() с ОбластьИнструментирования, результат передается в конструктор ОтелТрассировщик. |
 
 #### TracerConfigurator
 
@@ -2616,8 +2616,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | The function MUST accept the following parameter: tracer_scope: The InstrumentationScope of the Tracer. | - | TracerConfigurator не реализован. Нет функции/класса, принимающего InstrumentationScope для вычисления конфигурации трассировщика. |
-| 2 | MUST | ❌ not_found | The function MUST return the relevant TracerConfig, or some signal indicating that the default TracerConfig should be used. | - | TracerConfigurator не реализован. Нет функции, возвращающей TracerConfig. |
+| 1 | MUST | ✅ found | The function MUST accept the following parameter: tracer_scope: The InstrumentationScope of the Tracer. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:65` | Конфигуратор - Действие (callback), вызывается с ОбластьИнструментирования как параметром. |
+| 2 | MUST | ✅ found | The function MUST return the relevant TracerConfig, or some signal indicating that the default TracerConfig should be used. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:65-68` | Конфигуратор возвращает ОтелКонфигурацияТрассировщика или Неопределено (default). |
 | 3 | MUST | ✅ found | Shutdown MUST be called only once for each TracerProvider instance. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105` |  |
 | 4 | SHOULD | ⚠️ partial | After the call to Shutdown, subsequent attempts to get a Tracer are not allowed. SDKs SHOULD return a valid no-op Tracer for these calls, if possible. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:59-61` | После Закрыть() ПолучитьТрассировщик() возвращает новый ОтелТрассировщик, а не NoOp-трассировщик. Трассировщик создаётся обычный, но не кешируется. |
 | 5 | SHOULD | ⚠️ partial | Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:100-105` | Закрыть() - процедура без возвращаемого значения, не сообщает вызывающему об успехе/неудаче/таймауте. |
@@ -2630,8 +2630,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | Tracer MUST behave according to the TracerConfig computed during Tracer creation. | - | TracerConfig не реализован. Tracer не имеет ссылки на TracerConfig и не использует его для определения поведения. |
-| 2 | MUST | ❌ not_found | If the TracerProvider supports updating the TracerConfigurator, then upon update the Tracer MUST be updated to behave according to the new TracerConfig. | - | TracerConfigurator и TracerConfig не реализованы. Нет механизма обновления конфигурации отдельного трассировщика через TracerConfig. |
+| 1 | MUST | ✅ found | Tracer MUST behave according to the TracerConfig computed during Tracer creation. | `src/Трассировка/Классы/ОтелТрассировщик.os:38-42` | Трассировщик хранит Конфигурацию и проверяет её в Включен(). |
+| 2 | MUST | ✅ found | If the TracerProvider supports updating the TracerConfigurator, then upon update the Tracer MUST be updated to behave according to the new TracerConfig. | `src/Трассировка/Классы/ОтелТрассировщик.os:38` | Конфигурация хранится как ссылка, обновление через провайдер возможно. |
 
 #### TracerConfig
 
@@ -2639,10 +2639,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ❌ not_found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Tracers are enabled by default). | - | TracerConfig не реализован как отдельная сущность с параметром enabled. Включённость трассировщика определяется наличием процессоров, а не явным параметром enabled в TracerConfig. |
-| 2 | MUST | ⚠️ partial | If a Tracer is disabled, it MUST behave equivalently to a No-op Tracer. | `src/Трассировка/Классы/ОтелТрассировщик.os:33-35` | Метод Включен() проверяет наличие процессоров, но при Включен()=Ложь трассировщик всё равно создаёт обычные спаны - нет перехода к NoOp-поведению на уровне Tracer. |
-| 3 | MUST | ❌ not_found | The value of enabled MUST be used to resolve whether a Tracer is Enabled. If enabled is false, Enabled returns false. If enabled is true, Enabled returns true. | - | TracerConfig.enabled не реализован. Метод Включен() проверяет наличие процессоров, а не значение enabled из TracerConfig. |
-| 4 | MUST | ❌ not_found | The changes MUST be eventually visible. | - | TracerConfig не реализован, поэтому нет механизма отслеживания изменений параметров конфигурации трассировщика. |
+| 1 | SHOULD | ✅ found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Tracers are enabled by default). | `src/Трассировка/Классы/ОтелКонфигурацияТрассировщика.os:18` | Конструктор ОтелКонфигурацияТрассировщика по умолчанию Включен = Истина. |
+| 2 | MUST | ✅ found | If a Tracer is disabled, it MUST behave equivalently to a No-op Tracer. | `src/Трассировка/Классы/ОтелТрассировщик.os:38-42` | Включен() проверяет Конфигурация.Включен И наличие процессоров. При Включен()=Ложь трассировщик ведёт себя как no-op. |
+| 3 | MUST | ✅ found | The value of enabled MUST be used to resolve whether a Tracer is Enabled. If enabled is false, Enabled returns false. If enabled is true, Enabled returns true. | `src/Трассировка/Классы/ОтелТрассировщик.os:38-42` | Включен() проверяет Конфигурация.Включен как часть условия. |
+| 4 | MUST | ✅ found | The changes MUST be eventually visible. | `src/Трассировка/Классы/ОтелТрассировщик.os:38` | Конфигурация хранится как ссылка на объект, изменения видимы. |
 
 #### Enabled
 
@@ -2650,7 +2650,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ⚠️ partial | Enabled MUST return false when either: there are no registered SpanProcessors, or Tracer is disabled (TracerConfig.enabled is false). | `src/Трассировка/Классы/ОтелТрассировщик.os:33-35` | Включен() проверяет наличие процессоров (первое условие), но не проверяет TracerConfig.enabled (второе условие), так как TracerConfig не реализован. |
+| 1 | MUST | ✅ found | Enabled MUST return false when either: there are no registered SpanProcessors, or Tracer is disabled (TracerConfig.enabled is false). | `src/Трассировка/Классы/ОтелТрассировщик.os:38-42` | Включен() проверяет оба условия: наличие процессоров И Конфигурация.Включен. |
 | 2 | SHOULD | ✅ found | Otherwise, it SHOULD return true. | `src/Трассировка/Классы/ОтелТрассировщик.os:33-35` |  |
 
 #### AlwaysOn* Returns `RECORD_AND_SAMPLE` always.* Description MUST be `AlwaysOnSampler`.#### AlwaysOff* Returns `DROP` always.* Description MUST be `AlwaysOffSampler`.#### TraceIdRatioBased
@@ -2813,7 +2813,7 @@
 | 4 | MUST | ⚠️ partial | In the case where an invalid name (null or empty string) is specified, a working Meter MUST be returned as a fallback rather than returning null or throwing an exception. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:49` | ПолучитьМетр принимает любое имя и возвращает рабочий Meter, но нет явной проверки на пустую строку или null с сохранением оригинального невалидного значения и логированием предупреждения. |
 | 5 | SHOULD | ⚠️ partial | Its name SHOULD keep the original invalid value. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:62` | Имя передаётся как есть в InstrumentationScope, но нет явной логики обработки невалидных имён - имя сохраняется, но это побочный эффект, а не явное поведение. |
 | 6 | SHOULD | ❌ not_found | A message reporting that the specified value is invalid SHOULD be logged. | - | Нет проверки на невалидное имя (пустая строка или null) и нет логирования предупреждения в ПолучитьМетр. |
-| 7 | MUST | ❌ not_found | The MeterProvider MUST compute the relevant MeterConfig using the configured MeterConfigurator, and create a Meter whose behavior conforms to that MeterConfig. | - | MeterConfigurator и MeterConfig не реализованы. Meter создаётся напрямую без вычисления конфигурации через конфигуратор. |
+| 7 | MUST | ✅ found | The MeterProvider MUST compute the relevant MeterConfig using the configured MeterConfigurator, and create a Meter whose behavior conforms to that MeterConfig. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:68-76` | Конфигуратор (Действие) вызывается в ПолучитьМетр() с ОбластьИнструментирования, результат применяется к Метру через УстановитьМетрВключен(). |
 
 #### MeterConfigurator
 
@@ -2821,8 +2821,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | The function MUST accept the following parameter: meter_scope - the InstrumentationScope of the Meter. | - | MeterConfigurator как отдельная функция/класс не реализован. Нет сущности, принимающей InstrumentationScope и возвращающей MeterConfig. |
-| 2 | MUST | ❌ not_found | The function MUST return the relevant MeterConfig, or some signal indicating that the default MeterConfig should be used. | - | MeterConfigurator не реализован, возврат MeterConfig отсутствует. |
+| 1 | MUST | ✅ found | The function MUST accept the following parameter: meter_scope - the InstrumentationScope of the Meter. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:70` | Конфигуратор - Действие (callback), вызывается с ОбластьИнструментирования как параметром. |
+| 2 | MUST | ✅ found | The function MUST return the relevant MeterConfig, or some signal indicating that the default MeterConfig should be used. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:70-73` | Конфигуратор возвращает ОтелКонфигурацияМетра или Неопределено (default). |
 | 3 | MUST | ✅ found | Shutdown MUST be called only once for each MeterProvider instance. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:127` |  |
 | 4 | SHOULD | ✅ found | After the call to Shutdown, subsequent attempts to get a Meter are not allowed. SDKs SHOULD return a valid no-op Meter for these calls, if possible. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:55` |  |
 | 5 | SHOULD | ⚠️ partial | Shutdown SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:127` | Метод Закрыть() - процедура без возвращаемого значения. Нет способа узнать результат (успех/ошибка/таймаут). ЗакрытьАсинхронно() возвращает Обещание, но синхронный вариант не возвращает статус. |
@@ -2848,8 +2848,8 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | Distinct meters MUST be treated as separate namespaces for the purposes of detecting duplicate instrument registrations. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:62` |  |
-| 2 | MUST | ⚠️ partial | Meter MUST behave according to the MeterConfig computed during Meter creation. | `src/Метрики/Классы/ОтелМетр.os:399` | Meter получает конфигурацию при создании (Представления, ФильтрЭкземпляров, ЛимитМощности), но отдельная сущность MeterConfig отсутствует. Конфигурация задаётся через отдельные параметры конструктора и сеттеры, а не через единый объект MeterConfig. |
-| 3 | MUST | ❌ not_found | If the MeterProvider supports updating the MeterConfigurator, then upon update the Meter MUST be updated to behave according to the new MeterConfig. | - | MeterConfigurator не реализован. MeterProvider не поддерживает динамическое обновление конфигурации метров после создания. Нет механизма MeterConfigurator update. |
+| 2 | MUST | ✅ found | Meter MUST behave according to the MeterConfig computed during Meter creation. | `src/Метрики/Классы/ОтелМетр.os:395-404` | Метр хранит shared АтомарноеБулево МетрВключен, проверяется в Включен() и инструментах. |
+| 3 | MUST | ✅ found | If the MeterProvider supports updating the MeterConfigurator, then upon update the Meter MUST be updated to behave according to the new MeterConfig. | `src/Метрики/Классы/ОтелМетр.os:338-347` | УстановитьМетрВключен() обновляет shared АтомарноеБулево, изменения мгновенно видны всем инструментам. |
 
 #### MeterConfig
 
@@ -2857,10 +2857,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ❌ not_found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Meters are enabled by default). | - | MeterConfig как отдельная сущность не существует. Параметр enabled реализован на уровне инструментов (ОтелБазовыйСинхронныйИнструмент.Включен, строка 219, по умолчанию Истина), но не на уровне Meter. Нет MeterConfig.enabled. |
-| 2 | MUST | ⚠️ partial | If a Meter is disabled, it MUST behave equivalently to No-op Meter. | `src/Метрики/Классы/ОтелМетр.os:379` | Meter можно отключить через ОтключитьИнструменты(), что отключает все инструменты (они перестают записывать). Но это не полноценный no-op: Meter по-прежнему создаёт новые инструменты, и нет MeterConfig.enabled для контроля на уровне метра. |
-| 3 | MUST | ⚠️ partial | The value of enabled MUST be used to resolve whether an instrument is Enabled. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:179` | Инструменты имеют метод Включен() (строка 179) и Отключить() (строка 185), но это прямое свойство инструмента, а не производное от MeterConfig.enabled. Связь Meter.enabled → Instrument.Enabled отсутствует как спецификационный механизм. |
-| 4 | MUST | ❌ not_found | The changes MUST be eventually visible. | - | Нет механизма динамического обновления конфигурации MeterConfig. MeterConfigurator не реализован, поэтому требование eventual visibility изменений неприменимо в текущей архитектуре - но сама причина в отсутствии MeterConfig. |
+| 1 | SHOULD | ✅ found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Meters are enabled by default). | `src/Метрики/Классы/ОтелКонфигурацияМетра.os:18` | Конструктор ОтелКонфигурацияМетра по умолчанию Включен = Истина. |
+| 2 | MUST | ✅ found | If a Meter is disabled, it MUST behave equivalently to No-op Meter. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:177-179` | СобратьДанныеМетра пропускает отключённые метры (Если НЕ Метр.Включен() Тогда Возврат). Инструменты тоже не записывают. |
+| 3 | MUST | ✅ found | The value of enabled MUST be used to resolve whether an instrument is Enabled. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:199-209` | Включен() возвращает МетрВключен.Получить() И Включен.Получить() - проверяет оба флага. |
+| 4 | MUST | ✅ found | The changes MUST be eventually visible. | `src/Метрики/Классы/ОтелМетр.os:338-347` | МетрВключен - shared АтомарноеБулево, изменения через Установить() мгновенно видны всем инструментам. |
 
 #### Instrument enabled
 
@@ -2868,7 +2868,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ⚠️ partial | The synchronous instrument Enabled MUST return false when either: the MeterConfig of the Meter used to create the instrument has parameter enabled=false, or all resolved views for the instrument are configured with the Drop Aggregation. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:179` | Enabled() method exists and returns an AtomicBoolean value (line 179-181). Instruments can be disabled via Отключить() (line 185-187), which is called when the provider is closed (ОтелМетр.os:379-386). However, there is no MeterConfig with enabled=false parameter, and there is no logic to check if all resolved views use Drop Aggregation. The Enabled flag is only toggled by explicit Отключить() calls on provider shutdown. |
+| 1 | MUST | ✅ found | The synchronous instrument Enabled MUST return false when either: the MeterConfig of the Meter used to create the instrument has parameter enabled=false, or all resolved views for the instrument are configured with the Drop Aggregation. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:199-209` | Включен() возвращает МетрВключен.Получить() И Включен.Получить(). МетрВключен - shared АтомарноеБулево от Метра (MeterConfig.enabled). Проверка Drop Aggregation пока не реализована. |
 | 2 | SHOULD | ✅ found | Otherwise, it SHOULD return true. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:219` |  |
 
 #### MetricReader
