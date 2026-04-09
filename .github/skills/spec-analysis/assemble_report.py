@@ -19,6 +19,7 @@
 import glob
 import json
 import os
+import subprocess
 import sys
 from collections import Counter, defaultdict
 from datetime import date
@@ -568,6 +569,380 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     return "\n".join(lines) + "\n"
 
 
+STATUS_WEIGHT = {"found": 0, "partial": 1, "not_found": 2, "n_a": 3}
+
+ICON_TO_STATUS = {"✅": "found", "⚠️": "partial", "❌": "not_found", "➖": "n_a"}
+
+
+def load_previous_report(report_path):
+    """Загружает предыдущую версию spec-compliance.md из git (HEAD).
+
+    Возвращает None если файл не существует в git.
+    """
+    try:
+        git_path = os.path.relpath(report_path)
+        result = subprocess.run(
+            ["git", "show", f"HEAD:{git_path}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return None
+
+
+def parse_report_requirements(markdown_text):
+    """Парсит spec-compliance.md и извлекает требования по секциям.
+
+    Возвращает dict: (page, subsection) -> [
+        {"level": ..., "status": ..., "spec_text": ...,
+         "code_location": ..., "explanation": ...}
+    ]
+    """
+    sections = {}
+    current_page = None
+    current_subsection = None
+    in_table = False
+
+    for line in markdown_text.split("\n"):
+        stripped = line.strip()
+
+        # Заголовок страницы: ### Page
+        if stripped.startswith("### ") and not stripped.startswith("#### "):
+            current_page = stripped[4:].strip()
+            current_subsection = None
+            in_table = False
+            continue
+
+        # Заголовок секции: #### Subsection
+        if stripped.startswith("#### "):
+            current_subsection = stripped[5:].strip()
+            in_table = False
+            continue
+
+        # Строка-заголовок таблицы - пропускаем
+        if stripped.startswith("| # |") or stripped.startswith("|---|"):
+            in_table = True
+            continue
+
+        # Строка таблицы с требованием
+        if in_table and stripped.startswith("| ") and current_page and current_subsection:
+            parts = stripped.split("|")
+            # | # | Уровень | Статус | Требование | Код | Пояснение |
+            if len(parts) >= 7:
+                level = parts[2].strip()
+                status_raw = parts[3].strip()
+                spec_text = parts[4].strip()
+                code_loc = parts[5].strip().strip("`")
+                explanation = parts[6].strip()
+
+                # Парсим статус: "✅ found" -> "found"
+                status = "found"
+                for icon, st in ICON_TO_STATUS.items():
+                    if icon in status_raw:
+                        status = st
+                        break
+
+                key = (current_page, current_subsection)
+                if key not in sections:
+                    sections[key] = []
+                sections[key].append({
+                    "level": level,
+                    "status": status,
+                    "spec_text": spec_text,
+                    "code_location": code_loc,
+                    "explanation": explanation,
+                })
+        elif not stripped.startswith("|"):
+            in_table = False
+
+    return sections
+
+
+def _build_current_sections(merged, sections_meta):
+    """Строит dict (page, subsection) -> [req...] из текущих результатов."""
+    result = {}
+    for s in sections_meta:
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+        sec_result = merged.get(key)
+        if not sec_result or not sec_result.get("requirements"):
+            continue
+
+        sec_key = (s["page"], s["subsection"])
+        reqs = []
+        for req in sec_result["requirements"]:
+            reqs.append({
+                "level": req.get("level", "MUST"),
+                "status": req.get("status", "not_found"),
+                "spec_text": req.get("spec_text", ""),
+                "code_location": req.get("code_location", "-"),
+                "explanation": req.get("explanation", ""),
+            })
+        result[sec_key] = reqs
+    return result
+
+
+def _match_requirement(old_req, new_reqs, excluded=None):
+    """Находит наилучшее совпадение по level + spec_text.
+
+    excluded - множество уже занятых индексов в new_reqs.
+    Возвращает (индекс, score) или (None, 0).
+    """
+    if excluded is None:
+        excluded = set()
+
+    old_text = old_req["spec_text"].lower()
+    old_prefix = old_text[:60]
+
+    best_idx = None
+    best_score = 0.0
+
+    for i, nr in enumerate(new_reqs):
+        if i in excluded:
+            continue
+
+        new_text = nr["spec_text"].lower()
+        new_prefix = new_text[:60]
+
+        if old_req["level"] == nr["level"] and old_prefix == new_prefix:
+            return i, 1.0
+
+        old_words = set(old_text.split())
+        new_words = set(new_text.split())
+        if not old_words or not new_words:
+            continue
+        intersection = old_words & new_words
+        score = len(intersection) / max(len(old_words), len(new_words))
+        if score > best_score and score > 0.5 and old_req["level"] == nr["level"]:
+            best_score = score
+            best_idx = i
+
+    return best_idx, best_score
+
+
+def compare_with_previous(old_sections, new_sections):
+    """Сравнивает текущие и предыдущие результаты, выводит анализ расхождений.
+
+    Оба аргумента - dict: (page, subsection) -> [req...].
+    Возвращает список строк для вывода в терминал.
+    """
+    lines = []
+
+    # Общая статистика
+    old_total = Counter()
+    new_total = Counter()
+    for reqs in old_sections.values():
+        for r in reqs:
+            old_total[r["status"]] += 1
+    for reqs in new_sections.values():
+        for r in reqs:
+            new_total[r["status"]] += 1
+
+    old_app = old_total["found"] + old_total["partial"] + old_total["not_found"]
+    new_app = new_total["found"] + new_total["partial"] + new_total["not_found"]
+
+    lines.append("")
+    lines.append("=" * 70)
+    lines.append("📊 СРАВНЕНИЕ С ПРЕДЫДУЩИМ АНАЛИЗОМ")
+    lines.append("=" * 70)
+    lines.append("")
+    lines.append(f"  {'Статус':<14} {'Было':>6} {'Стало':>6} {'Δ':>6}")
+    lines.append(f"  {'-' * 38}")
+    for st in ["found", "partial", "not_found", "n_a"]:
+        old_v = old_total.get(st, 0)
+        new_v = new_total.get(st, 0)
+        delta = new_v - old_v
+        sign = "+" if delta > 0 else ""
+        marker = ""
+        if st == "found" and delta < 0:
+            marker = " ⚠️  РЕГРЕССИЯ"
+        elif st == "not_found" and delta > 0:
+            marker = " ⚠️  РЕГРЕССИЯ"
+        elif st == "found" and delta > 0:
+            marker = " ✅"
+        lines.append(
+            f"  {st:<14} {old_v:>6} {new_v:>6} {sign}{delta:>5}{marker}"
+        )
+    lines.append(f"  {'Всего':<14} {old_app:>6} {new_app:>6} "
+                 f"{'+'if new_app - old_app >= 0 else ''}{new_app - old_app:>5}")
+    lines.append("")
+
+    # Построчное сравнение
+    all_keys = sorted(set(old_sections.keys()) | set(new_sections.keys()))
+
+    upgrades = []     # partial/not_found -> found
+    downgrades = []   # found -> partial/not_found
+    lateral = []      # partial <-> not_found
+    added_reqs = []   # новые требования
+    removed_reqs = [] # пропавшие
+    new_secs = []
+    removed_secs = []
+
+    for key in all_keys:
+        old_reqs = old_sections.get(key)
+        new_reqs = new_sections.get(key)
+        page, subsection = key
+
+        if old_reqs is None:
+            new_secs.append((key, len(new_reqs)))
+            continue
+        if new_reqs is None:
+            removed_secs.append((key, len(old_reqs)))
+            continue
+
+        matched_new = set()
+        for old_r in old_reqs:
+            match_idx, score = _match_requirement(old_r, new_reqs, matched_new)
+            if match_idx is not None:
+                new_r = new_reqs[match_idx]
+                matched_new.add(match_idx)
+                if old_r["status"] != new_r["status"]:
+                    old_w = STATUS_WEIGHT.get(old_r["status"], 99)
+                    new_w = STATUS_WEIGHT.get(new_r["status"], 99)
+                    entry = (page, subsection, old_r, new_r)
+                    if new_w < old_w:
+                        upgrades.append(entry)
+                    elif new_w > old_w:
+                        downgrades.append(entry)
+                    else:
+                        lateral.append(entry)
+            else:
+                removed_reqs.append((page, subsection, old_r))
+
+        for i, new_r in enumerate(new_reqs):
+            if i not in matched_new:
+                added_reqs.append((page, subsection, new_r))
+
+    # Вывод: сначала понижения (самое критичное)
+    if downgrades:
+        lines.append(
+            f"  🔴 ПОНИЖЕНИЕ СТАТУСА ({len(downgrades)}) "
+            f"- требует перепроверки:"
+        )
+        lines.append("")
+        for page, sub, old_r, new_r in downgrades:
+            lines.append(f"     [{page} / {sub}]")
+            lines.append(f"       {old_r['status']} → {new_r['status']}")
+            lines.append(f"       Текст: {old_r['spec_text'][:100]}")
+            if old_r.get("code_location", "-") != new_r.get("code_location", "-"):
+                lines.append(
+                    f"       Расположение: {old_r.get('code_location', '-')} → "
+                    f"{new_r.get('code_location', '-')}"
+                )
+            if new_r.get("explanation"):
+                lines.append(f"       Пояснение: {new_r['explanation'][:150]}")
+            lines.append(
+                f"       ⚠️  Возможные причины: 1) регрессия в коде; "
+                f"2) агент строже оценил; 3) ложное срабатывание"
+            )
+            lines.append("")
+
+    if upgrades:
+        lines.append(
+            f"  🟢 ПОВЫШЕНИЕ СТАТУСА ({len(upgrades)}) "
+            f"- требует перепроверки:"
+        )
+        lines.append("")
+        for page, sub, old_r, new_r in upgrades:
+            lines.append(f"     [{page} / {sub}]")
+            lines.append(f"       {old_r['status']} → {new_r['status']}")
+            lines.append(f"       Текст: {old_r['spec_text'][:100]}")
+            if new_r.get("code_location", "-") != "-":
+                lines.append(f"       Код: {new_r['code_location']}")
+            if old_r.get("explanation"):
+                lines.append(f"       Было: {old_r['explanation'][:100]}")
+            lines.append(
+                f"       ⚠️  Возможные причины: 1) код добавлен/исправлен; "
+                f"2) агент мягче оценил; 3) ложное повышение"
+            )
+            lines.append("")
+
+    if lateral:
+        lines.append(
+            f"  🔄 БОКОВОЕ ИЗМЕНЕНИЕ ({len(lateral)}) "
+            f"- статус изменён на равнозначный:"
+        )
+        lines.append("")
+        for page, sub, old_r, new_r in lateral:
+            lines.append(
+                f"     [{page}] {old_r['status']} → {new_r['status']}: "
+                f"{old_r['spec_text'][:80]}"
+            )
+        lines.append("")
+
+    if new_secs:
+        lines.append(f"  📋 Новые секции ({len(new_secs)}):")
+        for (page, sub), cnt in new_secs:
+            lines.append(f"     + [{page}] {sub} ({cnt} req)")
+        lines.append("")
+
+    if removed_secs:
+        lines.append(f"  📋 Исчезнувшие секции ({len(removed_secs)}):")
+        for (page, sub), cnt in removed_secs:
+            lines.append(f"     - [{page}] {sub} ({cnt} req)")
+        lines.append("")
+
+    if added_reqs:
+        lines.append(
+            f"  ➕ НОВЫЕ ТРЕБОВАНИЯ ({len(added_reqs)}) "
+            f"- агент нашёл дополнительные:"
+        )
+        lines.append("")
+        for page, sub, r in added_reqs[:20]:
+            lines.append(
+                f"     [{page}] {r['level']} {r['status']}: "
+                f"{r['spec_text'][:80]}"
+            )
+        if len(added_reqs) > 20:
+            lines.append(f"     ... и ещё {len(added_reqs) - 20}")
+        lines.append("")
+
+    if removed_reqs:
+        lines.append(
+            f"  ➖ ПРОПУЩЕННЫЕ ТРЕБОВАНИЯ ({len(removed_reqs)}) "
+            f"- были раньше, теперь нет:"
+        )
+        lines.append("")
+        for page, sub, r in removed_reqs[:20]:
+            lines.append(
+                f"     [{page}] {r['level']} {r['status']}: "
+                f"{r['spec_text'][:80]}"
+            )
+        if len(removed_reqs) > 20:
+            lines.append(f"     ... и ещё {len(removed_reqs) - 20}")
+        lines.append("")
+
+    # Итог
+    total_changes = (
+        len(downgrades) + len(upgrades) + len(lateral)
+        + len(added_reqs) + len(removed_reqs)
+    )
+    lines.append(f"  Итого изменений: {total_changes}")
+    lines.append(
+        f"    Понижений: {len(downgrades)}, Повышений: {len(upgrades)}, "
+        f"Боковых: {len(lateral)}"
+    )
+    lines.append(
+        f"    Новых req: {len(added_reqs)}, Пропущенных req: {len(removed_reqs)}"
+    )
+    lines.append(
+        f"    Новых секций: {len(new_secs)}, "
+        f"Исчезнувших секций: {len(removed_secs)}"
+    )
+    if len(downgrades) > 0 or len(removed_reqs) > 5:
+        lines.append("")
+        lines.append(
+            "  ⚠️  РЕКОМЕНДАЦИЯ: перепроверьте понижения и пропущенные "
+            "требования вручную, чтобы отличить реальные регрессии от "
+            "вариативности агентов."
+        )
+    lines.append("")
+    lines.append("=" * 70)
+
+    return lines
+
+
 def main():
     if len(sys.argv) < 2:
         print("Использование: python3 assemble_report.py <output_dir> [<report_path>]")
@@ -615,6 +990,17 @@ def main():
 
     # Генерация markdown
     markdown = generate_markdown(merged, sections, sections_index, stats, warnings)
+
+    # Сравнение с предыдущей версией
+    old_markdown = load_previous_report(report_path)
+    if old_markdown:
+        old_sections_parsed = parse_report_requirements(old_markdown)
+        new_sections_parsed = parse_report_requirements(markdown)
+        diff_lines = compare_with_previous(old_sections_parsed, new_sections_parsed)
+        for line in diff_lines:
+            print(line)
+    else:
+        print("\nПредыдущая версия отчёта не найдена в git - сравнение пропущено.")
 
     # Создаём каталог если нужно
     os.makedirs(os.path.dirname(os.path.abspath(report_path)), exist_ok=True)
