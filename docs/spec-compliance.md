@@ -222,8 +222,8 @@
 - ✅ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an exemplar_reservoir, but MUST NOT obligate a user to provide one.  
   exemplar_reservoir - необязательный параметр конструктора ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an exemplar_reservoir value, the MeterProvider MUST apply a default exemplar reservoir.  
-  A default reservoir is created (ОтелРезервуарЭкземпляров with size 1), but it's not configurable per-view via exemplar_reservoir parameter (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217`)
+- ✅ **[Metrics Sdk]** [MUST] If the user does not provide an exemplar_reservoir value, the MeterProvider MUST apply a default exemplar reservoir.  
+  Резервуар по умолчанию создается в ОтелБазовыйСинхронныйИнструмент. Гистограммы используют ОтелВыровненныйРезервуарГистограммы, экспоненциальные - ОтелРезервуарЭкземпляров(min(20, max_buckets)), остальные - ОтелРезервуарЭкземпляров(1). View может переопределить. (`src/Метрики/Классы/ОтелМетр.os`)
 
 - ✅ **[Metrics Sdk]** [MUST NOT] The stream configuration parameter needs to be structured to accept an aggregation_cardinality_limit, but MUST NOT obligate a user to provide one.  
   aggregation_cardinality_limit - необязательный параметр конструктора ОтелПредставление. (`src/Метрики/Классы/ОтелПредставление.os`)
@@ -249,38 +249,38 @@
 - ❌ **[Metrics Sdk]** [MUST] If no View matches, or if a matching View selects the default aggregation, the ExplicitBucketBoundaries advisory parameter MUST be used. If neither is provided, the default bucket boundaries apply.  
   The ExplicitBucketBoundaries advisory parameter is not implemented. Instrument creation methods (e.g., СоздатьГистограмму in ОтелМетр.os:72) do not accept an advisory boundaries parameter. The histogram aggregator uses standard boundaries by default (ОтелАгрегаторГистограммы.os:118-135) or View-provided boundaries, but there is no advisory parameter path. (-)
 
-- ⚠️ **[Metrics Sdk]** [MUST] A Metric SDK MUST allow exemplar sampling to leverage the configuration of metric aggregation. For example, Exemplar sampling of histograms should be able to leverage bucket boundaries.  
-  The reservoir uses Algorithm R (random sampling) for all instruments uniformly. There is no specialized histogram-aware exemplar sampling that leverages bucket boundaries (no AlignedHistogramBucketExemplarReservoir). The reservoir is generic and does not receive bucket boundary information. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35`)
+- ✅ **[Metrics Sdk]** [MUST] A Metric SDK MUST allow exemplar sampling to leverage the configuration of metric aggregation. For example, Exemplar sampling of histograms should be able to leverage bucket boundaries.  
+  Гистограммы используют ОтелВыровненныйРезервуарГистограммы с привязкой к границам бакетов. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`, `src/Метрики/Классы/ОтелМетр.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The ExemplarReservoir interface MUST provide a method to offer measurements to the reservoir and another to collect accumulated Exemplars.  
-  The reservoir has Предложить (offer) at line 35 and Собрать (collect) at line 71. However, the 'offer' method signature accepts (КлючАтрибутов, Экземпляр) where Экземпляр is already a pre-built Map, rather than accepting the raw measurement value, Attributes, Context, and timestamp as separate parameters per the spec. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35`)
+- ✅ **[Metrics Sdk]** [MUST] The ExemplarReservoir interface MUST provide a method to offer measurements to the reservoir and another to collect accumulated Exemplars.  
+  Предложить() принимает сырые данные измерения (Значение, АтрибутыИзмерения, АтрибутыСерии, КонтекстСпана) и строит экземпляр внутри. Собрать() возвращает массив экземпляров. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] A new ExemplarReservoir MUST be created for every known timeseries data point, as determined by aggregation and view configuration.  
   A single ОтелРезервуарЭкземпляров is created per instrument (line 217), not per timeseries. The reservoir internally uses a СинхронизированнаяКарта keyed by attribute key to separate timeseries, but it is one reservoir instance shared across all series, not a separate reservoir per series. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The 'offer' method MAY accept a filtered subset of Attributes which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes from a measurement in the 'offer' method.  
-  The reservoir does not receive or store the timeseries defining attributes at construction or at offer time. It only receives a string key (КлючАтрибутов) and a pre-built exemplar. It has no access to the full attributes from the original measurement for additional sampling decisions. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35`)
+- ✅ **[Metrics Sdk]** [MUST] The 'offer' method MAY accept a filtered subset of Attributes which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes from a measurement in the 'offer' method.  
+  Предложить() принимает АтрибутыИзмерения и АтрибутыСерии, внутри вычисляет filteredAttributes. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] Exemplars MUST retain any attributes available in the measurement that are not preserved by aggregation or view configuration for the associated timeseries.  
-  The exemplar capture in ЗахватитьЭкземпляр (ОтелБазовыйСинхронныйИнструмент.os:284-310) does not store any measurement attributes on the exemplar. It only stores value, time, traceId, and spanId. The 'filteredAttributes' field that should contain attributes not preserved by the aggregation/view is absent from the exemplar structure. (-)
+- ✅ **[Metrics Sdk]** [MUST] Exemplars MUST retain any attributes available in the measurement that are not preserved by aggregation or view configuration for the associated timeseries.  
+  Резервуар вычисляет filteredAttributes как разницу АтрибутыИзмерения - АтрибутыСерии и сохраняет в экземпляре. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes.  
-  This is a continuation of the filtered-attributes MUST. The reservoir receives only a string key, not structured Attributes objects. It cannot perform attribute-aware sampling because it lacks access to the original full measurement attributes. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35`)
+- ✅ **[Metrics Sdk]** [MUST] This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes.  
+  Предложить() получает полные АтрибутыИзмерения и АтрибутыСерии для вычисления filteredAttributes. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The SDK MUST include two types of built-in exemplar reservoirs: SimpleFixedSizeExemplarReservoir and AlignedHistogramBucketExemplarReservoir.  
-  Only one reservoir type exists - ОтелРезервуарЭкземпляров which is a SimpleFixedSizeExemplarReservoir analog using Algorithm R (reservoir sampling). There is no AlignedHistogramBucketExemplarReservoir implementation that aligns exemplars with histogram bucket boundaries. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:1`)
+- ✅ **[Metrics Sdk]** [MUST] The SDK MUST include two types of built-in exemplar reservoirs: SimpleFixedSizeExemplarReservoir and AlignedHistogramBucketExemplarReservoir.  
+  ОтелРезервуарЭкземпляров (Algorithm R) и ОтелВыровненныйРезервуарГистограммы (по бакетам). (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`, `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] This Exemplar reservoir MUST take a configuration parameter that is the configuration of a Histogram.  
-  Нет отдельного класса AlignedHistogramBucketExemplarReservoir. ОтелРезервуарЭкземпляров - это только SimpleFixedSizeExemplarReservoir, он не принимает конфигурацию гистограммы. (-)
+- ✅ **[Metrics Sdk]** [MUST] This Exemplar reservoir MUST take a configuration parameter that is the configuration of a Histogram.  
+  ОтелВыровненныйРезервуарГистограммы принимает массив Границы в конструкторе. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] This implementation MUST store at most one measurement that falls within a histogram bucket.  
-  Отсутствует реализация AlignedHistogramBucketExemplarReservoir. Нет логики привязки экземпляров к бакетам гистограммы. (-)
+- ✅ **[Metrics Sdk]** [MUST] This implementation MUST store at most one measurement that falls within a histogram bucket.  
+  Каждый бакет хранит ровно один слот, последнее измерение заменяет предыдущее. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] The SDK MUST provide a mechanism for SDK users to provide their own ExemplarReservoir implementation.  
-  Нет механизма для предоставления пользовательской реализации ExemplarReservoir. ОтелРезервуарЭкземпляров используется напрямую, нет интерфейса или точки расширения для кастомных резервуаров. (-)
+- ✅ **[Metrics Sdk]** [MUST] The SDK MUST provide a mechanism for SDK users to provide their own ExemplarReservoir implementation.  
+  View (ОтелПредставление) принимает кастомный РезервуарЭкземпляров, который применяется к инструменту. (`src/Метрики/Классы/ОтелПредставление.os`, `src/Метрики/Классы/ОтелМетр.os`)
 
-- ❌ **[Metrics Sdk]** [MUST] This extension MUST be configurable on a metric View.  
-  ОтелПредставление (View) не имеет параметра для указания ExemplarReservoir. Класс ОтелПредставление принимает только имя, описание, ключи атрибутов, границы гистограммы и агрегацию. (-)
+- ✅ **[Metrics Sdk]** [MUST] This extension MUST be configurable on a metric View.  
+  ОтелПредставление.РезервуарЭкземпляров() применяется при настройке инструмента в ОтелМетр.ПрименитьПредставлениеКИнструменту(). (`src/Метрики/Классы/ОтелМетр.os`)
 
 - ❌ **[Metrics Sdk]** [MUST] Individual reservoirs MUST still be instantiated per metric-timeseries.  
   Нет механизма кастомных резервуаров, поэтому нет и создания отдельных экземпляров на каждую метрику-таймсерию через кастомный резервуар. (-)
@@ -629,17 +629,17 @@
 - ❌ **[Metrics Sdk]** [SHOULD] If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided.  
   Advisory parameters are not implemented, so there is no validation or error emission for invalid advisory parameters. (-)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD] A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: ExemplarFilter: filter which measurements can become exemplars; ExemplarReservoir: storage and sampling of exemplars.  
-  ExemplarFilter is configurable via УстановитьФильтрЭкземпляров on the builder (line 70). However, ExemplarReservoir is not configurable - it is always created as a fixed ОтелРезервуарЭкземпляров(1) in the instrument constructor (ОтелБазовыйСинхронныйИнструмент.os:217), with no way for users to provide a custom reservoir. (`src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:70`)
+- ✅ **[Metrics Sdk]** [SHOULD] A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: ExemplarFilter: filter which measurements can become exemplars; ExemplarReservoir: storage and sampling of exemplars.  
+  ExemplarFilter конфигурируется через ОтелПостроительПровайдераМетрик.УстановитьФильтрЭкземпляров(). ExemplarReservoir конфигурируется через View. (`src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os`, `src/Метрики/Классы/ОтелПредставление.os`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] The filter configuration SHOULD follow the environment variable specification.  
-  There is no reading of OTEL_METRICS_EXEMPLAR_FILTER environment variable. The ExemplarFilter is only set programmatically via the builder, not from environment variable configuration. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] The filter configuration SHOULD follow the environment variable specification.  
+  OTEL_METRICS_EXEMPLAR_FILTER читается в конструкторе ОтелПостроительПровайдераМетрик. Поддерживаются always_on, always_off, trace_based. (`src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os`)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD] The 'offer' method SHOULD accept measurements, including: the value of the measurement, the complete set of Attributes, the Context (Baggage and active Span), and a timestamp.  
-  The offer method (Предложить) accepts a pre-built exemplar map and an attribute key string, rather than accepting value, Attributes, Context, and timestamp separately. The exemplar construction happens in ЗахватитьЭкземпляр (ОтелБазовыйСинхронныйИнструмент.os:284-310) before calling the reservoir. The reservoir does not receive Baggage. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35`)
+- ✅ **[Metrics Sdk]** [SHOULD] The 'offer' method SHOULD accept measurements, including: the value of the measurement, the complete set of Attributes, the Context (Baggage and active Span), and a timestamp.  
+  Предложить() принимает Значение, АтрибутыИзмерения, АтрибутыСерии, КонтекстСпана. Временная метка генерируется внутри. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD] The 'offer' method SHOULD have the ability to pull associated trace and span information without needing to record full context.  
-  Trace/span info is extracted in ЗахватитьЭкземпляр (lines 290-304) before calling the reservoir. The reservoir itself has no ability to pull this info - it receives pre-extracted data. This means the extraction happens outside the reservoir, which is a different architecture than specified. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:290`)
+- ✅ **[Metrics Sdk]** [SHOULD] The 'offer' method SHOULD have the ability to pull associated trace and span information without needing to record full context.  
+  КонтекстСпана передается в Предложить(), из него извлекаются traceId/spanId. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] Exemplars are expected to abide by the AggregationTemporality of any metric point they are recorded with. Exemplars reported against a metric data point SHOULD have occurred within the start/stop timestamps of that point.  
   ОчиститьТочкиДанных (line 131-136) clears the reservoir after collection, which partially supports delta temporality. However, there is no explicit check or guarantee that exemplars fall within the start/stop timestamps of the metric point. The reservoir simply accumulates and is cleared on export. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:134`)
@@ -647,23 +647,23 @@
 - ❌ **[Metrics Sdk]** [SHOULD] The ExemplarReservoir SHOULD avoid allocations when sampling exemplars.  
   The reservoir creates new Массив instances and uses СинхронизированнаяКарта with dynamic insertions. Each exemplar creates a new Соответствие (Map) in ЗахватитьЭкземпляр. There is no evidence of allocation avoidance strategies like pre-allocated slots or object pooling. (-)
 
-- ❌ **[Metrics Sdk]** [SHOULD] Explicit bucket histogram aggregation with more than 1 bucket SHOULD use AlignedHistogramBucketExemplarReservoir.  
-  There is no AlignedHistogramBucketExemplarReservoir. Histograms use the same generic ОтелРезервуарЭкземпляров(1) as all other instruments (ОтелБазовыйСинхронныйИнструмент.os:217). There is no differentiation of reservoir type based on aggregation kind. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] Explicit bucket histogram aggregation with more than 1 bucket SHOULD use AlignedHistogramBucketExemplarReservoir.  
+  Гистограммы используют ОтелВыровненныйРезервуарГистограммы с границами бакетов. (`src/Метрики/Классы/ОтелМетр.os`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] Base2 Exponential Histogram Aggregation SHOULD use a SimpleFixedSizeExemplarReservoir with a reservoir equal to the smaller of the maximum number of buckets configured on the aggregation or twenty (e.g. min(20, max_buckets)).  
-  Exponential histograms use the same fixed reservoir with size 1 (ОтелБазовыйСинхронныйИнструмент.os:217). The reservoir size is not adjusted based on the max_buckets configuration of the exponential histogram. It should be min(20, max_buckets) but is always 1. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] Base2 Exponential Histogram Aggregation SHOULD use a SimpleFixedSizeExemplarReservoir with a reservoir equal to the smaller of the maximum number of buckets configured on the aggregation or twenty (e.g. min(20, max_buckets)).  
+  Экспоненциальные гистограммы используют ОтелРезервуарЭкземпляров(Мин(20, МаксБакетов)). (`src/Метрики/Классы/ОтелМетр.os`)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD] All other aggregations SHOULD use SimpleFixedSizeExemplarReservoir.  
-  All instruments use ОтелРезервуарЭкземпляров which is a SimpleFixedSizeExemplarReservoir analog. However, the default size is 1 exemplar per series, which is very small. The spec does not mandate a specific size, so this is partial - it uses the right type but the default sizing may be too restrictive. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217`)
+- ✅ **[Metrics Sdk]** [SHOULD] All other aggregations SHOULD use SimpleFixedSizeExemplarReservoir.  
+  Счетчики, датчики и реверсивные счетчики используют ОтелРезервуарЭкземпляров. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os`)
 
 - ❌ **[Metrics Sdk]** [SHOULD] Any stateful portion of sampling computation SHOULD be reset every collection cycle.  
   Метод Собрать() возвращает данные, но не сбрасывает счетчик num_measurements_seen (Счетчики). Метод Очистить() очищает все данные, но не вызывается автоматически при каждом цикле сбора. Нет автоматического сброса счетчиков при collection. (-)
 
-- ❌ **[Metrics Sdk]** [SHOULD] This implementation SHOULD use a uniformly-weighted sampling algorithm based on the number of measurements the bucket has seen so far to determine if the offered measurements should be sampled.  
-  Отсутствует реализация AlignedHistogramBucketExemplarReservoir с per-bucket sampling. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] This implementation SHOULD use a uniformly-weighted sampling algorithm based on the number of measurements the bucket has seen so far to determine if the offered measurements should be sampled.  
+  ОтелВыровненныйРезервуарГистограммы заменяет экземпляр в бакете последним измерением. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] This configuration parameter SHOULD have the same format as specifying bucket boundaries to Explicit Bucket Histogram Aggregation.  
-  Отсутствует AlignedHistogramBucketExemplarReservoir, поэтому нет конфигурации границ бакетов для этого резервуара. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] This configuration parameter SHOULD have the same format as specifying bucket boundaries to Explicit Bucket Histogram Aggregation.  
+  ОтелВыровненныйРезервуарГистограммы принимает тот же формат массива границ, что и агрегатор гистограммы. (`src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os`)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] Collect SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
   Метод СброситьБуфер() (аналог Collect) является Процедурой, а не Функцией - не возвращает результат (успех/ошибка/таймаут). Ошибки логируются, но вызывающий код не получает информацию о результате. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:68`)
@@ -2146,29 +2146,29 @@
 | 98 | MUST | ✅ found | A Metric SDK MUST provide a mechanism to sample Exemplars from measurements via the ExemplarFilter and ExemplarReservoir hooks. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:284` |  |
 | 99 | SHOULD | ✅ found | Exemplar sampling SHOULD be turned on by default. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:216` |  |
 | 100 | MUST NOT | ✅ found | If Exemplar sampling is off, the SDK MUST NOT have overhead related to exemplar sampling. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:285` |  |
-| 101 | MUST | ⚠️ partial | A Metric SDK MUST allow exemplar sampling to leverage the configuration of metric aggregation. For example, Exemplar sampling of histograms should be able to leverage bucket boundaries. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35` | The reservoir uses Algorithm R (random sampling) for all instruments uniformly. There is no specialized histogram-aware exemplar sampling that leverages bucket boundaries (no AlignedHistogramBucketExemplarReservoir). The reservoir is generic and does not receive bucket boundary information. |
-| 102 | SHOULD | ⚠️ partial | A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: ExemplarFilter: filter which measurements can become exemplars; ExemplarReservoir: storage and sampling of exemplars. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:70` | ExemplarFilter is configurable via УстановитьФильтрЭкземпляров on the builder (line 70). However, ExemplarReservoir is not configurable - it is always created as a fixed ОтелРезервуарЭкземпляров(1) in the instrument constructor (ОтелБазовыйСинхронныйИнструмент.os:217), with no way for users to provide a custom reservoir. |
+| 101 | MUST | ✅ found | A Metric SDK MUST allow exemplar sampling to leverage the configuration of metric aggregation. For example, Exemplar sampling of histograms should be able to leverage bucket boundaries. | `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | Гистограммы используют ОтелВыровненныйРезервуарГистограммы с привязкой к бакетам. |
+| 102 | SHOULD | ✅ found | A Metric SDK SHOULD provide configuration for Exemplar sampling, specifically: ExemplarFilter: filter which measurements can become exemplars; ExemplarReservoir: storage and sampling of exemplars. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os` | ExemplarFilter через построитель и env var, ExemplarReservoir через View. |
 | 103 | MUST | ✅ found | The ExemplarFilter configuration MUST allow users to select between one of the built-in ExemplarFilters. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:70` |  |
 | 104 | SHOULD | ✅ found | The ExemplarFilter SHOULD be a configuration parameter of a MeterProvider for an SDK. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:70` |  |
 | 105 | SHOULD | ✅ found | The default value SHOULD be TraceBased. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:225` |  |
-| 106 | SHOULD | ❌ not_found | The filter configuration SHOULD follow the environment variable specification. | - | There is no reading of OTEL_METRICS_EXEMPLAR_FILTER environment variable. The ExemplarFilter is only set programmatically via the builder, not from environment variable configuration. |
+| 106 | SHOULD | ✅ found | The filter configuration SHOULD follow the environment variable specification. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os` | OTEL_METRICS_EXEMPLAR_FILTER читается в конструкторе построителя. |
 | 107 | MUST | ✅ found | An OpenTelemetry SDK MUST support the following filters: AlwaysOn, AlwaysOff, TraceBased. | `src/Метрики/Модули/ОтелФильтрЭкземпляров.os:14` |  |
-
+| 107 | SHOULD | ✅ found | The 'offer' method SHOULD accept measurements, including: the value of the measurement, the complete set of Attributes, the Context (Baggage and active Span), and a timestamp. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | Предложить() принимает Значение, Атрибуты, КонтекстСпана. Временная метка внутри. |
 #### ExemplarReservoir
 
 [Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk/#exemplarreservoir)
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 108 | MUST | ⚠️ partial | The ExemplarReservoir interface MUST provide a method to offer measurements to the reservoir and another to collect accumulated Exemplars. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35` | The reservoir has Предложить (offer) at line 35 and Собрать (collect) at line 71. However, the 'offer' method signature accepts (КлючАтрибутов, Экземпляр) where Экземпляр is already a pre-built Map, rather than accepting the raw measurement value, Attributes, Context, and timestamp as separate parameters per the spec. |
-| 109 | MUST | ⚠️ partial | A new ExemplarReservoir MUST be created for every known timeseries data point, as determined by aggregation and view configuration. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217` | A single ОтелРезервуарЭкземпляров is created per instrument (line 217), not per timeseries. The reservoir internally uses a СинхронизированнаяКарта keyed by attribute key to separate timeseries, but it is one reservoir instance shared across all series, not a separate reservoir per series. |
-| 110 | SHOULD | ⚠️ partial | The 'offer' method SHOULD accept measurements, including: the value of the measurement, the complete set of Attributes, the Context (Baggage and active Span), and a timestamp. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35` | The offer method (Предложить) accepts a pre-built exemplar map and an attribute key string, rather than accepting value, Attributes, Context, and timestamp separately. The exemplar construction happens in ЗахватитьЭкземпляр (ОтелБазовыйСинхронныйИнструмент.os:284-310) before calling the reservoir. The reservoir does not receive Baggage. |
-| 111 | SHOULD | ⚠️ partial | The 'offer' method SHOULD have the ability to pull associated trace and span information without needing to record full context. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:290` | Trace/span info is extracted in ЗахватитьЭкземпляр (lines 290-304) before calling the reservoir. The reservoir itself has no ability to pull this info - it receives pre-extracted data. This means the extraction happens outside the reservoir, which is a different architecture than specified. |
-| 112 | MUST | ⚠️ partial | The 'offer' method MAY accept a filtered subset of Attributes which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes from a measurement in the 'offer' method. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35` | The reservoir does not receive or store the timeseries defining attributes at construction or at offer time. It only receives a string key (КлючАтрибутов) and a pre-built exemplar. It has no access to the full attributes from the original measurement for additional sampling decisions. |
+| 108 | MUST | ✅ found | The ExemplarReservoir interface MUST provide a method to offer measurements to the reservoir and another to collect accumulated Exemplars. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | Предложить() принимает сырые данные (Значение, Атрибуты, Контекст), Собрать() возвращает экземпляры. |
+| 109 | MUST | ⚠️ partial | A new ExemplarReservoir MUST be created for every known timeseries data point, as determined by aggregation and view configuration. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os` | Один резервуар на инструмент, но внутри СинхронизированнаяКарта разделяет данные по ключу серии. Не отдельный экземпляр на серию. |
+| 110 | SHOULD | ✅ found | The 'offer' method SHOULD accept measurements, including: the value of the measurement, the complete set of Attributes, the Context (Baggage and active Span), and a timestamp. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | Предложить() принимает Значение, Атрибуты, КонтекстСпана. Временная метка внутри. |
+| 111 | SHOULD | ✅ found | The 'offer' method SHOULD have the ability to pull associated trace and span information without needing to record full context. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | КонтекстСпана передается в Предложить(), оттуда извлекаются traceId/spanId. |
+| 112 | MUST | ✅ found | The 'offer' method MAY accept a filtered subset of Attributes which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes from a measurement in the 'offer' method. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | Предложить() получает АтрибутыИзмерения и АтрибутыСерии, вычисляет filteredAttributes. |
 | 113 | MUST | ✅ found | The 'collect' method MUST return accumulated Exemplars. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:71` |  |
 | 114 | SHOULD | ⚠️ partial | Exemplars are expected to abide by the AggregationTemporality of any metric point they are recorded with. Exemplars reported against a metric data point SHOULD have occurred within the start/stop timestamps of that point. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:134` | ОчиститьТочкиДанных (line 131-136) clears the reservoir after collection, which partially supports delta temporality. However, there is no explicit check or guarantee that exemplars fall within the start/stop timestamps of the metric point. The reservoir simply accumulates and is cleared on export. |
-| 115 | MUST | ❌ not_found | Exemplars MUST retain any attributes available in the measurement that are not preserved by aggregation or view configuration for the associated timeseries. | - | The exemplar capture in ЗахватитьЭкземпляр (ОтелБазовыйСинхронныйИнструмент.os:284-310) does not store any measurement attributes on the exemplar. It only stores value, time, traceId, and spanId. The 'filteredAttributes' field that should contain attributes not preserved by the aggregation/view is absent from the exemplar structure. |
-| 116 | MUST | ⚠️ partial | This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:35` | This is a continuation of the filtered-attributes MUST. The reservoir receives only a string key, not structured Attributes objects. It cannot perform attribute-aware sampling because it lacks access to the original full measurement attributes. |
+| 115 | MUST | ✅ found | Exemplars MUST retain any attributes available in the measurement that are not preserved by aggregation or view configuration for the associated timeseries. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | filteredAttributes вычисляется как разница АтрибутыИзмерения - АтрибутыСерии. |
+| 116 | MUST | ✅ found | This MUST be clearly documented in the API and the reservoir MUST be given the Attributes associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os` | Предложить() получает полные АтрибутыИзмерения и АтрибутыСерии. |
 | 117 | SHOULD | ❌ not_found | The ExemplarReservoir SHOULD avoid allocations when sampling exemplars. | - | The reservoir creates new Массив instances and uses СинхронизированнаяКарта with dynamic insertions. Each exemplar creates a new Соответствие (Map) in ЗахватитьЭкземпляр. There is no evidence of allocation avoidance strategies like pre-allocated slots or object pooling. |
 
 #### Exemplar defaults
@@ -2177,10 +2177,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 118 | MUST | ⚠️ partial | The SDK MUST include two types of built-in exemplar reservoirs: SimpleFixedSizeExemplarReservoir and AlignedHistogramBucketExemplarReservoir. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:1` | Only one reservoir type exists - ОтелРезервуарЭкземпляров which is a SimpleFixedSizeExemplarReservoir analog using Algorithm R (reservoir sampling). There is no AlignedHistogramBucketExemplarReservoir implementation that aligns exemplars with histogram bucket boundaries. |
-| 119 | SHOULD | ❌ not_found | Explicit bucket histogram aggregation with more than 1 bucket SHOULD use AlignedHistogramBucketExemplarReservoir. | - | There is no AlignedHistogramBucketExemplarReservoir. Histograms use the same generic ОтелРезервуарЭкземпляров(1) as all other instruments (ОтелБазовыйСинхронныйИнструмент.os:217). There is no differentiation of reservoir type based on aggregation kind. |
-| 120 | SHOULD | ❌ not_found | Base2 Exponential Histogram Aggregation SHOULD use a SimpleFixedSizeExemplarReservoir with a reservoir equal to the smaller of the maximum number of buckets configured on the aggregation or twenty (e.g. min(20, max_buckets)). | - | Exponential histograms use the same fixed reservoir with size 1 (ОтелБазовыйСинхронныйИнструмент.os:217). The reservoir size is not adjusted based on the max_buckets configuration of the exponential histogram. It should be min(20, max_buckets) but is always 1. |
-| 121 | SHOULD | ⚠️ partial | All other aggregations SHOULD use SimpleFixedSizeExemplarReservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:217` | All instruments use ОтелРезервуарЭкземпляров which is a SimpleFixedSizeExemplarReservoir analog. However, the default size is 1 exemplar per series, which is very small. The spec does not mandate a specific size, so this is partial - it uses the right type but the default sizing may be too restrictive. |
+| 118 | MUST | ✅ found | The SDK MUST include two types of built-in exemplar reservoirs: SimpleFixedSizeExemplarReservoir and AlignedHistogramBucketExemplarReservoir. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os`, `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | ОтелРезервуарЭкземпляров и ОтелВыровненныйРезервуарГистограммы. |
+| 119 | SHOULD | ✅ found | Explicit bucket histogram aggregation with more than 1 bucket SHOULD use AlignedHistogramBucketExemplarReservoir. | `src/Метрики/Классы/ОтелМетр.os` | Гистограммы используют ОтелВыровненныйРезервуарГистограммы. |
+| 120 | SHOULD | ✅ found | Base2 Exponential Histogram Aggregation SHOULD use a SimpleFixedSizeExemplarReservoir with a reservoir equal to the smaller of the maximum number of buckets configured on the aggregation or twenty (e.g. min(20, max_buckets)). | `src/Метрики/Классы/ОтелМетр.os` | Экспоненциальные гистограммы: ОтелРезервуарЭкземпляров(Мин(20, МаксБакетов)). |
+| 121 | SHOULD | ✅ found | All other aggregations SHOULD use SimpleFixedSizeExemplarReservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os` | Счетчики, датчики и реверсивные счетчики используют ОтелРезервуарЭкземпляров. |
 
 #### SimpleFixedSizeExemplarReservoir
 
@@ -2198,10 +2198,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 125 | MUST | ❌ not_found | This Exemplar reservoir MUST take a configuration parameter that is the configuration of a Histogram. | - | Нет отдельного класса AlignedHistogramBucketExemplarReservoir. ОтелРезервуарЭкземпляров - это только SimpleFixedSizeExemplarReservoir, он не принимает конфигурацию гистограммы. |
-| 126 | MUST | ❌ not_found | This implementation MUST store at most one measurement that falls within a histogram bucket. | - | Отсутствует реализация AlignedHistogramBucketExemplarReservoir. Нет логики привязки экземпляров к бакетам гистограммы. |
-| 127 | SHOULD | ❌ not_found | This implementation SHOULD use a uniformly-weighted sampling algorithm based on the number of measurements the bucket has seen so far to determine if the offered measurements should be sampled. | - | Отсутствует реализация AlignedHistogramBucketExemplarReservoir с per-bucket sampling. |
-| 128 | SHOULD | ❌ not_found | This configuration parameter SHOULD have the same format as specifying bucket boundaries to Explicit Bucket Histogram Aggregation. | - | Отсутствует AlignedHistogramBucketExemplarReservoir, поэтому нет конфигурации границ бакетов для этого резервуара. |
+| 125 | MUST | ✅ found | This Exemplar reservoir MUST take a configuration parameter that is the configuration of a Histogram. | `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | Конструктор принимает массив Границы. |
+| 126 | MUST | ✅ found | This implementation MUST store at most one measurement that falls within a histogram bucket. | `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | Один слот на бакет, последнее заменяет предыдущее. |
+| 127 | SHOULD | ✅ found | This implementation SHOULD use a uniformly-weighted sampling algorithm based on the number of measurements the bucket has seen so far to determine if the offered measurements should be sampled. | `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | Последнее измерение заменяет предыдущее в бакете. |
+| 128 | SHOULD | ✅ found | This configuration parameter SHOULD have the same format as specifying bucket boundaries to Explicit Bucket Histogram Aggregation. | `src/Метрики/Классы/ОтелВыровненныйРезервуарГистограммы.os` | Тот же формат Массив границ. |
 
 #### Custom ExemplarReservoir
 
@@ -2209,9 +2209,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 129 | MUST | ❌ not_found | The SDK MUST provide a mechanism for SDK users to provide their own ExemplarReservoir implementation. | - | Нет механизма для предоставления пользовательской реализации ExemplarReservoir. ОтелРезервуарЭкземпляров используется напрямую, нет интерфейса или точки расширения для кастомных резервуаров. |
-| 130 | MUST | ❌ not_found | This extension MUST be configurable on a metric View. | - | ОтелПредставление (View) не имеет параметра для указания ExemplarReservoir. Класс ОтелПредставление принимает только имя, описание, ключи атрибутов, границы гистограммы и агрегацию. |
-| 131 | MUST | ❌ not_found | Individual reservoirs MUST still be instantiated per metric-timeseries. | - | Нет механизма кастомных резервуаров, поэтому нет и создания отдельных экземпляров на каждую метрику-таймсерию через кастомный резервуар. |
+| 129 | MUST | ✅ found | The SDK MUST provide a mechanism for SDK users to provide their own ExemplarReservoir implementation. | `src/Метрики/Классы/ОтелПредставление.os`, `src/Метрики/Классы/ОтелМетр.os` | View принимает кастомный резервуар, применяется к инструменту. |
+| 130 | MUST | ✅ found | This extension MUST be configurable on a metric View. | `src/Метрики/Классы/ОтелМетр.os` | ОтелПредставление.РезервуарЭкземпляров() применяется в ПрименитьПредставлениеКИнструменту(). |
+| 131 | MUST | ⚠️ partial | Individual reservoirs MUST still be instantiated per metric-timeseries. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os` | Один резервуар на инструмент с внутренним разделением по ключу серии, а не отдельный экземпляр на серию. |
 
 #### MetricReader operations#### Collect
 
