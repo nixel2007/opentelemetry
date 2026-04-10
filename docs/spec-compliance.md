@@ -15,12 +15,12 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 521 (75.2%) |
-| ⚠️ Частично (partial) | 106 (15.3%) |
-| ❌ Не реализовано (not_found) | 66 (9.5%) |
+| ✅ Реализовано (found) | 520 (75.0%) |
+| ⚠️ Частично (partial) | 111 (16.0%) |
+| ❌ Не реализовано (not_found) | 62 (8.9%) |
 | ➖ Неприменимо (n_a) | 2 |
 | **MUST/MUST NOT found** | 353/418 (84.4%) |
-| **SHOULD/SHOULD NOT found** | 168/275 (61.1%) |
+| **SHOULD/SHOULD NOT found** | 167/275 (60.7%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -33,18 +33,18 @@
 | Trace Sdk | 58 | 16 | 8 | 0 | 82 | 70.7% |
 | Logs Api | 19 | 1 | 0 | 1 | 20 | 95.0% |
 | Logs Sdk | 47 | 14 | 3 | 0 | 64 | 73.4% |
-| Metrics Api | 85 | 16 | 0 | 0 | 101 | 84.2% |
-| Metrics Sdk | 112 | 27 | 32 | 0 | 171 | 65.5% |
+| Metrics Api | 86 | 15 | 0 | 0 | 101 | 85.1% |
+| Metrics Sdk | 112 | 31 | 28 | 0 | 171 | 65.5% |
 | Otlp Exporter | 11 | 7 | 6 | 1 | 24 | 45.8% |
-| Propagators | 32 | 0 | 1 | 0 | 33 | 97.0% |
+| Propagators | 30 | 2 | 1 | 0 | 33 | 90.9% |
 | Env Vars | 12 | 4 | 8 | 0 | 24 | 50.0% |
 
 ## Ключевые несоответствия (Stable)
 
 ### MUST/MUST NOT нарушения
 
-- ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: * The `Context`.  
-  Нет прямого Attach(Context) API, принимающего объект контекста. Методы УстановитьЗначение(Ключ, Значение), СделатьСпанТекущим(Спан), СделатьBaggageТекущим(Багаж) создают контекст внутри из key-value, а не принимают готовый Context как параметр. (`src/Ядро/Модули/ОтелКонтекст.os:203`)
+- ⚠️ **[Context]** [MUST] The API MUST accept the following parameters: * The Context.  
+  Нет метода, принимающего объект Context напрямую. Вместо этого прикрепление реализовано через специализированные методы УстановитьЗначение(Ключ, Значение), СделатьСпанТекущим(Спан), СделатьBaggageТекущим(Багаж), которые внутренне создают и помещают новый контекст в стек. (`src/Ядро/Модули/ОтелКонтекст.os:203`)
 
 - ⚠️ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
   Detectors exist (ОтелДетекторРесурсаХоста, ОтелДетекторРесурсаПроцесса, ОтелДетекторРесурсаПроцессора) but are all within src/Ядро/Классы/ - inline in the SDK package, not in separate packages. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
@@ -58,14 +58,8 @@
 - ❌ **[Resource Sdk]** [MUST] The `,` and `=` characters in keys and values MUST be percent encoded.  
   РазобратьПарыКлючЗначение() splits by ',' and '=' but performs no percent-decoding. Values containing %2C or %3D will not be decoded back to ',' or '='. (-)
 
-- ⚠️ **[Trace Api]** [MUST] `IsRemote` MUST return true, whereas for the SpanContext of any child spans it MUST return false.  
-  IsRemote method exists but the logic for propagated contexts vs child spans is handled during span creation, not explicitly in the IsRemote method itself (`src/Трассировка/Классы/ОтелКонтекстСпана.os:60`)
-
-- ⚠️ **[Trace Api]** [MUST] When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true  
-  The Удаленный flag is set during construction and can be set via УстановитьУдаленный, but the integration with Propagators API needs verification in propagation components (`src/Трассировка/Классы/ОтелКонтекстСпана.os:172`)
-
-- ⚠️ **[Trace Api]** [MUST NOT] `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default  
-  Span creation doesn't set it as active by default, but the separate СделатьТекущим() method must be called explicitly (`src/Трассировка/Классы/ОтелСпан.os:398`)
+- ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
+  УстановитьРодителя() accepts ОтелСпан or ОтелКонтекстСпана as parent directly, not a full Context object as required by the spec. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
 
 - ❌ **[Trace Api]** [MUST] The API MUST provide an operation for wrapping a `SpanContext` with an object implementing the `Span` interface.  
   No explicit wrapping operation found. The code creates spans from span contexts but doesn't expose a direct wrapping API. (-)
@@ -145,20 +139,20 @@
 - ⚠️ **[Metrics Sdk]** [MUST] `Shutdown` MUST be called only once for each `MeterProvider` instance.  
   Закрыть() method sets Закрыт flag but does not prevent multiple calls - no guard against repeated shutdown (`src/Метрики/Классы/ОтелПровайдерМетрик.os:130`)
 
-- ❌ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
-  Exclude-list field exists in ОтелПредставление (ИсключенныеКлючиАтрибутов) but the actual exclusion filtering is not implemented in the measurement pipeline. (-)
+- ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
+  Поле ИсключенныеКлючиАтрибутов существует в классе ОтелПредставление, но логика исключения атрибутов не применяется в ОтелМетр.ПрименитьПредставлениеКИнструменту - фильтрация по exclude-list не работает. (`src/Метрики/Классы/ОтелПредставление.os:56`)
 
-- ❌ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
-  Exclude-list field exists in ОтелПредставление (ИсключенныеКлючиАтрибутов) but the keep-remaining logic for excluded attributes is not implemented. (-)
-
-- ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance.  
-  Default aggregation is applied per instrument type (Sum for Counter, Histogram for Histogram, LastValue for Gauge). However, the aggregation is not configurable per MetricReader instance - all readers share the same aggregation strategy set at instrument creation time. (`src/Метрики/Классы/ОтелМетр.os:58`)
+- ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
+  Логика сохранения остальных атрибутов при исключении не реализована, так как exclude-list не применяется в пайплайне обработки измерений. (`src/Метрики/Классы/ОтелПредставление.os:56`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation_cardinality_limit` value, the `MeterProvider` MUST apply the default aggregation cardinality limit the `MetricReader` is configured with.  
-  A default cardinality limit of 2000 is applied per instrument, but it is hardcoded in ОтелБазовыйСинхронныйИнструмент rather than being configurable on the MetricReader instance as the spec requires. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253`)
+  Лимит мощности по умолчанию (2000) задан в конструкторе ОтелБазовыйСинхронныйИнструмент, но не привязан к конфигурации MetricReader. Спецификация требует, чтобы лимит брался из настроек MetricReader. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253`)
+
+- ⚠️ **[Metrics Sdk]** [MUST] The implementation MUST maintain reasonable minimum and maximum scale parameters that the automatic scale parameter will not exceed.  
+  MaxScale определён (НачальнаяШкала=20, конфигурируемый). Однако минимальная шкала не ограничена явно - автоматическая шкала может уменьшаться без нижней границы. (`src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:302`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] Callback functions MUST be invoked for the specific `MetricReader` performing collection, such that observations made or produced by executing callbacks only apply to the intended `MetricReader` during collection.  
-  Callbacks are invoked during each reader's collection cycle, but observations go into the instrument's shared state (ВнешниеНаблюдения on ОтелБазовыйНаблюдаемыйИнструмент). Multiple readers share the same instrument state, so observations are not truly isolated per MetricReader. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:140`)
+  Callback-функции вызываются во время сбора данных, но наблюдения не изолированы по MetricReader. Все callback-и разделяют одно хранилище наблюдений (ВнешниеНаблюдения), поэтому при нескольких читателях наблюдения не привязаны к конкретному MetricReader. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:142`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] The SDK MUST create an Aggregator with the overflow attribute set prior to reaching the cardinality limit and use it to aggregate Measurements for which the correct Aggregator could not be created.  
   Overflow aggregator with otel.metric.overflow=true attribute is created lazily on first overflow (line 92: Если Аккумуляторы.Количество() >= ЛимитМощности), not prior to reaching the limit. The overflow bucket is not pre-allocated, so total accumulators can exceed the configured limit by 1 (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:325`)
@@ -214,6 +208,12 @@
 - ❌ **[Otlp Exporter]** [MUST] The only exception is that if an URL contains no path part, the root path `/` MUST be used (see Example 2).  
   Per-signal endpoint переменные не поддерживаются, поэтому обработка пустого пути для per-signal URL не реализована (-)
 
+- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
+  W3C TraceContext и W3C Baggage реализованы, но B3 пропагатор отсутствует (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
+
+- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
+  W3C TraceContext и W3C Baggage распространяются как часть SDK, но B3 пропагатор не реализован как отдельный extension-пакет (`src/Пропагация/Классы/ОтелW3CBaggageПропагатор.os:1`)
+
 - ⚠️ **[Env Vars]** [MUST] The SDK MUST interpret an empty value of an environment variable the same way as when the variable is unset.  
   Некоторые параметры проверяют пустую строку (строки 105, 137, 398, 411, 439, 447 через '<> ""'), но параметры использующие значение по умолчанию в Менеджер.Параметр(ключ, умолчание) не обрабатывают пустую строку как неустановленное значение - пустая строка обходит значение по умолчанию (например строки 150, 160, 177, 255, 291, 562) (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:105`)
 
@@ -241,7 +241,7 @@
 ### SHOULD/SHOULD NOT несоответствия
 
 - ⚠️ **[Baggage Api]** [SHOULD NOT] The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation.  
-  Контекстный ключ КлючBaggage экспортируется через публичный метод КлючBaggage() в области ПрограммныйИнтерфейс, давая пользователям API прямой доступ к ключу контекста. Хотя удобные методы BaggageИзКонтекста/КонтекстСBaggage делают прямой доступ необязательным, ключ всё равно доступен. (`src/Ядро/Модули/ОтелКонтекст.os:53`)
+  Ключ Baggage доступен пользователям через экспортную функцию ОтелКонтекст.КлючBaggage(). Хотя API предоставляет высокоуровневые методы BaggageИзКонтекста() и КонтекстСBaggage(), прямой доступ к ключу контекста не скрыт. (`src/Ядро/Модули/ОтелКонтекст.os:53`)
 
 - ⚠️ **[Resource Sdk]** [SHOULD] whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error.  
   Detection errors are caught and logged via Лог.Отладка() (debug level) instead of being treated as errors at error log level. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:24`)
@@ -261,11 +261,17 @@
 - ⚠️ **[Trace Api]** [SHOULD NOT] The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Tracing API implementation.  
   Ключ контекста для спана доступен публично через ОтелКонтекст.КлючСпана(). Хотя существуют удобные методы (СпанИзКонтекста, КонтекстСоСпаном), пользователи имеют прямой доступ к ключу. (`src/Ядро/Модули/ОтелКонтекст.os:44`)
 
-- ⚠️ **[Trace Api]** [SHOULD] The span name SHOULD be the most general string that identifies a (statistically) interesting class of Spans, rather than individual Span instances while still being human-readable.  
-  Span name can be changed via ИзменитьИмя method, but there's no validation or guidance enforcement for naming conventions (`src/Трассировка/Классы/ОтелСпан.os:247`)
+- ⚠️ **[Trace Api]** [SHOULD NOT] The API SHOULD NOT expose details about how they are internally stored.  
+  TraceId and SpanId are stored as hex strings and the hex accessor directly returns the stored value, implicitly exposing the internal storage format. However, binary accessors do provide an abstracted representation. (`src/Трассировка/Классы/ОтелКонтекстСпана.os:4`)
 
-- ⚠️ **[Trace Api]** [SHOULD] Generality SHOULD be prioritized over human-readability.  
-  Implementation allows setting any name without enforcing generality vs readability guidelines (`src/Трассировка/Классы/ОтелСпан.os:247`)
+- ⚠️ **[Trace Api]** [SHOULD NOT] To prevent misuse, implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`.  
+  ОтелСпан exposes Атрибуты() as a public Export method, providing direct read access to span attributes beyond SpanContext. (`src/Трассировка/Классы/ОтелСпан.os:134`)
+
+- ⚠️ **[Trace Api]** [SHOULD] When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable.  
+  Метод SetStatus существует и принимает Description, но нет формальной документации для Instrumentation Libraries о допустимых значениях Description (`src/Трассировка/Классы/ОтелСпан.os:413`)
+
+- ⚠️ **[Trace Api]** [SHOULD] For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean.  
+  Нет опубликованных конвенций для библиотек инструментирования о допустимых значениях Description (-)
 
 - ❌ **[Trace Api]** [SHOULD NOT] If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible  
   No wrapping functionality implemented to evaluate this requirement. (-)
@@ -337,25 +343,25 @@
   СброситьБуфер() is a Процедура (void) - it does not return any status indicator (success, failure, or timeout) to the caller (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:41`)
 
 - ⚠️ **[Logs Api]** [SHOULD] The API SHOULD be documented that instrumentation authors needs to call this API each time they emit a LogRecord to ensure they have the most up-to-date response.  
-  Метод Включен() задокументирован (строки 28-41), но документация не содержит указания о том, что авторы инструментирования должны вызывать его каждый раз перед emit для получения актуального ответа. (`src/Логирование/Классы/ОтелЛоггер.os:28`)
+  Метод Включен() задокументирован (строки 28-41), но документация не указывает явно, что авторы инструментирования должны вызывать его каждый раз перед emit для получения актуального ответа. Документация лишь говорит 'позволяет пропустить создание LogRecord'. (`src/Логирование/Классы/ОтелЛоггер.os:28`)
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  Метод Закрыть() - процедура (void), не возвращает статус успеха/неуспеха/таймаута (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:116`)
+  Синхронный метод Закрыть() - Процедура без возвращаемого значения, не сообщает статус. Асинхронный ЗакрытьАсинхронно() возвращает Обещание, но без явного статуса успех/ошибка/тайм-аут. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:143`)
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
-  Метод Закрыть() не принимает параметр таймаута и не имеет механизма прерывания по времени (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:116`)
+  Синхронный метод Закрыть() не поддерживает тайм-аут. Асинхронный ЗакрытьАсинхронно() возвращает Обещание с поддержкой тайм-аута, но основной синхронный API не имеет механизма прерывания. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:143`)
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  Метод СброситьБуфер() - процедура (void), не возвращает статус успеха/неуспеха/таймаута (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
+  Синхронный метод СброситьБуфер() - Процедура без возвращаемого значения. Асинхронный СброситьБуферАсинхронно() возвращает Обещание, но без явного статуса успех/ошибка/тайм-аут. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:131`)
 
-- ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD return some ERROR status if there is an error condition; and if there is no error condition, it SHOULD return some NO ERROR status, language implementations MAY decide how to model ERROR and NO ERROR.  
-  СброситьБуфер() не возвращает ERROR статус - является процедурой (void) (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
+- ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD return some ERROR status if there is an error condition;  
+  Метод СброситьБуфер() не возвращает статус ошибки. Ошибки обрабатываются через исключения, а не через возвращаемый статус ERROR. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
 
-- ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD return some ERROR status if there is an error condition; and if there is no error condition, it SHOULD return some NO ERROR status, language implementations MAY decide how to model ERROR and NO ERROR.  
-  СброситьБуфер() не возвращает NO ERROR статус - является процедурой (void) (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
+- ⚠️ **[Logs Sdk]** [SHOULD] and if there is no error condition, it SHOULD return some NO ERROR status,  
+  Метод СброситьБуфер() не возвращает явный статус NO ERROR. Успех подразумевается отсутствием исключения, но нет возвращаемого значения. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout.  
-  Метод СброситьБуфер() не принимает параметр таймаута и не имеет механизма прерывания по времени (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:107`)
+  Синхронный метод СброситьБуфер() не поддерживает тайм-аут. Асинхронный СброситьБуферАсинхронно() возвращает Обещание с поддержкой тайм-аута, но основной синхронный API не имеет механизма прерывания. (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:131`)
 
 - ❌ **[Logs Sdk]** [SHOULD] To avoid such race conditions, implementations SHOULD recommended to users that a clone of `logRecord` be used for any concurrent processing, such as in a batching processor.  
   Нет рекомендации по клонированию logRecord для конкурентной обработки. Пакетный процессор (ОтелБазовыйПакетныйПроцессор) добавляет оригинал в буфер без клонирования, и нет документации о необходимости клонирования. (-)
@@ -377,9 +383,6 @@
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout.  
   ForceFlush (СброситьБуфер) не имеет собственного параметра таймаута и не прерывает выполнение по таймауту. Индивидуальные вызовы экспорта ограничены таймаутом транспорта (HTTP: 10с), но сама операция ForceFlush не имеет общего таймаута для прерывания. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os:41`)
-
-- ⚠️ **[Metrics Api]** [SHOULD] Language-level features such as the distinction between integer and floating point numbers SHOULD be considered as identifying.  
-  Дескриптор инструмента (ЗарегистрироватьДескриптор) хранит Вид, ЕдиницаИзмерения, Описание, Совет, но не хранит тип значения (int/double). Тип числа зашит внутри агрегатора при создании, но не участвует в идентификации инструмента при проверке конфликтов дескрипторов (ПроверитьКонфликтДескриптора). (`src/Метрики/Классы/ОтелМетр.os:553`)
 
 - ⚠️ **[Metrics Api]** [SHOULD] The API SHOULD be documented in a way to communicate to users that the `name` parameter needs to conform to the instrument name syntax.  
   Комментарии к методам создания инструментов описывают параметр Имя, но не упоминают требования к синтаксису имени инструмента (instrument name syntax) (`src/Метрики/Классы/ОтелМетр.os:36`)
@@ -423,32 +426,32 @@
 - ❌ **[Metrics Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout.  
   No timeout mechanism implemented in flush methods (-)
 
-- ❌ **[Metrics Sdk]** [SHOULD] In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector that selects at most one instrument.  
-  No validation exists to check whether a View with a name parameter selects at most one instrument. No warning or fast-fail is implemented. (-)
+- ⚠️ **[Metrics Sdk]** [SHOULD] In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector that selects at most one instrument.  
+  Нет валидации, что селектор View с переданным name выбирает не более одного инструмента. Реализация не проверяет это условие и не выдаёт предупреждение. (-)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] Additionally, implementations SHOULD support configuring an exclude-list of attribute keys.  
-  ОтелПредставление has ИсключенныеКлючиАтрибутов field defined, but the exclude-list filtering is not applied during measurement collection - only the allow-list (РазрешенныеКлючиАтрибутов) is actually applied in ОтелБазовыйСинхронныйИнструмент. (`src/Метрики/Классы/ОтелПредставление.os:9`)
+  Поле ИсключенныеКлючиАтрибутов определено в ОтелПредставление, но нигде не применяется в пайплайне обработки измерений - фильтрация по исключениям не реализована. (`src/Метрики/Классы/ОтелПредставление.os:56`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] If applying the View results in conflicting metric identities the implementation SHOULD apply the View and emit a warning.  
-  No detection of conflicting metric identities from View application exists. Views are applied without checking for identity conflicts and no warning is emitted. (-)
+- ⚠️ **[Metrics Sdk]** [SHOULD] If applying the View results in conflicting metric identities the implementation SHOULD apply the View and emit a warning.  
+  Представления применяются независимо для каждого инструмента, но нет проверки конфликтующих идентичностей метрик и предупреждения при конфликтах. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:202`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] If it is not possible to apply the View without producing semantic errors (e.g. the View sets an asynchronous instrument to use the Explicit bucket histogram aggregation) the implementation SHOULD emit a warning and proceed as if the View did not exist.  
-  No validation exists for semantic incompatibility between View aggregation settings and instrument types. No warning is emitted for such cases. (-)
+- ❌ **[Metrics Sdk]** [SHOULD] If it is not possible to apply the View without producing semantic errors (e.g. the View sets an asynchronous instrument to use the Explicit bucket histogram aggregation) the implementation SHOULD emit a warning and proceed as if the View did not  
+  Нет проверки семантической совместимости View с типом инструмента. Например, не проверяется, что Explicit Bucket Histogram не применяется к асинхронным инструментам. (-)
 
 - ❌ **[Metrics Sdk]** [SHOULD NOT] Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`).  
-  Histogram aggregator always collects sum regardless of instrument type. No check exists to skip sum collection for instruments that record negative measurements. (-)
+  Агрегатор гистограммы всегда собирает sum. Нет проверки типа инструмента для подавления sum при использовании с инструментами, записывающими отрицательные значения. (-)
+
+- ⚠️ **[Metrics Sdk]** [SHOULD] SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good reasons to use something different (e.g. for backward compatibility reasons in a stable SDK release).  
+  Стандартные границы бакетов применяются, но отсутствует значение 7500. Реализация: [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000]. Спецификация: [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]. (`src/Метрики/Классы/ОтелАгрегаторГистограммы.os:118`)
 
 - ❌ **[Metrics Sdk]** [SHOULD NOT] Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket.  
-  No special handling exists for non-normal IEEE floating point values (Inf, -Inf, NaN) in ОтелАгрегаторЭкспоненциальнойГистограммы. All values are incorporated into sum, min, and max without filtering. (-)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD] When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale.  
-  Initial scale is set to НачальнаяШкала (MaxScale, default 20), so first values use max scale. However, there is no explicit logic to return to max scale when the histogram has only one value after downscaling has occurred. (`src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:41`)
+  Нет фильтрации нестандартных значений (+Inf, -Inf, NaN) при записи в аккумулятор экспоненциальной гистограммы. (-)
 
 - ❌ **[Metrics Sdk]** [SHOULD] The implementation SHOULD disregard the use of asynchronous instrument APIs outside of registered callbacks.  
-  No mechanism exists to detect or discard observations made on asynchronous instruments outside of registered callback invocations. (-)
+  Нет механизма, предотвращающего или игнорирующего использование API асинхронных инструментов вне зарегистрированных callback-ов. (-)
 
 - ❌ **[Metrics Sdk]** [SHOULD] The implementation SHOULD use a timeout to prevent indefinite callback execution.  
-  Callbacks are invoked synchronously without any timeout mechanism. An indefinitely blocking callback will block the entire collection cycle. (-)
+  Нет таймаута для выполнения callback-ов в ОтелБазовыйНаблюдаемыйИнструмент.ВызватьCallbackИСобрать - callback может выполняться неограниченно долго. (-)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] A view with criteria matching the instrument an aggregation is created for has an `aggregation_cardinality_limit` value defined for the stream, that value SHOULD be used.  
   View class has ЛимитМощностиАгрегации property (line 18, getter line 92, setter line 112), but ПрименитьПредставлениеКИнструменту in ОтелМетр.os:515-537 does NOT apply the view cardinality limit to instruments - only attribute filters and exemplar reservoirs are applied (`src/Метрики/Классы/ОтелПредставление.os:92`)
@@ -573,7 +576,7 @@
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | A `Context` MUST be immutable, and its write operations MUST result in the creation of a new `Context` containing the original values and the specified values updated. | `src/Ядро/Модули/ОтелКонтекст.os:130` |  |
 | 2 | MUST | ✅ found | A `Context` MUST be immutable, and its write operations MUST result in the creation of a new `Context` containing the original values and the specified values updated. | `src/Ядро/Модули/ОтелКонтекст.os:127` |  |
-| 3 | MUST | ✅ found | OpenTelemetry MUST provide its own `Context` implementation. | `src/Ядро/Модули/ОтелКонтекст.os:1` |  |
+| 3 | MUST | ✅ found | In the cases where an extremely clear, pre-existing option is not available, OpenTelemetry MUST provide its own `Context` implementation. | `src/Ядро/Модули/ОтелКонтекст.os:1` |  |
 
 #### Create a key
 
@@ -583,7 +586,7 @@
 |---|---|---|---|---|---|
 | 4 | MUST | ✅ found | The API MUST accept the following parameter: | `src/Ядро/Модули/ОтелКонтекст.os:35` |  |
 | 5 | SHOULD NOT | ✅ found | Multiple calls to `CreateKey` with the same name SHOULD NOT return the same value unless language constraints dictate otherwise. | `src/Ядро/Модули/ОтелКонтекст.os:36` |  |
-| 6 | MUST | ✅ found | The API MUST return an opaque object representing the newly created key. | `src/Ядро/Классы/ОтелКлючКонтекста.os:1` |  |
+| 6 | MUST | ✅ found | The API MUST return an opaque object representing the newly created key. | `src/Ядро/Модули/ОтелКонтекст.os:36` |  |
 
 #### Get value
 
@@ -625,8 +628,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 13 | MUST | ⚠️ partial | The API MUST accept the following parameters: * The `Context`. | `src/Ядро/Модули/ОтелКонтекст.os:203` | Нет прямого Attach(Context) API, принимающего объект контекста. Методы УстановитьЗначение(Ключ, Значение), СделатьСпанТекущим(Спан), СделатьBaggageТекущим(Багаж) создают контекст внутри из key-value, а не принимают готовый Context как параметр. |
-| 14 | MUST | ✅ found | The API MUST return a value that can be used as a `Token` to restore the previous `Context`. | `src/Ядро/Модули/ОтелКонтекст.os:207` |  |
+| 13 | MUST | ⚠️ partial | The API MUST accept the following parameters: * The Context. | `src/Ядро/Модули/ОтелКонтекст.os:203` | Нет метода, принимающего объект Context напрямую. Вместо этого прикрепление реализовано через специализированные методы УстановитьЗначение(Ключ, Значение), СделатьСпанТекущим(Спан), СделатьBaggageТекущим(Багаж), которые внутренне создают и помещают новый контекст в стек. |
+| 14 | MUST | ✅ found | The API MUST return a value that can be used as a Token to restore the previous Context. | `src/Ядро/Модули/ОтелКонтекст.os:207` |  |
 
 #### Detach Context
 
@@ -634,7 +637,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 15 | MUST | ✅ found | The API MUST accept the following parameters: * A `Token` that was returned by a previous call to attach a `Context`. | `src/Ядро/Классы/ОтелОбласть.os:22` |  |
+| 15 | MUST | ✅ found | The API MUST accept the following parameters: * A Token that was returned by a previous call to attach a Context. | `src/Ядро/Классы/ОтелОбласть.os:22` |  |
 
 ### Baggage Api
 
@@ -644,12 +647,12 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ✅ found | Each name in `Baggage` MUST be associated with exactly one value. | `src/Ядро/Классы/ОтелBaggage.os:3` |  |
-| 2 | SHOULD NOT | ✅ found | Language API SHOULD NOT restrict which strings are used as baggage names. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
-| 3 | MUST | ✅ found | Language API MUST accept any valid UTF-8 string as baggage value in `Set` and return the same value from `Get`. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
-| 4 | MUST | ✅ found | Language API MUST treat both baggage names and values as case sensitive. | `src/Ядро/Классы/ОтелBaggage.os:3` |  |
+| 1 | MUST | ✅ found | Each name in Baggage MUST be associated with exactly one value. | `src/Ядро/Классы/ОтелПостроительBaggage.os:24` |  |
+| 2 | SHOULD NOT | ✅ found | Language API SHOULD NOT restrict which strings are used as baggage names. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
+| 3 | MUST | ✅ found | Language API MUST accept any valid UTF-8 string as baggage value in Set and return the same value from Get. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
+| 4 | MUST | ✅ found | Language API MUST treat both baggage names and values as case sensitive. | `src/Ядро/Классы/ОтелПостроительBaggage.os:72` |  |
 | 5 | MUST | ✅ found | The Baggage API MUST be fully functional in the absence of an installed SDK. | `src/Ядро/Классы/ОтелBaggage.os:1` |  |
-| 6 | MUST | ✅ found | The `Baggage` container MUST be immutable, so that the containing `Context` also remains immutable. | `src/Ядро/Классы/ОтелBaggage.os:154` |  |
+| 6 | MUST | ✅ found | The Baggage container MUST be immutable, so that the containing Context also remains immutable. | `src/Ядро/Классы/ОтелBaggage.os:154` |  |
 
 #### Get Value
 
@@ -657,7 +660,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 7 | MUST | ✅ found | To access the value for a name/value pair set by a prior event, the Baggage API MUST provide a function that takes the name as input, and returns a value associated with the given name, or null if the given name is not present. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
+| 7 | MUST | ✅ found | the Baggage API MUST provide a function that takes the name as input, and returns a value associated with the given name, or null if the given name is not present. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
 
 #### Get All Values
 
@@ -673,7 +676,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ✅ found | To record the value for a name/value pair, the Baggage API MUST provide a function which takes a name, and a value as input. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
+| 9 | MUST | ✅ found | the Baggage API MUST provide a function which takes a name, and a value as input. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
 
 #### Remove Value
 
@@ -690,9 +693,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 11 | MUST | ✅ found | If an implementation of this API does not operate directly on the `Context`, it MUST provide the following functionality to interact with a `Context` instance: | `src/Ядро/Модули/ОтелКонтекст.os:156` |  |
-| 12 | SHOULD NOT | ⚠️ partial | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:53` | Контекстный ключ КлючBaggage экспортируется через публичный метод КлючBaggage() в области ПрограммныйИнтерфейс, давая пользователям API прямой доступ к ключу контекста. Хотя удобные методы BaggageИзКонтекста/КонтекстСBaggage делают прямой доступ необязательным, ключ всё равно доступен. |
+| 12 | SHOULD NOT | ⚠️ partial | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:53` | Ключ Baggage доступен пользователям через экспортную функцию ОтелКонтекст.КлючBaggage(). Хотя API предоставляет высокоуровневые методы BaggageИзКонтекста() и КонтекстСBaggage(), прямой доступ к ключу контекста не скрыт. |
 | 13 | SHOULD | ✅ found | If the language has support for implicitly propagated `Context` (see here), the API SHOULD also provide the following functionality: | `src/Ядро/Классы/ОтелBaggage.os:16` |  |
-| 14 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Классы/ОтелBaggage.os:16` |  |
+| 14 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Классы/ОтелBaggage.os:26` |  |
 
 #### Clear Baggage in the Context
 
@@ -700,7 +703,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 15 | MUST | ✅ found | To avoid sending any name/value pairs to an untrusted process, the Baggage API MUST provide a way to remove all baggage entries from a context. | `src/Ядро/Классы/ОтелBaggage.os:94` |  |
+| 15 | MUST | ✅ found | the Baggage API MUST provide a way to remove all baggage entries from a context. | `src/Ядро/Классы/ОтелBaggage.os:94` |  |
 
 #### Propagation
 
@@ -852,11 +855,11 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 20 | MUST | ✅ found | The API MUST allow retrieving the `TraceId` and `SpanId` in the following forms: | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
-| 21 | MUST | ✅ found | result MUST be a 32-hex-character lowercase string | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
-| 22 | MUST | ✅ found | result MUST be a 16-hex-character lowercase string | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
-| 23 | MUST | ✅ found | result MUST be a 16-byte array | `src/Трассировка/Классы/ОтелКонтекстСпана.os:82` |  |
-| 24 | MUST | ✅ found | result MUST be an 8-byte array | `src/Трассировка/Классы/ОтелКонтекстСпана.os:91` |  |
-| 25 | SHOULD NOT | ✅ found | The API SHOULD NOT expose details about how they are internally stored. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
+| 21 | MUST | ✅ found | Hex - returns the lowercase hex encoded `TraceId` (result MUST be a 32-hex-character lowercase string) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
+| 22 | MUST | ✅ found | or `SpanId` (result MUST be a 16-hex-character lowercase string). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
+| 23 | MUST | ✅ found | Binary - returns the binary representation of the `TraceId` (result MUST be a 16-byte array) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:82` |  |
+| 24 | MUST | ✅ found | or `SpanId` (result MUST be an 8-byte array). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:91` |  |
+| 25 | SHOULD NOT | ⚠️ partial | The API SHOULD NOT expose details about how they are internally stored. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:4` | TraceId and SpanId are stored as hex strings and the hex accessor directly returns the stored value, implicitly exposing the internal storage format. However, binary accessors do provide an abstracted representation. |
 
 #### IsValid
 
@@ -873,8 +876,8 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 27 | MUST | ✅ found | An API called `IsRemote`, that returns a boolean value, which is `true` if the SpanContext was propagated from a remote parent, MUST be provided. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:60` |  |
-| 28 | MUST | ⚠️ partial | `IsRemote` MUST return true, whereas for the SpanContext of any child spans it MUST return false. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:60` | IsRemote method exists but the logic for propagated contexts vs child spans is handled during span creation, not explicitly in the IsRemote method itself |
-| 29 | MUST | ⚠️ partial | When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true | `src/Трассировка/Классы/ОтелКонтекстСпана.os:172` | The Удаленный flag is set during construction and can be set via УстановитьУдаленный, but the integration with Propagators API needs verification in propagation components |
+| 28 | MUST | ✅ found | When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true, | `src/Пропагация/Классы/ОтелW3CПропагатор.os:126` |  |
+| 29 | MUST | ✅ found | whereas for the SpanContext of any child spans it MUST return false. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:198` |  |
 
 #### TraceState
 
@@ -883,12 +886,12 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 30 | MUST | ✅ found | Tracing API MUST provide at least the following operations on `TraceState`: | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:44` |  |
-| 31 | MUST | ✅ found | These operations MUST follow the rules described in the W3C Trace Context specification. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:66` |  |
+| 31 | MUST | ✅ found | These operations MUST follow the rules described in the W3C Trace Context specification. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:227` |  |
 | 32 | MUST | ✅ found | All mutating operations MUST return a new `TraceState` with the modifications applied. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:92` |  |
-| 33 | MUST | ✅ found | `TraceState` MUST at all times be valid according to rules specified in W3C Trace Context specification. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:227` |  |
+| 33 | MUST | ✅ found | `TraceState` MUST at all times be valid according to rules specified in W3C Trace Context specification. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:220` |  |
 | 34 | MUST | ✅ found | Every mutating operations MUST validate input parameters. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:67` |  |
-| 35 | MUST NOT | ✅ found | If invalid value is passed the operation MUST NOT return `TraceState` containing invalid data | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:67` |  |
-| 36 | MUST | ✅ found | MUST follow the general error handling guidelines. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:67` |  |
+| 35 | MUST NOT | ✅ found | If invalid value is passed the operation MUST NOT return `TraceState` containing invalid data | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:68` |  |
+| 36 | MUST | ✅ found | and MUST follow the general error handling guidelines. | `src/Трассировка/Классы/ОтелСостояниеТрассировки.os:68` |  |
 
 #### Span
 
@@ -896,13 +899,13 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 37 | SHOULD | ⚠️ partial | The span name SHOULD be the most general string that identifies a (statistically) interesting class of Spans, rather than individual Span instances while still being human-readable. | `src/Трассировка/Классы/ОтелСпан.os:247` | Span name can be changed via ИзменитьИмя method, but there's no validation or guidance enforcement for naming conventions |
-| 38 | SHOULD | ⚠️ partial | Generality SHOULD be prioritized over human-readability. | `src/Трассировка/Классы/ОтелСпан.os:247` | Implementation allows setting any name without enforcing generality vs readability guidelines |
-| 39 | SHOULD | ✅ found | A `Span`'s start time SHOULD be set to the current time on span creation. | `src/Трассировка/Классы/ОтелТрассировщик.os:82` |  |
+| 37 | SHOULD | ✅ found | The span name SHOULD be the most general string that identifies a (statistically) interesting class of Spans, rather than individual Span instances while still being human-readable. | - |  |
+| 38 | SHOULD | ✅ found | Generality SHOULD be prioritized over human-readability. | - |  |
+| 39 | SHOULD | ✅ found | A `Span`'s start time SHOULD be set to the current time on span creation. | `src/Трассировка/Классы/ОтелСпан.os:609` |  |
 | 40 | SHOULD | ✅ found | After the `Span` is created, it SHOULD be possible to change its name, set its `Attribute`s, add `Event`s, and set the `Status`. | `src/Трассировка/Классы/ОтелСпан.os:247` |  |
 | 41 | MUST NOT | ✅ found | These MUST NOT be changed after the `Span`'s end time has been set. | `src/Трассировка/Классы/ОтелСпан.os:248` |  |
-| 42 | SHOULD NOT | ✅ found | implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`. | `src/Трассировка/Классы/ОтелСпан.os:134` |  |
-| 43 | MUST NOT | ✅ found | alternative implementations MUST NOT allow callers to create `Span`s directly. | `src/Трассировка/Классы/ОтелТрассировщик.os:27` |  |
+| 42 | SHOULD NOT | ⚠️ partial | To prevent misuse, implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`. | `src/Трассировка/Классы/ОтелСпан.os:134` | ОтелСпан exposes Атрибуты() as a public Export method, providing direct read access to span attributes beyond SpanContext. |
+| 43 | MUST NOT | ✅ found | However, alternative implementations MUST NOT allow callers to create `Span`s directly. | `src/Трассировка/Классы/ОтелТрассировщик.os:27` |  |
 | 44 | MUST | ✅ found | All `Span`s MUST be created via a `Tracer`. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
 
 #### Span Creation
@@ -912,17 +915,17 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 45 | MUST NOT | ✅ found | There MUST NOT be any API for creating a `Span` other than with a `Tracer`. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
-| 46 | MUST NOT | ⚠️ partial | `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default | `src/Трассировка/Классы/ОтелСпан.os:398` | Span creation doesn't set it as active by default, but the separate СделатьТекущим() method must be called explicitly |
-| 47 | MUST | ✅ found | The API MUST accept the following parameters: | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` |  |
-| 48 | MUST NOT | ✅ found | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` |  |
+| 46 | MUST NOT | ✅ found | In languages with implicit `Context` propagation, `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default, | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
+| 47 | MUST | ✅ found | The API MUST accept the following parameters: | `src/Трассировка/Классы/ОтелПостроительСпана.os:186` |  |
+| 48 | MUST NOT | ⚠️ partial | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | УстановитьРодителя() accepts ОтелСпан or ОтелКонтекстСпана as parent directly, not a full Context object as required by the spec. |
 | 49 | MUST | ✅ found | The semantic parent of the Span MUST be determined according to the rules described in Determining the Parent Span from a Context. | `src/Трассировка/Классы/ОтелТрассировщик.os:57` |  |
-| 50 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling `SetAttribute` later | `src/Трассировка/Классы/ОтелПостроительСпана.os:66` |  |
-| 51 | SHOULD | ✅ found | This argument SHOULD only be set when span creation time has already passed. | `src/Трассировка/Классы/ОтелПостроительСпана.os:109` |  |
+| 50 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling `SetAttribute` later, as samplers can only consider information already present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:66` |  |
+| 51 | SHOULD | ✅ found | `Start timestamp`, default to current time. This argument SHOULD only be set when span creation time has already passed. | `src/Трассировка/Классы/ОтелПостроительСпана.os:109` |  |
 | 52 | MUST NOT | ✅ found | If API is called at a moment of a Span logical start, API user MUST NOT explicitly set this argument. | `src/Трассировка/Классы/ОтелПостроительСпана.os:109` |  |
-| 53 | MUST | ✅ found | Implementations MUST provide an option to create a `Span` as a root span | `src/Трассировка/Классы/ОтелПостроительСпана.os:45` |  |
-| 54 | MUST | ✅ found | MUST generate a new `TraceId` for each root span created. | `src/Трассировка/Классы/ОтелТрассировщик.os:107` |  |
-| 55 | MUST | ✅ found | the `TraceId` MUST be the same as the parent. | `src/Трассировка/Классы/ОтелТрассировщик.os:140` |  |
-| 56 | MUST | ✅ found | the child span MUST inherit all `TraceState` values of its parent by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:78` |  |
+| 53 | MUST | ✅ found | Implementations MUST provide an option to create a `Span` as a root span, | `src/Трассировка/Классы/ОтелТрассировщик.os:106` |  |
+| 54 | MUST | ✅ found | and MUST generate a new `TraceId` for each root span created. | `src/Трассировка/Классы/ОтелТрассировщик.os:107` |  |
+| 55 | MUST | ✅ found | For a Span with a parent, the `TraceId` MUST be the same as the parent. | `src/Трассировка/Классы/ОтелТрассировщик.os:140` |  |
+| 56 | MUST | ✅ found | Also, the child span MUST inherit all `TraceState` values of its parent by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:230` |  |
 | 57 | MUST | ✅ found | Any span that is created MUST also be ended. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
 
 #### Specifying links
@@ -940,7 +943,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 59 | MUST | ✅ found | The Span interface MUST provide: An API that returns the `SpanContext` for the given `Span`. | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
-| 60 | MUST | ✅ found | The returned value MUST be the same for the entire Span lifetime. | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
+| 60 | MUST | ✅ found | The returned value MUST be the same for the entire Span lifetime. | `src/Трассировка/Классы/ОтелСпан.os:9` |  |
 
 #### IsRecording
 
@@ -993,13 +996,13 @@
 | 75 | MUST | ✅ found | `Description` MUST be IGNORED for `StatusCode` `Ok` & `Unset` values. | `src/Трассировка/Классы/ОтелСпан.os:431` |  |
 | 76 | SHOULD | ✅ found | The status code SHOULD remain unset, except for the following circumstances: | `src/Трассировка/Классы/ОтелСпан.os:614` |  |
 | 77 | SHOULD | ✅ found | An attempt to set value `Unset` SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:424` |  |
-| 78 | SHOULD | ✅ found | When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable. | - |  |
-| 79 | SHOULD | ✅ found | For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | - |  |
-| 80 | SHOULD NOT | ✅ found | Generally, Instrumentation Libraries SHOULD NOT set the status code to `Ok`, unless explicitly configured to do so. | - |  |
-| 81 | SHOULD | ✅ found | Instrumentation Libraries SHOULD leave the status code as `Unset` unless there is an error, as described above. | - |  |
+| 78 | SHOULD | ⚠️ partial | When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable. | `src/Трассировка/Классы/ОтелСпан.os:413` | Метод SetStatus существует и принимает Description, но нет формальной документации для Instrumentation Libraries о допустимых значениях Description |
+| 79 | SHOULD | ⚠️ partial | For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | - | Нет опубликованных конвенций для библиотек инструментирования о допустимых значениях Description |
+| 80 | SHOULD NOT | ✅ found | Generally, Instrumentation Libraries SHOULD NOT set the status code to `Ok`, unless explicitly configured to do so. | `src/Трассировка/Классы/ОтелСпан.os:413` |  |
+| 81 | SHOULD | ✅ found | Instrumentation Libraries SHOULD leave the status code as `Unset` unless there is an error, as described above. | `src/Трассировка/Классы/ОтелСпан.os:614` |  |
 | 82 | SHOULD | ✅ found | When span status is set to `Ok` it SHOULD be considered final and any further attempts to change it SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:419` |  |
 | 83 | SHOULD | ✅ found | When span status is set to `Ok` it SHOULD be considered final and any further attempts to change it SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:419` |  |
-| 84 | SHOULD | ✅ found | Analysis tools SHOULD respond to an `Ok` status by suppressing any errors they would otherwise generate. | - |  |
+| 84 | SHOULD | ✅ found | Analysis tools SHOULD respond to an `Ok` status by suppressing any errors they would otherwise generate. | `src/Трассировка/Классы/ОтелСпан.os:413` |  |
 
 #### End
 
@@ -1008,10 +1011,10 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 85 | SHOULD | ✅ found | Implementations SHOULD ignore all subsequent calls to `End` and any other Span methods, i.e. the Span becomes non-recording by being ended. | `src/Трассировка/Классы/ОтелСпан.os:448` |  |
-| 86 | MUST | ✅ found | However, all API implementations of such methods MUST internally call the `End` method and be documented to do so. | - |  |
+| 86 | MUST | ✅ found | However, all API implementations of such methods MUST internally call the `End` method and be documented to do so. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
 | 87 | MUST NOT | ✅ found | `End` MUST NOT have any effects on child spans. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
 | 88 | MUST NOT | ✅ found | `End` MUST NOT inactivate the `Span` in any `Context` it is active in. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
-| 89 | MUST | ✅ found | It MUST still be possible to use an ended span as parent via a Context it is contained in. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
+| 89 | MUST | ✅ found | It MUST still be possible to use an ended span as parent via a Context it is contained in. | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
 | 90 | MUST | ✅ found | Also, any mechanisms for putting the Span into a Context MUST still work after the Span was ended. | `src/Трассировка/Классы/ОтелСпан.os:398` |  |
 | 91 | MUST | ✅ found | If omitted, this MUST be treated equivalent to passing the current time. | `src/Трассировка/Классы/ОтелСпан.os:449` |  |
 | 92 | MUST NOT | ✅ found | This operation itself MUST NOT perform blocking I/O on the calling thread. | `src/Трассировка/Классы/ОтелСпан.os:447` |  |
@@ -1404,7 +1407,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ✅ found | Thus, the API SHOULD provide a way to set/register and access a global default `LoggerProvider`. | `src/Ядро/Модули/ОтелГлобальный.os:31` |  |
+| 1 | SHOULD | ✅ found | Thus, the API SHOULD provide a way to set/register and access a global default LoggerProvider. | `src/Ядро/Модули/ОтелГлобальный.os:31` |  |
 
 #### LoggerProvider operations
 
@@ -1412,7 +1415,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 2 | MUST | ✅ found | The `LoggerProvider` MUST provide the following functions: * Get a `Logger` | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
+| 2 | MUST | ✅ found | The LoggerProvider MUST provide the following functions: Get a Logger | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
 
 #### Get a Logger
 
@@ -1420,8 +1423,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 3 | MUST | ✅ found | This API MUST accept the following instrumentation scope parameters: | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
-| 4 | MUST | ✅ found | This API MUST be structured to accept a variable number of attributes, including none. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:57` |  |
+| 3 | MUST | ✅ found | This API MUST accept the following instrumentation scope parameters: name, version (optional), schema_url (optional), attributes (optional). | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
+| 4 | MUST | ✅ found | This API MUST be structured to accept a variable number of attributes, including none. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
 
 #### Logger
 
@@ -1429,8 +1432,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 5 | MUST | ✅ found | The `Logger` MUST provide a function to: * Emit a `LogRecord` | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
-| 6 | SHOULD | ✅ found | The `Logger` SHOULD provide functions to: * Report if `Logger` is `Enabled` | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
+| 5 | MUST | ✅ found | The Logger MUST provide a function to: Emit a LogRecord | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
+| 6 | SHOULD | ✅ found | The Logger SHOULD provide functions to: Report if Logger is Enabled | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
 
 #### Emit a LogRecord
 
@@ -1438,10 +1441,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 7 | MUST | ✅ found | The API MUST accept the following parameters: | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
+| 7 | MUST | ✅ found | The API MUST accept the following parameters: Timestamp (optional), Observed Timestamp (optional), The Context associated with the LogRecord, Severity Number (optional), Severity Text (optional), Body (optional), Attributes (optional), Event Name (optional). | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
 | 8 | SHOULD | ✅ found | When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context. | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
 | 9 | MUST | ✅ found | When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context. | `src/Логирование/Классы/ОтелЛоггер.os:82` |  |
-| 10 | SHOULD | ➖ n_a | When only explicit Context is supported, this parameter SHOULD be required. | - | Реализация поддерживает неявный контекст через ОтелКонтекст.Текущий(), поэтому условие 'only explicit Context is supported' не выполняется. Требование условное и неприменимо к данной реализации. |
+| 10 | SHOULD | ➖ n_a | When only explicit Context is supported, this parameter SHOULD be required. | - | Реализация поддерживает неявный контекст (implicit Context) через ОтелКонтекст.Текущий(), поэтому условие "When only explicit Context is supported" не применимо к данной платформе. |
 
 #### Enabled
 
@@ -1452,9 +1455,9 @@
 | 11 | SHOULD | ✅ found | To help users avoid performing computationally expensive operations when generating a `LogRecord`, a `Logger` SHOULD provide this `Enabled` API. | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
 | 12 | SHOULD | ✅ found | The API SHOULD accept the following parameters: | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
 | 13 | SHOULD | ✅ found | When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context. | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
-| 14 | MUST | ✅ found | When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context. | `src/Логирование/Классы/ОтелЛоггер.os:149` |  |
+| 14 | MUST | ✅ found | When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context. | `src/Логирование/Классы/ОтелЛоггер.os:151` |  |
 | 15 | MUST | ✅ found | This API MUST return a language idiomatic boolean type. | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
-| 16 | SHOULD | ⚠️ partial | The API SHOULD be documented that instrumentation authors needs to call this API each time they emit a LogRecord to ensure they have the most up-to-date response. | `src/Логирование/Классы/ОтелЛоггер.os:28` | Метод Включен() задокументирован (строки 28-41), но документация не содержит указания о том, что авторы инструментирования должны вызывать его каждый раз перед emit для получения актуального ответа. |
+| 16 | SHOULD | ⚠️ partial | The API SHOULD be documented that instrumentation authors needs to call this API each time they emit a LogRecord to ensure they have the most up-to-date response. | `src/Логирование/Классы/ОтелЛоггер.os:28` | Метод Включен() задокументирован (строки 28-41), но документация не указывает явно, что авторы инструментирования должны вызывать его каждый раз перед emit для получения актуального ответа. Документация лишь говорит 'позволяет пропустить создание LogRecord'. |
 
 #### Optional and required parameters
 
@@ -1491,7 +1494,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 2 | MUST | ✅ found | A `LoggerProvider` MUST provide a way to allow a Resource to be specified. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:206` |  |
+| 2 | MUST | ✅ found | A `LoggerProvider` MUST provide a way to allow a Resource to be specified. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:205` |  |
 | 3 | SHOULD | ✅ found | If a `Resource` is specified, it SHOULD be associated with all the `LogRecord`s produced by any `Logger` from the `LoggerProvider`. | `src/Логирование/Классы/ОтелЛоггер.os:78` |  |
 
 #### LoggerProvider Creation
@@ -1500,7 +1503,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 4 | SHOULD | ✅ found | The SDK SHOULD allow the creation of multiple independent `LoggerProviders`s. | `src/Логирование/Классы/ОтелПостроительПровайдераЛогирования.os:60` |  |
+| 4 | SHOULD | ✅ found | The SDK SHOULD allow the creation of multiple independent `LoggerProviders`s. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:205` |  |
 
 #### Configuration
 
@@ -1508,9 +1511,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 5 | MUST | ✅ found | Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the `LoggerProvider`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:12` |  |
-| 6 | MUST | ✅ found | If configuration is updated (e.g., adding a `LogRecordProcessor`), the updated configuration MUST also apply to all already returned `Logger`s (i.e. it MUST NOT matter whether a `Logger` was obtained from the `LoggerProvider` before or after the configuration change). | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:157` |  |
-| 7 | MUST | ✅ found | If configuration is updated (e.g., adding a `LogRecordProcessor`), the updated configuration MUST also apply to all already returned `Logger`s (i.e. it MUST NOT matter whether a `Logger` was obtained from the `LoggerProvider` before or after the configuration change). | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:157` |  |
+| 5 | MUST | ✅ found | Configuration (i.e. LogRecordProcessors and (Development) LoggerConfigurator) MUST be owned by the `LoggerProvider`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:13` |  |
+| 6 | MUST | ✅ found | If configuration is updated (e.g., adding a `LogRecordProcessor`), the updated configuration MUST also apply to all already returned `Logger`s (i.e. it MUST NOT matter whether a `Logger` was obtained from the `LoggerProvider` before or after the configuration change). | `src/Логирование/Классы/ОтелЛоггер.os:107` |  |
+| 7 | MUST NOT | ✅ found | If configuration is updated (e.g., adding a `LogRecordProcessor`), the updated configuration MUST also apply to all already returned `Logger`s (i.e. it MUST NOT matter whether a `Logger` was obtained from the `LoggerProvider` before or after the configuration change). | `src/Логирование/Классы/ОтелЛоггер.os:107` |  |
 
 #### Shutdown
 
@@ -1520,8 +1523,8 @@
 |---|---|---|---|---|---|
 | 8 | MUST | ✅ found | `Shutdown` MUST be called only once for each `LoggerProvider` instance. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:117` |  |
 | 9 | SHOULD | ✅ found | SDKs SHOULD return a valid no-op `Logger` for these calls, if possible. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:59` |  |
-| 10 | SHOULD | ⚠️ partial | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:116` | Метод Закрыть() - процедура (void), не возвращает статус успеха/неуспеха/таймаута |
-| 11 | SHOULD | ⚠️ partial | `Shutdown` SHOULD complete or abort within some timeout. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:116` | Метод Закрыть() не принимает параметр таймаута и не имеет механизма прерывания по времени |
+| 10 | SHOULD | ⚠️ partial | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:143` | Синхронный метод Закрыть() - Процедура без возвращаемого значения, не сообщает статус. Асинхронный ЗакрытьАсинхронно() возвращает Обещание, но без явного статуса успех/ошибка/тайм-аут. |
+| 11 | SHOULD | ⚠️ partial | `Shutdown` SHOULD complete or abort within some timeout. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:143` | Синхронный метод Закрыть() не поддерживает тайм-аут. Асинхронный ЗакрытьАсинхронно() возвращает Обещание с поддержкой тайм-аута, но основной синхронный API не имеет механизма прерывания. |
 | 12 | MUST | ✅ found | `Shutdown` MUST be implemented by invoking `Shutdown` on all registered LogRecordProcessors. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:120` |  |
 
 #### ForceFlush
@@ -1530,10 +1533,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 13 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | Метод СброситьБуфер() - процедура (void), не возвращает статус успеха/неуспеха/таймаута |
-| 14 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD return some ERROR status if there is an error condition; and if there is no error condition, it SHOULD return some NO ERROR status, language implementations MAY decide how to model ERROR and NO ERROR. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | СброситьБуфер() не возвращает ERROR статус - является процедурой (void) |
-| 15 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD return some ERROR status if there is an error condition; and if there is no error condition, it SHOULD return some NO ERROR status, language implementations MAY decide how to model ERROR and NO ERROR. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | СброситьБуфер() не возвращает NO ERROR статус - является процедурой (void) |
-| 16 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | Метод СброситьБуфер() не принимает параметр таймаута и не имеет механизма прерывания по времени |
+| 13 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:131` | Синхронный метод СброситьБуфер() - Процедура без возвращаемого значения. Асинхронный СброситьБуферАсинхронно() возвращает Обещание, но без явного статуса успех/ошибка/тайм-аут. |
+| 14 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD return some ERROR status if there is an error condition; | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | Метод СброситьБуфер() не возвращает статус ошибки. Ошибки обрабатываются через исключения, а не через возвращаемый статус ERROR. |
+| 15 | SHOULD | ⚠️ partial | and if there is no error condition, it SHOULD return some NO ERROR status, | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107` | Метод СброситьБуфер() не возвращает явный статус NO ERROR. Успех подразумевается отсутствием исключения, но нет возвращаемого значения. |
+| 16 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:131` | Синхронный метод СброситьБуфер() не поддерживает тайм-аут. Асинхронный СброситьБуферАсинхронно() возвращает Обещание с поддержкой тайм-аута, но основной синхронный API не имеет механизма прерывания. |
 | 17 | MUST | ✅ found | `ForceFlush` MUST invoke `ForceFlush` on all registered LogRecordProcessors. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:108` |  |
 
 #### ReadableLogRecord
@@ -1542,9 +1545,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 18 | MUST | ✅ found | A function receiving this as an argument MUST be able to access all the information added to the LogRecord. | `src/Логирование/Классы/ОтелЗаписьЛога.os:44` |  |
-| 19 | MUST | ✅ found | It MUST also be able to access the Instrumentation Scope and Resource information (implicitly) associated with the LogRecord. | `src/Логирование/Классы/ОтелЗаписьЛога.os:132` |  |
-| 20 | MUST | ✅ found | The trace context fields MUST be populated from the resolved Context (either the explicitly passed Context or the current Context) when emitted. | `src/Логирование/Классы/ОтелЛоггер.os:81` |  |
+| 18 | MUST | ✅ found | A function receiving this as an argument MUST be able to access all the information added to the LogRecord. | `src/Логирование/Классы/ОтелЗаписьЛога.os:51` |  |
+| 19 | MUST | ✅ found | It MUST also be able to access the Instrumentation Scope and Resource information (implicitly) associated with the `LogRecord`. | `src/Логирование/Классы/ОтелЗаписьЛога.os:141` |  |
+| 20 | MUST | ✅ found | The trace context fields MUST be populated from the resolved `Context` (either the explicitly passed `Context` or the current `Context`) when emitted. | `src/Логирование/Классы/ОтелЛоггер.os:81` |  |
 | 21 | MUST | ✅ found | Counts for attributes due to collection limits MUST be available for exporters to report as described in the transformation to non-OTLP formats specification. | `src/Логирование/Классы/ОтелЗаписьЛога.os:150` |  |
 
 #### ReadWriteLogRecord
@@ -1553,7 +1556,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 22 | MUST | ✅ found | A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: Timestamp, ObservedTimestamp, SeverityText, SeverityNumber, Body, Attributes (addition, modification, removal), TraceId, SpanId, TraceFlags, EventName. | `src/Логирование/Классы/ОтелЗаписьЛога.os:179` |  |
+| 22 | MUST | ✅ found | A function receiving this as an argument MUST additionally be able to modify the following information added to the LogRecord: `Timestamp`, `ObservedTimestamp`, `SeverityText`, `SeverityNumber`, `Body`, `Attributes` (addition, modification, removal), `TraceId`, `SpanId`, `TraceFlags`, `EventName`. | `src/Логирование/Классы/ОтелЗаписьЛога.os:179` |  |
 
 #### LogRecord Limits
 
@@ -1561,11 +1564,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 23 | MUST | ✅ found | LogRecord attributes MUST adhere to the common rules of attribute limits. | `src/Логирование/Классы/ОтелЗаписьЛога.os:235` |  |
-| 24 | MUST | ✅ found | If the SDK implements attribute limits it MUST provide a way to change these limits, via a configuration to the LoggerProvider, by allowing users to configure individual limits like in the Java example below. | `src/Логирование/Классы/ОтелЛимитыЗаписейЛога.os:39` |  |
-| 25 | SHOULD | ✅ found | The options MAY be bundled in a class, which then SHOULD be called LogRecordLimits. | `src/Логирование/Классы/ОтелЛимитыЗаписейЛога.os:1` |  |
+| 23 | MUST | ✅ found | `LogRecord` attributes MUST adhere to the common rules of attribute limits. | `src/Логирование/Классы/ОтелЗаписьЛога.os:235` |  |
+| 24 | MUST | ✅ found | If the SDK implements attribute limits it MUST provide a way to change these limits, via a configuration to the `LoggerProvider`, by allowing users to configure individual limits like in the Java example below. | `src/Логирование/Классы/ОтелПостроительПровайдераЛогирования.os:50` |  |
+| 25 | SHOULD | ✅ found | The options MAY be bundled in a class, which then SHOULD be called `LogRecordLimits`. | `src/Логирование/Классы/ОтелЛимитыЗаписейЛога.os:1` |  |
 | 26 | SHOULD | ✅ found | There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute was discarded due to such a limit. | `src/Логирование/Классы/ОтелЗаписьЛога.os:384` |  |
-| 27 | MUST | ✅ found | To prevent excessive logging, the message MUST be printed at most once per LogRecord (i.e., not per discarded attribute). | `src/Логирование/Классы/ОтелЗаписьЛога.os:385` |  |
+| 27 | MUST | ✅ found | To prevent excessive logging, the message MUST be printed at most once per `LogRecord` (i.e., not per discarded attribute). | `src/Логирование/Классы/ОтелЗаписьЛога.os:385` |  |
 
 #### LogRecordProcessor
 
@@ -1573,7 +1576,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 28 | MUST | ✅ found | The SDK MUST allow each pipeline to end with an individual exporter. | `src/Логирование/Классы/ОтелПростойПроцессорЛогов.os:66` |  |
+| 28 | MUST | ✅ found | The SDK MUST allow each pipeline to end with an individual exporter. | `src/Логирование/Классы/ОтелПростойПроцессорЛогов.os:4` |  |
 | 29 | MUST | ✅ found | The SDK MUST allow users to implement and configure custom processors and decorate built-in processors for advanced scenarios such as enriching with attributes. | `src/Логирование/Классы/ИнтерфейсПроцессорЛогов.os:1` |  |
 
 #### OnEmit
@@ -1710,7 +1713,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ✅ found | Thus, the API SHOULD provide a way to set/register and access a global default MeterProvider. | `src/Ядро/Модули/ОтелГлобальный.os:31` |  |
+| 1 | SHOULD | ✅ found | Thus, the API SHOULD provide a way to set/register and access a global default MeterProvider. | `src/Ядро/Модули/ОтелГлобальный.os:99` |  |
 
 #### MeterProvider operations
 
@@ -1718,7 +1721,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 2 | MUST | ✅ found | The MeterProvider MUST provide the following functions: Get a Meter | `src/Метрики/Классы/ОтелПровайдерМетрик.os:52` |  |
+| 2 | MUST | ✅ found | The `MeterProvider` MUST provide the following functions: Get a Meter | `src/Метрики/Классы/ОтелПровайдерМетрик.os:52` |  |
 
 #### Get a Meter
 
@@ -1726,9 +1729,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 3 | MUST | ✅ found | This API MUST accept the following parameters: | `src/Метрики/Классы/ОтелПровайдерМетрик.os:52` |  |
-| 4 | MUST NOT | ✅ found | Users can provide a version, but it is up to their discretion. Therefore, this API needs to be structured to accept a version, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:54` |  |
-| 5 | MUST NOT | ✅ found | Users can provide a schema_url, but it is up to their discretion. Therefore, this API needs to be structured to accept a schema_url, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:56` |  |
+| 3 | MUST | ✅ found | This API MUST accept the following parameters: `name`, `version`, `schema_url`, `attributes`. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:52` |  |
+| 4 | MUST NOT | ✅ found | Users can provide a `version`, but it is up to their discretion. Therefore, this API needs to be structured to accept a `version`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:54` |  |
+| 5 | MUST NOT | ✅ found | Users can provide a `schema_url`, but it is up to their discretion. Therefore, this API needs to be structured to accept a `schema_url`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:56` |  |
 | 6 | MUST | ✅ found | Therefore, this API MUST be structured to accept a variable number of attributes, including none. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:55` |  |
 
 #### Meter
@@ -1737,7 +1740,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 7 | SHOULD NOT | ✅ found | Meter SHOULD NOT be responsible for the configuration. This should be the responsibility of the MeterProvider instead. | `src/Метрики/Классы/ОтелМетр.os:1` |  |
+| 7 | SHOULD NOT | ✅ found | Note: `Meter` SHOULD NOT be responsible for the configuration. This should be the responsibility of the `MeterProvider` instead. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:231` |  |
 
 #### Meter operations
 
@@ -1745,7 +1748,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 8 | MUST | ✅ found | The Meter MUST provide functions to create new Instruments: | `src/Метрики/Классы/ОтелМетр.os:48` |  |
+| 8 | MUST | ✅ found | The `Meter` MUST provide functions to create new Instruments: Create a new Counter, Create a new Asynchronous Counter, Create a new Histogram, Create a new Gauge, Create a new Asynchronous Gauge, Create a new UpDownCounter, Create a new Asynchronous UpDownCounter | `src/Метрики/Классы/ОтелМетр.os:48` |  |
 
 #### Instrument
 
@@ -1753,7 +1756,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | SHOULD | ⚠️ partial | Language-level features such as the distinction between integer and floating point numbers SHOULD be considered as identifying. | `src/Метрики/Классы/ОтелМетр.os:553` | Дескриптор инструмента (ЗарегистрироватьДескриптор) хранит Вид, ЕдиницаИзмерения, Описание, Совет, но не хранит тип значения (int/double). Тип числа зашит внутри агрегатора при создании, но не участвует в идентификации инструмента при проверке конфликтов дескрипторов (ПроверитьКонфликтДескриптора). |
+| 9 | SHOULD | ✅ found | Language-level features such as the distinction between integer and floating point numbers SHOULD be considered as identifying. | `src/Метрики/Классы/ОтелМетр.os:58` |  |
 
 #### Instrument unit
 
@@ -1761,8 +1764,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 10 | SHOULD | ✅ found | The API SHOULD treat it as an opaque string. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:257` |  |
-| 11 | MUST | ✅ found | It MUST be case-sensitive (e.g. kb and kB are different units), ASCII string. | `src/Метрики/Классы/ОтелМетр.os:568` |  |
+| 10 | SHOULD | ✅ found | The `unit` is an optional string provided by the author of the Instrument. The API SHOULD treat it as an opaque string. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:13` |  |
+| 11 | MUST | ✅ found | It MUST be case-sensitive (e.g. `kb` and `kB` are different units), ASCII string. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:66` |  |
 
 #### Instrument description
 
@@ -2046,7 +2049,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 17 | MUST | ✅ found | The SDK MUST provide functionality for a user to create Views for a `MeterProvider`. | `src/Метрики/Классы/ОтелПредставление.os:1` |  |
+| 17 | MUST | ✅ found | The SDK MUST provide functionality for a user to create Views for a `MeterProvider`. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:53` |  |
 | 18 | MUST | ✅ found | This functionality MUST accept as inputs the Instrument selection criteria and the resulting stream configuration. | `src/Метрики/Классы/ОтелПостроительПровайдераМетрик.os:53` |  |
 | 19 | MUST | ✅ found | The SDK MUST provide the means to register Views with a `MeterProvider`. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:176` |  |
 
@@ -2056,15 +2059,15 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 20 | SHOULD | ✅ found | Criteria SHOULD be treated as additive. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:37` |  |
+| 20 | SHOULD | ✅ found | Criteria SHOULD be treated as additive. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:34` |  |
 | 21 | MUST | ✅ found | The SDK MUST accept the following criteria: | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
 | 22 | MUST | ✅ found | If the SDK does not support wildcards in general, it MUST still recognize the special single asterisk (`*`) character as matching all Instruments. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:37` |  |
 | 23 | MUST NOT | ✅ found | Users can provide a `name`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `name`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
 | 24 | MUST NOT | ✅ found | Users can provide a `type`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `type`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
-| 25 | MUST NOT | ✅ found | Users can provide a `unit`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `unit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
-| 26 | MUST NOT | ✅ found | Users can provide a `meter_name`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_name`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
-| 27 | MUST NOT | ✅ found | Users can provide a `meter_version`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_version`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
-| 28 | MUST NOT | ✅ found | Users can provide a `meter_schema_url`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_schema_url`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
+| 25 | MUST NOT | ✅ found | Users can provide a `unit`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `unit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:161` |  |
+| 26 | MUST NOT | ✅ found | Users can provide a `meter_name`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_name`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:160` |  |
+| 27 | MUST NOT | ✅ found | Users can provide a `meter_version`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_version`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:161` |  |
+| 28 | MUST NOT | ✅ found | Users can provide a `meter_schema_url`, but it is up to their discretion. Therefore, the instrument selection criteria parameter needs to be structured to accept a `meter_schema_url`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:161` |  |
 | 29 | MUST NOT | ✅ found | Users can provide these additional criteria the SDK accepts, but it is up to their discretion. Therefore, the instrument selection criteria can be structured to accept the criteria, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелСелекторИнструментов.os:159` |  |
 
 #### Stream configuration
@@ -2075,26 +2078,26 @@
 |---|---|---|---|---|---|
 | 30 | MUST | ✅ found | The SDK MUST accept the following stream configuration parameters: | `src/Метрики/Классы/ОтелПредставление.os:156` |  |
 | 31 | SHOULD | ✅ found | `name`: The metric stream name that SHOULD be used. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:211` |  |
-| 32 | SHOULD | ❌ not_found | In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector that selects at most one instrument. | - | No validation exists to check whether a View with a name parameter selects at most one instrument. No warning or fast-fail is implemented. |
-| 33 | MUST NOT | ✅ found | Users can provide a `name`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept a `name`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:157` |  |
+| 32 | SHOULD | ⚠️ partial | In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector that selects at most one instrument. | - | Нет валидации, что селектор View с переданным name выбирает не более одного инструмента. Реализация не проверяет это условие и не выдаёт предупреждение. |
+| 33 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept a `name`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:157` |  |
 | 34 | MUST | ✅ found | If the user does not provide a `name` value, name from the Instrument the View matches MUST be used by default. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:211` |  |
 | 35 | SHOULD | ✅ found | `description`: The metric stream description that SHOULD be used. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:214` |  |
-| 36 | MUST NOT | ✅ found | Users can provide a `description`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept a `description`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:158` |  |
+| 36 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept a `description`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:158` |  |
 | 37 | MUST | ✅ found | If the user does not provide a `description` value, the description from the Instrument a View matches MUST be used by default. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:214` |  |
 | 38 | MUST | ✅ found | The allow-list contains attribute keys that identify the attributes that MUST be kept, and all other attributes MUST be ignored. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:291` |  |
 | 39 | MUST | ✅ found | The allow-list contains attribute keys that identify the attributes that MUST be kept, and all other attributes MUST be ignored. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:291` |  |
-| 40 | MUST NOT | ✅ found | Users can provide `attribute_keys`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept `attribute_keys`, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелПредставление.os:159` |  |
+| 40 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept `attribute_keys`, but MUST NOT obligate a user to provide them. | `src/Метрики/Классы/ОтелПредставление.os:159` |  |
 | 41 | SHOULD | ✅ found | If the user does not provide any value, the SDK SHOULD use the `Attributes` advisory parameter configured on the instrument instead. | `src/Метрики/Классы/ОтелМетр.os:527` |  |
 | 42 | MUST | ✅ found | If the `Attributes` advisory parameter is absent, all attributes MUST be kept. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:84` |  |
-| 43 | SHOULD | ⚠️ partial | Additionally, implementations SHOULD support configuring an exclude-list of attribute keys. | `src/Метрики/Классы/ОтелПредставление.os:9` | ОтелПредставление has ИсключенныеКлючиАтрибутов field defined, but the exclude-list filtering is not applied during measurement collection - only the allow-list (РазрешенныеКлючиАтрибутов) is actually applied in ОтелБазовыйСинхронныйИнструмент. |
-| 44 | MUST | ❌ not_found | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | - | Exclude-list field exists in ОтелПредставление (ИсключенныеКлючиАтрибутов) but the actual exclusion filtering is not implemented in the measurement pipeline. |
-| 45 | MUST | ❌ not_found | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | - | Exclude-list field exists in ОтелПредставление (ИсключенныеКлючиАтрибутов) but the keep-remaining logic for excluded attributes is not implemented. |
-| 46 | MUST NOT | ✅ found | Users can provide an `aggregation`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept an `aggregation`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:161` |  |
-| 47 | MUST | ⚠️ partial | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелМетр.os:58` | Default aggregation is applied per instrument type (Sum for Counter, Histogram for Histogram, LastValue for Gauge). However, the aggregation is not configurable per MetricReader instance - all readers share the same aggregation strategy set at instrument creation time. |
-| 48 | MUST NOT | ✅ found | Users can provide an `exemplar_reservoir`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept an `exemplar_reservoir`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:163` |  |
+| 43 | SHOULD | ⚠️ partial | Additionally, implementations SHOULD support configuring an exclude-list of attribute keys. | `src/Метрики/Классы/ОтелПредставление.os:56` | Поле ИсключенныеКлючиАтрибутов определено в ОтелПредставление, но нигде не применяется в пайплайне обработки измерений - фильтрация по исключениям не реализована. |
+| 44 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | Поле ИсключенныеКлючиАтрибутов существует в классе ОтелПредставление, но логика исключения атрибутов не применяется в ОтелМетр.ПрименитьПредставлениеКИнструменту - фильтрация по exclude-list не работает. |
+| 45 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | Логика сохранения остальных атрибутов при исключении не реализована, так как exclude-list не применяется в пайплайне обработки измерений. |
+| 46 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept an `aggregation`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:161` |  |
+| 47 | MUST | ✅ found | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелМетр.os:58` |  |
+| 48 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept an `exemplar_reservoir`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:163` |  |
 | 49 | MUST | ✅ found | If the user does not provide an `exemplar_reservoir` value, the `MeterProvider` MUST apply a default exemplar reservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:265` |  |
-| 50 | MUST NOT | ✅ found | Users can provide an `aggregation_cardinality_limit`, but it is up to their discretion. Therefore, the stream configuration parameter needs to be structured to accept an `aggregation_cardinality_limit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
-| 51 | MUST | ⚠️ partial | If the user does not provide an `aggregation_cardinality_limit` value, the `MeterProvider` MUST apply the default aggregation cardinality limit the `MetricReader` is configured with. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253` | A default cardinality limit of 2000 is applied per instrument, but it is hardcoded in ОтелБазовыйСинхронныйИнструмент rather than being configurable on the MetricReader instance as the spec requires. |
+| 50 | MUST NOT | ✅ found | the stream configuration parameter needs to be structured to accept an `aggregation_cardinality_limit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
+| 51 | MUST | ⚠️ partial | If the user does not provide an `aggregation_cardinality_limit` value, the `MeterProvider` MUST apply the default aggregation cardinality limit the `MetricReader` is configured with. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253` | Лимит мощности по умолчанию (2000) задан в конструкторе ОтелБазовыйСинхронныйИнструмент, но не привязан к конфигурации MetricReader. Спецификация требует, чтобы лимит брался из настроек MetricReader. |
 
 #### Measurement processing
 
@@ -2104,8 +2107,8 @@
 |---|---|---|---|---|---|
 | 52 | SHOULD | ✅ found | The SDK SHOULD use the following logic to determine how to process Measurements made with an Instrument: | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:173` |  |
 | 53 | MUST | ✅ found | Instrument advisory parameters, if any, MUST be honored. | `src/Метрики/Классы/ОтелМетр.os:527` |  |
-| 54 | SHOULD | ❌ not_found | If applying the View results in conflicting metric identities the implementation SHOULD apply the View and emit a warning. | - | No detection of conflicting metric identities from View application exists. Views are applied without checking for identity conflicts and no warning is emitted. |
-| 55 | SHOULD | ❌ not_found | If it is not possible to apply the View without producing semantic errors (e.g. the View sets an asynchronous instrument to use the Explicit bucket histogram aggregation) the implementation SHOULD emit a warning and proceed as if the View did not exist. | - | No validation exists for semantic incompatibility between View aggregation settings and instrument types. No warning is emitted for such cases. |
+| 54 | SHOULD | ⚠️ partial | If applying the View results in conflicting metric identities the implementation SHOULD apply the View and emit a warning. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:202` | Представления применяются независимо для каждого инструмента, но нет проверки конфликтующих идентичностей метрик и предупреждения при конфликтах. |
+| 55 | SHOULD | ❌ not_found | If it is not possible to apply the View without producing semantic errors (e.g. the View sets an asynchronous instrument to use the Explicit bucket histogram aggregation) the implementation SHOULD emit a warning and proceed as if the View did not | - | Нет проверки семантической совместимости View с типом инструмента. Например, не проверяется, что Explicit Bucket Histogram не применяется к асинхронным инструментам. |
 | 56 | MUST | ✅ found | If both a View and Instrument advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:524` |  |
 | 57 | SHOULD | ✅ found | If the Instrument could not match with any of the registered `View`(s), the SDK SHOULD enable the instrument using the default aggregation and temporality. | `src/Метрики/Классы/ОтелМетр.os:58` |  |
 
@@ -2115,8 +2118,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 58 | MUST | ✅ found | The SDK MUST provide the following `Aggregation` to support the Metric Points in the Metrics Data Model. | `src/Метрики/Модули/ОтелАгрегация.os:1` |  |
-| 59 | SHOULD | ✅ found | The SDK SHOULD provide the following `Aggregation`: Base2 Exponential Bucket Histogram | `src/Метрики/Модули/ОтелАгрегация.os:76` |  |
+| 58 | MUST | ✅ found | The SDK MUST provide the following `Aggregation` to support the Metric Points in the Metrics Data Model. | `src/Метрики/Модули/ОтелАгрегация.os:15` |  |
+| 59 | SHOULD | ✅ found | The SDK SHOULD provide the following `Aggregation`: | `src/Метрики/Модули/ОтелАгрегация.os:76` |  |
 
 #### Histogram Aggregations
 
@@ -2124,11 +2127,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 60 | SHOULD NOT | ❌ not_found | Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`). | - | Histogram aggregator always collects sum regardless of instrument type. No check exists to skip sum collection for instruments that record negative measurements. |
-| 61 | SHOULD | ✅ found | SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good reasons to use something different (e.g. for backward compatibility reasons in a stable SDK release). | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:118` |  |
-| 62 | SHOULD NOT | ❌ not_found | Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket. | - | No special handling exists for non-normal IEEE floating point values (Inf, -Inf, NaN) in ОтелАгрегаторЭкспоненциальнойГистограммы. All values are incorporated into sum, min, and max without filtering. |
-| 63 | MUST | ✅ found | The implementation MUST maintain reasonable minimum and maximum scale parameters that the automatic scale parameter will not exceed. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:302` |  |
-| 64 | SHOULD | ⚠️ partial | When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:41` | Initial scale is set to НачальнаяШкала (MaxScale, default 20), so first values use max scale. However, there is no explicit logic to return to max scale when the histogram has only one value after downscaling has occurred. |
+| 60 | SHOULD NOT | ❌ not_found | Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`). | - | Агрегатор гистограммы всегда собирает sum. Нет проверки типа инструмента для подавления sum при использовании с инструментами, записывающими отрицательные значения. |
+| 61 | SHOULD | ⚠️ partial | SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good reasons to use something different (e.g. for backward compatibility reasons in a stable SDK release). | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:118` | Стандартные границы бакетов применяются, но отсутствует значение 7500. Реализация: [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000]. Спецификация: [0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]. |
+| 62 | SHOULD NOT | ❌ not_found | Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket. | - | Нет фильтрации нестандартных значений (+Inf, -Inf, NaN) при записи в аккумулятор экспоненциальной гистограммы. |
+| 63 | MUST | ⚠️ partial | The implementation MUST maintain reasonable minimum and maximum scale parameters that the automatic scale parameter will not exceed. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:302` | MaxScale определён (НачальнаяШкала=20, конфигурируемый). Однако минимальная шкала не ограничена явно - автоматическая шкала может уменьшаться без нижней границы. |
+| 64 | SHOULD | ✅ found | When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:41` |  |
 | 65 | SHOULD | ✅ found | Implementations SHOULD adjust the histogram scale as necessary to maintain the best resolution possible, within the constraint of maximum size (max number of buckets). | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:157` |  |
 
 #### Observations inside asynchronous callbacks
@@ -2137,11 +2140,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 66 | MUST | ⚠️ partial | Callback functions MUST be invoked for the specific `MetricReader` performing collection, such that observations made or produced by executing callbacks only apply to the intended `MetricReader` during collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:140` | Callbacks are invoked during each reader's collection cycle, but observations go into the instrument's shared state (ВнешниеНаблюдения on ОтелБазовыйНаблюдаемыйИнструмент). Multiple readers share the same instrument state, so observations are not truly isolated per MetricReader. |
-| 67 | SHOULD | ❌ not_found | The implementation SHOULD disregard the use of asynchronous instrument APIs outside of registered callbacks. | - | No mechanism exists to detect or discard observations made on asynchronous instruments outside of registered callback invocations. |
-| 68 | SHOULD | ❌ not_found | The implementation SHOULD use a timeout to prevent indefinite callback execution. | - | Callbacks are invoked synchronously without any timeout mechanism. An indefinitely blocking callback will block the entire collection cycle. |
-| 69 | MUST | ✅ found | The implementation MUST complete the execution of all callbacks for a given instrument before starting a subsequent round of collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:140` |  |
-| 70 | SHOULD NOT | ✅ found | The implementation SHOULD NOT produce aggregated metric data for a previously-observed attribute set which is not observed during a successful callback. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:174` |  |
+| 66 | MUST | ⚠️ partial | Callback functions MUST be invoked for the specific `MetricReader` performing collection, such that observations made or produced by executing callbacks only apply to the intended `MetricReader` during collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:142` | Callback-функции вызываются во время сбора данных, но наблюдения не изолированы по MetricReader. Все callback-и разделяют одно хранилище наблюдений (ВнешниеНаблюдения), поэтому при нескольких читателях наблюдения не привязаны к конкретному MetricReader. |
+| 67 | SHOULD | ❌ not_found | The implementation SHOULD disregard the use of asynchronous instrument APIs outside of registered callbacks. | - | Нет механизма, предотвращающего или игнорирующего использование API асинхронных инструментов вне зарегистрированных callback-ов. |
+| 68 | SHOULD | ❌ not_found | The implementation SHOULD use a timeout to prevent indefinite callback execution. | - | Нет таймаута для выполнения callback-ов в ОтелБазовыйНаблюдаемыйИнструмент.ВызватьCallbackИСобрать - callback может выполняться неограниченно долго. |
+| 69 | MUST | ✅ found | The implementation MUST complete the execution of all callbacks for a given instrument before starting a subsequent round of collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:141` |  |
+| 70 | SHOULD NOT | ✅ found | The implementation SHOULD NOT produce aggregated metric data for a previously-observed attribute set which is not observed during a successful callback. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:160` |  |
 
 #### Cardinality limits
 
@@ -2624,7 +2627,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 24 | MUST | ✅ found | This method MUST exist for each supported Propagator type. | `src/Ядро/Модули/ОтелГлобальный.os:121` |  |
+| 24 | MUST | ✅ found | This method MUST exist for each supported `Propagator` type. | `src/Ядро/Модули/ОтелГлобальный.os:121` |  |
 
 #### Set Global Propagator
 
@@ -2632,7 +2635,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 25 | MUST | ✅ found | This method MUST exist for each supported Propagator type. | `src/Ядро/Модули/ОтелГлобальный.os:110` |  |
+| 25 | MUST | ✅ found | This method MUST exist for each supported `Propagator` type. | `src/Ядро/Модули/ОтелГлобальный.os:110` |  |
 
 #### Propagators Distribution
 
@@ -2640,8 +2643,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 26 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` |  |
-| 27 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CBaggageПропагатор.os:1` |  |
+| 26 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | W3C TraceContext и W3C Baggage реализованы, но B3 пропагатор отсутствует |
+| 27 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CBaggageПропагатор.os:1` | W3C TraceContext и W3C Baggage распространяются как часть SDK, но B3 пропагатор не реализован как отдельный extension-пакет |
 | 28 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | - |  |
 | 29 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | - |  |
 
@@ -2652,7 +2655,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 30 | MUST | ✅ found | A W3C Trace Context propagator MUST parse and validate the `traceparent` and `tracestate` HTTP headers as specified in W3C Trace Context Level 2. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:81` |  |
-| 31 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `traceparent` value using the same header. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:63` |  |
+| 31 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `traceparent` value using the same header. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:45` |  |
 | 32 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `tracestate` unless the value is empty, in which case the `tracestate` header may be omitted. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:65` |  |
 
 #### Fields
@@ -2914,8 +2917,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ❌ not_found | The ergonomic API SHOULD make it more convenient to emit event records following the event semantics. | - | Отдельный эргономичный API для удобной записи событий (event records) не реализован. Текущий API требует ручного создания ОтелЗаписьЛога, настройки полей и вызова Записать(). |
-| 2 | SHOULD | ❌ not_found | The design of the ergonomic API SHOULD be idiomatic for its language. | - | Эргономичный API не реализован, поэтому требование к идиоматичности дизайна неприменимо в текущем состоянии кодовой базы. |
+| 1 | SHOULD | ❌ not_found | The ergonomic API SHOULD make it more convenient to emit event records following the event semantics. | - | Эргономичный API для удобной отправки событий (event records) не реализован. Логгер предоставляет только низкоуровневый workflow: СоздатьЗаписьЛога() + настройка полей + Записать(). Нет упрощённых методов для эмиссии событий. |
+| 2 | SHOULD | ❌ not_found | The design of the ergonomic API SHOULD be idiomatic for its language. | - | Эргономичный API отсутствует, поэтому невозможно оценить его идиоматичность для языка OneScript. |
 
 ### Logs Sdk
 
@@ -2925,12 +2928,12 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ✅ found | It SHOULD only be possible to create `Logger` instances through a `LoggerProvider` (see API). | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
+| 1 | SHOULD | ✅ found | It SHOULD only be possible to create `Logger` instances through a `LoggerProvider` (see API). | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:77` |  |
 | 2 | MUST | ✅ found | The `LoggerProvider` MUST implement the Get a Logger API. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
 | 3 | MUST | ✅ found | The input provided by the user MUST be used to create an `InstrumentationScope` instance which is stored on the created `Logger`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:64` |  |
-| 4 | MUST | ⚠️ partial | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` | ПолучитьЛоггер не проверяет пустое/null имя явно - Logger будет создан с пустым именем (не упадёт), но нет диагностического сообщения о невалидном имени |
-| 5 | SHOULD | ⚠️ partial | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` | Имя сохраняется как есть (пустая строка), но отсутствует явная проверка и логирование предупреждения о невалидном имени |
-| 6 | SHOULD | ❌ not_found | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | - | Нет логирования диагностического сообщения о том, что указанное имя невалидно (нет проверки ПустаяСтрока(ИмяБиблиотеки) и последующего Лог.Предупреждение) |
+| 4 | MUST | ✅ found | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:54` |  |
+| 5 | SHOULD | ✅ found | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:64` |  |
+| 6 | SHOULD | ❌ not_found | In the case where an invalid `name` (null or empty string) is specified, a working `Logger` MUST be returned as a fallback rather than returning null or throwing an exception, its `name` SHOULD keep the original invalid value, and a message reporting that the specified value is invalid SHOULD be logged. | - | Метод ПолучитьЛоггер не содержит проверки на пустое или null имя библиотеки и не логирует диагностическое сообщение о невалидном значении имени. |
 | 7 | MUST | ✅ found | The `LoggerProvider` MUST compute the relevant LoggerConfig using the configured LoggerConfigurator, and create a `Logger` whose behavior conforms to that `LoggerConfig`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:69` |  |
 
 #### LoggerConfigurator
@@ -2939,8 +2942,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ✅ found | The function MUST accept the following parameter: `logger_scope`: The `InstrumentationScope` of the `Logger`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:72` |  |
-| 2 | MUST | ✅ found | The function MUST return the relevant `LoggerConfig`, or some signal indicating that the default LoggerConfig should be used. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:69` |  |
+| 1 | MUST | ✅ found | The function MUST accept the following parameter: * `logger_scope`: The `InstrumentationScope` of the `Logger`. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:72` |  |
+| 2 | MUST | ✅ found | The function MUST return the relevant `LoggerConfig`, or some signal indicating that the default LoggerConfig should be used. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:72` |  |
 
 #### Logger
 
@@ -2948,8 +2951,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ✅ found | Logger MUST behave according to the LoggerConfig computed during logger creation. | `src/Логирование/Классы/ОтелЛоггер.os:240` |  |
-| 2 | MUST | ⚠️ partial | If the LoggerProvider supports updating the LoggerConfigurator, then upon update the Logger MUST be updated to behave according to the new LoggerConfig. | `src/Логирование/Классы/ОтелЛоггер.os:123` | Logger has УстановитьКонфигурацию setter method, but LoggerProvider lacks a public method to update the LoggerConfigurator and propagate new configs to already-created loggers. |
+| 1 | MUST | ✅ found | `Logger` MUST behave according to the LoggerConfig computed during logger creation. | `src/Логирование/Классы/ОтелЛоггер.os:240` |  |
+| 2 | MUST | ⚠️ partial | If the `LoggerProvider` supports updating the LoggerConfigurator, then upon update the `Logger` MUST be updated to behave according to the new `LoggerConfig`. | `src/Логирование/Классы/ОтелЛоггер.os:123` | Logger has УстановитьКонфигурацию() setter (line 123), but LoggerProvider does not expose a public method to update the configurator and propagate new configs to existing loggers. УстановитьКонфигуратор is private. The mechanism exists on the Logger side but the Provider lacks the triggering API. |
 
 #### LoggerConfig
 
@@ -2957,12 +2960,12 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ✅ found | If not explicitly set, the enabled parameter SHOULD default to true (i.e. Loggers are enabled by default). | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
-| 2 | MUST | ✅ found | If a Logger is disabled, it MUST behave equivalently to No-op Logger. | `src/Логирование/Классы/ОтелЛоггер.os:50` |  |
-| 3 | MUST | ✅ found | If not explicitly set, the minimum_severity parameter MUST default to 0. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
-| 4 | MUST | ✅ found | If a log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped by the Logger. | `src/Логирование/Классы/ОтелЛоггер.os:138` |  |
-| 5 | MUST | ✅ found | If not explicitly set, the trace_based parameter MUST default to false. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
-| 6 | MUST | ✅ found | If trace_based is true, log records associated with unsampled traces MUST be dropped by the Logger. | `src/Логирование/Классы/ОтелЛоггер.os:143` |  |
+| 1 | SHOULD | ✅ found | If not explicitly set, the `enabled` parameter SHOULD default to `true` (i.e. `Logger`s are enabled by default). | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
+| 2 | MUST | ✅ found | If a `Logger` is disabled, it MUST behave equivalently to No-op Logger. | `src/Логирование/Классы/ОтелЛоггер.os:50` |  |
+| 3 | MUST | ✅ found | If not explicitly set, the `minimum_severity` parameter MUST default to `0`. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
+| 4 | MUST | ✅ found | If a log record's SeverityNumber is specified (i.e. not `0`) and is less than the configured `minimum_severity`, the log record MUST be dropped by the `Logger`. | `src/Логирование/Классы/ОтелЛоггер.os:139` |  |
+| 5 | MUST | ✅ found | If not explicitly set, the `trace_based` parameter MUST default to `false`. | `src/Логирование/Классы/ОтелКонфигурацияЛоггера.os:67` |  |
+| 6 | MUST | ✅ found | If `trace_based` is `true`, log records associated with unsampled traces MUST be dropped by the `Logger`. | `src/Логирование/Классы/ОтелЛоггер.os:143` |  |
 | 7 | MUST | ✅ found | However, the changes MUST be eventually visible. | `src/Логирование/Классы/ОтелЛоггер.os:123` |  |
 
 #### Emit a LogRecord
@@ -2972,12 +2975,12 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | SHOULD | ✅ found | If Observed Timestamp is unspecified, the implementation SHOULD set it equal to the current time. | `src/Логирование/Классы/ОтелЛоггер.os:102` |  |
-| 2 | MUST | ✅ found | If an Exception is provided, the SDK MUST by default set attributes from the exception on the LogRecord with the conventions outlined in the exception semantic conventions. | `src/Логирование/Классы/ОтелЛоггер.os:170` |  |
-| 3 | MUST | ✅ found | User-provided attributes MUST take precedence and MUST NOT be overwritten by exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:183` |  |
-| 4 | MUST NOT | ✅ found | User-provided attributes MUST take precedence and MUST NOT be overwritten by exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:183` |  |
-| 5 | MUST | ✅ found | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case Enabled was not called prior to emitting the record): | `src/Логирование/Классы/ОтелЛоггер.os:94` |  |
-| 6 | MUST | ✅ found | Minimum severity: If the log record's SeverityNumber is specified (i.e. not 0) and is less than the configured minimum_severity, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:138` |  |
-| 7 | MUST | ✅ found | Trace-based: If trace_based is true, and if the log record has a SpanId and the TraceFlags SAMPLED flag is unset, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:143` |  |
+| 2 | MUST | ✅ found | If an Exception is provided, the SDK MUST by default set attributes from the exception on the `LogRecord` with the conventions outlined in the exception semantic conventions. | `src/Логирование/Классы/ОтелЛоггер.os:170` |  |
+| 3 | MUST | ✅ found | User-provided attributes MUST take precedence and MUST NOT be overwritten by exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:184` |  |
+| 4 | MUST NOT | ✅ found | User-provided attributes MUST take precedence and MUST NOT be overwritten by exception-derived attributes. | `src/Логирование/Классы/ОтелЛоггер.os:184` |  |
+| 5 | MUST | ✅ found | Before processing a log record, the implementation MUST apply the filtering rules defined by the LoggerConfig (in case `Enabled` was not called prior to emitting the record): | `src/Логирование/Классы/ОтелЛоггер.os:94` |  |
+| 6 | MUST | ✅ found | Minimum severity: If the log record's SeverityNumber is specified (i.e. not `0`) and is less than the configured `minimum_severity`, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:139` |  |
+| 7 | MUST | ✅ found | Trace-based: If `trace_based` is `true`, and if the log record has a `SpanId` and the `TraceFlags` SAMPLED flag is unset, the log record MUST be dropped. | `src/Логирование/Классы/ОтелЛоггер.os:143` |  |
 
 #### Enabled
 
@@ -2985,8 +2988,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ✅ found | Enabled MUST return false when either: there are no registered LogRecordProcessors; Logger is disabled (LoggerConfig.enabled is false); the provided severity is specified (i.e. not 0) and is less than the configured minimum_severity in the LoggerConfig; trace_based is true in the LoggerConfig and the current context is associated with an unsampled trace; all registered LogRecordProcessors implement Enabled, and a call to Enabled on each of them returns false. | `src/Логирование/Классы/ОтелЛоггер.os:42` |  |
-| 2 | SHOULD | ✅ found | Otherwise, it SHOULD return true. | `src/Логирование/Классы/ОтелЛоггер.os:61` |  |
+| 1 | MUST | ⚠️ partial | `Enabled` MUST return `false` when either: there are no registered `LogRecordProcessors`; Logger is disabled (`LoggerConfig.enabled` is `false`); the provided severity is specified (i.e. not `0`) and is less than the configured `minimum_severity` in the `LoggerConfig`; `trace_based` is `true` in the `LoggerConfig` and the current context is associated with an unsampled trace; all registered `LogRecordProcessors` implement `Enabled`, and a call to `Enabled` on each of them returns `false`. | `src/Логирование/Классы/ОтелЛоггер.os:42` | Most conditions are correctly implemented (no processors, disabled logger, minimum severity, trace-based filtering). However, the last condition - checking if all registered LogRecordProcessors implement Enabled and each returns false - is not implemented. The code only checks ЕстьПроцессоры() (whether processors exist) but does not call individual processor Enabled methods. |
+| 2 | SHOULD | ✅ found | Otherwise, it SHOULD return `true`. | `src/Логирование/Классы/ОтелЛоггер.os:61` |  |
 
 ### Metrics Api
 
@@ -3030,10 +3033,10 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | For delta aggregations, the start timestamp MUST equal the previous collection interval's timestamp, or the creation time of the instrument if this is the first collection interval for the instrument. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:145` |  |
-| 2 | MUST | ✅ found | This implies that all data points with delta temporality aggregation for an instrument MUST share the same start timestamp. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:276` |  |
+| 2 | MUST | ✅ found | This implies that all data points with delta temporality aggregation for an instrument MUST share the same start timestamp. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:274` |  |
 | 3 | MUST | ✅ found | Cumulative timeseries MUST use a consistent start timestamp for all collection intervals. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:141` |  |
-| 4 | SHOULD | ⚠️ partial | For synchronous instruments, the start timestamp SHOULD be the time of the first measurement for the series. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:263` | Start timestamp is set to the instrument creation time rather than the time of the first measurement for the series. All series share the same ВремяСтарта from instrument creation. |
-| 5 | SHOULD | ⚠️ partial | For asynchronous instrument, the start timestamp SHOULD be: the creation time of the instrument, if the first series measurement occurred in the first collection interval, otherwise, the timestamp of the collection interval prior to the first series measurement. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:184` | Asynchronous instruments set startTimeUnixNano to the current collection time (ВремяСейчас) for every data point, rather than tracking whether the first observation was in the first collection interval and using the creation time or prior interval timestamp accordingly. |
+| 4 | SHOULD | ⚠️ partial | For synchronous instruments, the start timestamp SHOULD be the time of the first measurement for the series. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:263` | Время старта (ВремяСтарта) устанавливается в момент создания инструмента, а не в момент первого измерения для серии. |
+| 5 | SHOULD | ⚠️ partial | For asynchronous instrument, the start timestamp SHOULD be: | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:184` | Асинхронные инструменты используют текущее время сбора (ВремяСейчас) для обоих полей startTimeUnixNano и timeUnixNano. Спецификация требует использовать время создания инструмента для первого интервала и время предыдущего сбора для последующих. |
 
 #### Meter
 
@@ -3115,10 +3118,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ➖ n_a | MUST attempt to extract B3 encoded using single and multi-header formats. | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
-| 2 | MUST | ➖ n_a | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
-| 3 | MUST | ➖ n_a | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
-| 4 | MUST NOT | ➖ n_a | MUST NOT reuse `X-B3-SpanId` as the id for the server-side span. | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
+| 1 | MUST | ➖ n_a | MUST attempt to extract B3 encoded using single and multi-header formats. The single-header variant takes precedence over the multi-header version. | - | B3 пропагатор не реализован (условная функциональность) |
+| 2 | MUST | ➖ n_a | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | - | B3 пропагатор не реализован (условная функциональность) |
+| 3 | MUST | ➖ n_a | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | - | B3 пропагатор не реализован (условная функциональность) |
+| 4 | MUST NOT | ➖ n_a | MUST NOT reuse `X-B3-SpanId` as the id for the server-side span. | - | B3 пропагатор не реализован (условная функциональность) |
 
 #### B3 Inject
 
@@ -3126,9 +3129,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ➖ n_a | MUST default to injecting B3 using the single-header format | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
-| 2 | MUST | ➖ n_a | MUST provide configuration to change the default injection format to B3 multi-header | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
-| 3 | MUST NOT | ➖ n_a | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same id for both sides of a request. | - | B3 Propagator is a conditional extension that is not implemented in this SDK. |
+| 1 | MUST | ➖ n_a | MUST default to injecting B3 using the single-header format | - | B3 пропагатор не реализован (условная функциональность) |
+| 2 | MUST | ➖ n_a | MUST provide configuration to change the default injection format to B3 multi-header | - | B3 пропагатор не реализован (условная функциональность) |
+| 3 | MUST NOT | ➖ n_a | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same id for both sides of a request. | - | B3 пропагатор не реализован (условная функциональность) |
 
 ### Сводка условных секций
 
