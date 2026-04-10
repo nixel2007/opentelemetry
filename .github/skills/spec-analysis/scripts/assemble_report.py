@@ -455,18 +455,90 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
 
             lines.append("")
 
-    # Условные требования
+    # Условные требования - полные таблицы для Stable+conditional секций
+    # (Development+conditional уже отображены в Development-секции)
     lines.append("## Условные требования (Conditional)")
     lines.append("")
+    lines.append(
+        "Требования из условных секций. Применяются только при реализации "
+        "соответствующей опциональной фичи."
+    )
+    lines.append("")
 
-    cond_sections = [s for s in sections if "conditional" in s.get("scope", "")]
-    if cond_sections:
-        lines.append("| Раздел | Секция | Scope | Keywords | Ссылка |")
-        lines.append("|---|---|---|---|---|")
-        for s in cond_sections:
+    cond_stable_sections = [
+        s for s in sections
+        if "conditional" in s.get("scope", "") and s["stability"] == "Stable"
+    ]
+    if cond_stable_sections:
+        current_page = None
+        for s in cond_stable_sections:
+            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+            result = merged.get(key)
+
+            if s["page"] != current_page:
+                current_page = s["page"]
+                lines.append(f"### {current_page}")
+                lines.append("")
+
+            url = (
+                result.get("spec_url", s.get("url", ""))
+                if result
+                else s.get("url", "")
+            )
+            scope_label = s.get("scope", "conditional")
+            lines.append(f"#### {s['subsection']}")
+            lines.append("")
+            lines.append(
+                f"[Ссылка на спецификацию]({url}) | Scope: {scope_label}"
+            )
+            lines.append("")
+
+            if not result or not result.get("requirements"):
+                lines.append(
+                    f"> ⚠️ Нет данных от агента "
+                    f"(ожидалось ~{s['keywords']['total']} требований)"
+                )
+                lines.append("")
+                continue
+
+            lines.append(
+                "| # | Уровень | Статус | Требование "
+                "| Расположение в коде | Пояснение |"
+            )
+            lines.append("|---|---|---|---|---|---|")
+
+            for i, req in enumerate(result["requirements"], 1):
+                level = req.get("level", "?")
+                status = req.get("status", "?")
+                icon = STATUS_ICONS.get(status, "?")
+                spec_text = (
+                    req.get("spec_text", "").replace("|", "\\|").replace("\n", " ")
+                )
+                loc = req.get("code_location", "-")
+                if loc and loc != "-":
+                    loc = f"`{loc}`"
+                explanation = (
+                    req.get("explanation", "").replace("|", "\\|").replace("\n", " ")
+                )
+                lines.append(
+                    f"| {i} | {level} | {icon} {status} | {spec_text} "
+                    f"| {loc} | {explanation} |"
+                )
+
+            lines.append("")
+
+    # Сводка условных секций (включая Development+conditional)
+    all_cond_sections = [s for s in sections if "conditional" in s.get("scope", "")]
+    if all_cond_sections:
+        lines.append("### Сводка условных секций")
+        lines.append("")
+        lines.append("| Раздел | Секция | Scope | Stability | Keywords | Ссылка |")
+        lines.append("|---|---|---|---|---|---|")
+        for s in all_cond_sections:
             lines.append(
                 f"| {s['page']} | {s['subsection']} | {s['scope']} | "
-                f"{s['keywords']['total']} | [spec]({s['url']}) |"
+                f"{s['stability']} | {s['keywords']['total']} | "
+                f"[spec]({s['url']}) |"
             )
         lines.append("")
 
@@ -739,8 +811,8 @@ def compare_with_previous(old_sections, new_sections):
         for r in reqs:
             new_total[r["status"]] += 1
 
-    old_app = old_total["found"] + old_total["partial"] + old_total["not_found"]
-    new_app = new_total["found"] + new_total["partial"] + new_total["not_found"]
+    old_app = old_total["found"] + old_total["partial"] + old_total["not_found"] + old_total["n_a"]
+    new_app = new_total["found"] + new_total["partial"] + new_total["not_found"] + new_total["n_a"]
 
     lines.append("")
     lines.append("=" * 70)
@@ -1013,6 +1085,45 @@ def main():
     print(f"\n✅ Отчёт записан в {report_path}")
     print(f"   Stable universal: {t['found']} found, {t['partial']} partial, "
           f"{t['not_found']} not_found, {t['n_a']} n_a (из {applicable} применимых)")
+
+    # Финальная валидация: total requirements в markdown == total keywords в sections
+    expected_kw = sum(s["keywords"]["total"] for s in sections)
+    actual_reqs = 0
+    for s in sections:
+        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+        result = merged.get(key)
+        if result:
+            actual_reqs += len(result.get("requirements", []))
+
+    # Проверяем также, что markdown содержит все требования (через парсинг)
+    parsed_sections = parse_report_requirements(markdown)
+    md_reqs = sum(len(reqs) for reqs in parsed_sections.values())
+
+    print(f"\n📊 Валидация полноты:")
+    print(f"   Keywords в спецификации: {expected_kw}")
+    print(f"   Требований от агентов (JSON): {actual_reqs}")
+    print(f"   Требований в markdown: {md_reqs}")
+
+    if actual_reqs != expected_kw:
+        delta = expected_kw - actual_reqs
+        print(f"   ❌ ОШИБКА: Разница агенты vs спецификация: {delta} "
+              f"(агенты вернули {actual_reqs}, ожидалось {expected_kw})")
+        # Показываем какие секции не совпали
+        for s in sections:
+            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+            result = merged.get(key)
+            if not result:
+                print(f"      Нет результата: {key} ({s['keywords']['total']} kw)")
+            elif len(result.get("requirements", [])) != s["keywords"]["total"]:
+                print(f"      Несовпадение: {key} "
+                      f"(ожидалось {s['keywords']['total']}, "
+                      f"получено {len(result.get('requirements', []))})")
+    elif md_reqs != expected_kw:
+        print(f"   ❌ ОШИБКА: Разница markdown vs спецификация: "
+              f"{expected_kw - md_reqs}")
+    else:
+        print(f"   ✅ Все {expected_kw} требований присутствуют "
+              f"(JSON: {actual_reqs}, markdown: {md_reqs})")
 
 
 if __name__ == "__main__":

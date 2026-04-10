@@ -14,10 +14,10 @@ description: >
 
 ### Принцип работы
 
-1. `extract_requirements.py` - разбивает спецификацию на **секции по заголовкам**, сохраняет **полный текст** каждой секции в `sections.json`
-2. `generate_prompts.py` - группирует секции в агентов (5-8 секций на агента), генерирует промпты с **JSON-схемой вывода**
+1. `scripts/extract_requirements.py` - разбивает спецификацию на **секции по заголовкам**, сохраняет **полный текст** каждой секции в `sections.json`
+2. `scripts/generate_prompts.py` - группирует секции в агентов (5-8 секций на агента), генерирует промпты с **JSON-схемой вывода**
 3. Оркестратор запускает **general-purpose агентов**, каждый записывает результат в `results/<agent>.json`
-4. `assemble_report.py` - **детерминированно** собирает `docs/spec-compliance.md` из JSON-результатов
+4. `scripts/assemble_report.py` - **детерминированно** собирает `docs/spec-compliance.md` из JSON-результатов
 
 ### Ключевое свойство: воспроизводимость
 
@@ -66,7 +66,7 @@ description: >
 > При повторных запусках скрипт использует кеш из `<output_dir>/*.txt`. Удали кеш-файлы для обновления.
 
 ```bash
-python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
+python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-specs
 ```
 
 Скрипт:
@@ -81,7 +81,7 @@ python3 .github/skills/spec-analysis/extract_requirements.py /tmp/otel-specs
 ## Шаг 2: Генерация промптов для агентов
 
 ```bash
-python3 .github/skills/spec-analysis/generate_prompts.py /tmp/otel-specs
+python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 ```
 
 Скрипт:
@@ -95,7 +95,7 @@ python3 .github/skills/spec-analysis/generate_prompts.py /tmp/otel-specs
    - Инструкцией записать результат в `results/<agent>.json`
 5. Сохраняет `agents.json` (конфигурация) и `prompts/<agent>.md` (промпты)
 
-> Все критерии верификации, примеры false positive и правила n_a определены в `generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
+> Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.
 
 Ожидаемый результат: ~20-25 агентов.
@@ -136,19 +136,26 @@ ls /tmp/otel-specs/results/*.json | wc -l  # должно совпадать с 
 
 ### Шаг 3.5: Валидация и повторный запуск
 
+> **КРИТИЧЕСКИ ВАЖНО:** Агенты обязаны вернуть данные по 100% секций и 100% ключевых слов.
+> Повторяй до тех пор, пока все не будут пройдены. Rate limit - не причина остановиться.
+
 После завершения всех агентов **обязательно** проверь количество требований:
 
 ```python
 # Псевдокод валидации
-import json
+import json, os, time
 
 with open("/tmp/otel-specs/agents.json") as f:
     agents = json.load(f)
 
 failed_agents = []
+missing_agents = []
 for agent in agents:
     name = agent["name"]
     result_path = f"/tmp/otel-specs/results/{name}.json"
+    if not os.path.exists(result_path):
+        missing_agents.append(name)
+        continue
     with open(result_path) as f:
         result = json.load(f)
 
@@ -163,9 +170,10 @@ for agent in agents:
         failed_agents.append((name, mismatches))
 ```
 
-Для каждого агента с несовпадениями:
-1. Удали его результат: `rm /tmp/otel-specs/results/<agent>.json`
-2. Перезапусти агента с **дополнительной инструкцией** в начале промпта:
+Для каждого агента с несовпадениями или отсутствующим результатом:
+1. Удали его результат (если есть): `rm -f /tmp/otel-specs/results/<agent>.json`
+2. Подожди 30 секунд (задержка для rate limit): `time.sleep(30)`
+3. Перезапусти агента с **дополнительной инструкцией** в начале промпта:
 
 ```
 ⚠️ ПОВТОРНЫЙ ЗАПУСК: В предыдущей попытке количество требований не совпало с expected_keywords.
@@ -174,12 +182,18 @@ for agent in agents:
 Перечитай текст секции ВНИМАТЕЛЬНО и убедись, что ты нашёл РОВНО expected_keywords ключевых слов.
 ```
 
-Повтори до 2 раз. Если после 2 повторов count не совпадает - зафиксируй расхождение в предупреждениях.
+**Цикл повторов:**
+- Повторяй до 3 раз для каждого агента
+- Между повторами - задержка 30-60 секунд (rate limit)
+- Если агент не вернул результат (rate limit / ошибка) - увеличь задержку до 120 секунд
+- Если после 3 повторов count не совпадает - зафиксируй расхождение в предупреждениях
+
+> **НЕ ОСТАНАВЛИВАЙСЯ**, если rate limit. Сделай задержку и повтори.
 
 ## Шаг 4: Сборка итогового документа
 
 ```bash
-python3 .github/skills/spec-analysis/assemble_report.py /tmp/otel-specs docs/spec-compliance.md
+python3 .github/skills/spec-analysis/scripts/assemble_report.py /tmp/otel-specs docs/spec-compliance.md
 ```
 
 Скрипт:
@@ -214,7 +228,7 @@ docs/spec-compliance.md
 │   └── SHOULD/SHOULD NOT несоответствия
 ├── Детальный анализ по разделам (Stable) - каждая секция = ####, каждое требование = строка таблицы
 ├── Требования Development-статуса - с полными таблицами
-├── Условные требования (Conditional)
+├── Условные требования (Conditional) - с полными таблицами для Stable+conditional
 ├── Ограничения платформы OneScript
 └── Методология
 ```
@@ -222,9 +236,27 @@ docs/spec-compliance.md
 > Каждая секция спецификации = отдельный подзаголовок (####).
 > Каждое MUST/SHOULD = отдельная строка таблицы с полным текстом, статусом, расположением в коде и пояснением.
 
+### Шаг 4.5: Проверка полноты отчёта
+
+Скрипт `scripts/assemble_report.py` автоматически проверяет полноту:
+
+```
+📊 Валидация полноты:
+   Keywords в спецификации: 824
+   Требований от агентов (JSON): 824
+   Требований в markdown: 824
+   ✅ Все 824 требований присутствуют (JSON: 824, markdown: 824)
+```
+
+**Если total не совпадает** (❌ ОШИБКА в выводе):
+1. Посмотри какие секции не совпали (скрипт покажет)
+2. Перезапусти соответствующих агентов (Шаг 3.5)
+3. Повтори сборку (Шаг 4)
+4. Повторяй пока не будет 100% совпадение
+
 ## Шаг 5: Проверка сравнения
 
-Сравнение выполняется **автоматически** в шаге 4 (assemble_report.py).
+Сравнение выполняется **автоматически** в шаге 4 (scripts/assemble_report.py).
 Скрипт загружает `git show HEAD:docs/spec-compliance.md`, парсит таблицы требований и сравнивает каждое с текущим результатом.
 
 Если изменений много (>10 понижений или >20 пропущенных требований), проверь вручную:

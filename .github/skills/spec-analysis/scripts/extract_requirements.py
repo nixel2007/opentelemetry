@@ -74,7 +74,7 @@ def fetch_page(url, output_dir, name):
     # Конвертируем HTML элементы в текст
     raw = re.sub(
         r"<h([1-6])[^>]*>(.*?)</h\1>",
-        lambda m: "#" * int(m.group(1)) + " " + m.group(2),
+        lambda m: "\n" + "#" * int(m.group(1)) + " " + m.group(2) + "\n",
         raw,
         flags=re.DOTALL,
     )
@@ -83,6 +83,16 @@ def fetch_page(url, output_dir, name):
     raw = re.sub(r"<p[^>]*>", "\n", raw)
     raw = re.sub(r"</p>", "\n", raw)
     raw = re.sub(r"<code[^>]*>(.*?)</code>", r"`\1`", raw, flags=re.DOTALL)
+
+    # Таблицы: конвертируем в текст с разделителями (до общей очистки тегов)
+    raw = re.sub(r"</?table[^>]*>", "\n", raw)
+    raw = re.sub(r"</?thead[^>]*>", "", raw)
+    raw = re.sub(r"</?tbody[^>]*>", "", raw)
+    raw = re.sub(r"<tr[^>]*>", "\n", raw)
+    raw = re.sub(r"</tr>", "", raw)
+    raw = re.sub(r"<th[^>]*>(.*?)</th>", r" | \1", raw, flags=re.DOTALL)
+    raw = re.sub(r"<td[^>]*>(.*?)</td>", r" | \1", raw, flags=re.DOTALL)
+
     raw = re.sub(r"<[^>]+>", "", raw)  # Убираем оставшиеся теги
     raw = html.unescape(raw)
 

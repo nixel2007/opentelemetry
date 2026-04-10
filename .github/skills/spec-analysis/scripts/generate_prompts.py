@@ -311,7 +311,7 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
         sections_block += f"{'=' * 60}\n\n"
         sections_block += s["text"] + "\n"
 
-    # Формируем JSON-литерал шаблона для Python-записи
+    # Формируем JSON-литерал шаблона для записи результата
     sections_meta = []
     for s in agent_sections:
         section_id = s.get("section_id", f"{s['page']}/{s['subsection']}")
@@ -347,7 +347,7 @@ def build_prompt(agent_name, code_dirs, agent_sections, output_dir):
 
 ### Формат вывода
 
-После анализа всех секций **запиши результат в JSON-файл** используя Python.
+После анализа всех секций **запиши результат в JSON-файл**.
 Это критически важно для воспроизводимости - результат должен быть машиночитаемым.
 
 Путь файла результата: `{results_path}`
@@ -357,22 +357,23 @@ JSON-схема:
 {RESULT_JSON_SCHEMA}
 ```
 
-**Для записи используй Python** (гарантирует валидный JSON):
+**КРИТИЧЕСКИ ВАЖНО - как записать результат:**
+- Используй инструмент `create` для создания файла `{results_path}` с JSON-содержимым.
+- **НЕ создавай промежуточные Python-скрипты** (write_results.py и т.п.) - это засоряет проект.
+- **НЕ создавай никаких файлов** кроме `{results_path}`.
+- Просто вызови `create` tool с path=`{results_path}` и file_text= полный JSON-результат.
 
-```python
-import json
-results = {{
-    "agent": "{agent_name}",
-    "sections": [
-        # ... твои результаты по каждой секции ...
-    ]
+Формат JSON-файла:
+```json
+{{
+  "agent": "{agent_name}",
+  "sections": [
+    // ... для каждой секции из метаданных ниже, добавь поле "requirements": [...]
+  ]
 }}
-with open("{results_path}", "w", encoding="utf-8") as f:
-    json.dump(results, f, ensure_ascii=False, indent=2)
-print(f"Записано {{len(results['sections'])}} секций")
 ```
 
-Метаданные секций для JSON (скопируй в результат, добавив `requirements`):
+Метаданные секций (скопируй в результат, добавив `requirements`):
 ```json
 {json.dumps(sections_meta, ensure_ascii=False, indent=2)}
 ```
@@ -386,7 +387,7 @@ print(f"Записано {{len(results['sections'])}} секций")
    d. Для каждого ключевого слова найди реализацию в коде через grep/view
    e. Определи статус (found/partial/not_found/n_a)
 2. После анализа ВСЕХ секций - **перед записью проверь** количество requirements в каждой секции = expected_keywords
-3. Запиши JSON-файл через Python
+3. Запиши JSON-файл через `create` tool (НЕ через Python-скрипт!)
 4. Выведи сводку в формате: `Секция <id>: expected=<N>, actual=<M>, found=<X>, partial=<Y>, not_found=<Z>, n_a=<W>`
 
 ---
