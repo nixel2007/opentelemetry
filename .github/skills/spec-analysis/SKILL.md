@@ -76,7 +76,7 @@ python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-s
 4. Считает количество MUST/SHOULD ключевых слов в каждой секции
 5. Сохраняет результат в `/tmp/otel-specs/sections.json`
 
-Ожидаемый результат: ~100-150 секций, в сумме содержащих ~750+ ключевых слов MUST/SHOULD.
+Ожидаемый результат: ~200-250 секций, в сумме содержащих ~800+ ключевых слов MUST/SHOULD.
 
 ## Шаг 2: Генерация промптов для агентов
 
@@ -93,102 +93,159 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
    - Строгими критериями статуса (found/partial/not_found/n_a)
    - JSON-схемой вывода
    - Инструкцией записать результат в `results/<agent>.json`
-5. Сохраняет `agents.json` (конфигурация) и `prompts/<agent>.md` (промпты)
+5. Сохраняет `agents.json` (конфигурация с `launch_prompt`) и `prompts/<agent>.md` (промпты)
 
 > Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.
 
-Ожидаемый результат: ~20-25 агентов.
+Ожидаемый результат: ~30-40 агентов.
 
 ## Шаг 3: Запуск агентов верификации
 
 > **ВАЖНО:** Используй `agent_type: "general-purpose"` (Sonnet), НЕ `explore` (Haiku).
 > Haiku не обладает достаточной глубиной рассуждений для корректной верификации.
 
-Для каждого агента из `agents.json`:
-
-```python
-# Псевдокод оркестратора
-import json
-
-with open("/tmp/otel-specs/agents.json") as f:
-    agents = json.load(f)
-
-for agent in agents:
-    name = agent["name"]
-    with open(f"/tmp/otel-specs/prompts/{name}.md") as f:
-        prompt = f.read()
-    # Запуск: task(agent_type="general-purpose", mode="background", prompt=prompt, name=name)
-```
-
-Агенты работают параллельно. Каждый:
-1. Читает полный текст секций из промпта
-2. Извлекает РОВНО `expected_keywords` требований на секцию (сверху вниз)
-3. Ищет реализацию в коде (grep/view по указанным каталогам)
-4. Определяет статус каждого MUST/SHOULD
-5. Записывает результат в `/tmp/otel-specs/results/<agent>.json`
-
-После завершения всех агентов проверь, что все файлы результатов существуют:
+### 3.1. Прочитай список агентов
 
 ```bash
-ls /tmp/otel-specs/results/*.json | wc -l  # должно совпадать с количеством агентов
+python3 -c "
+import json
+with open('/tmp/otel-specs/agents.json') as f:
+    agents = json.load(f)
+for a in agents:
+    print(a['name'])
+print(f'Всего: {len(agents)} агентов')
+"
 ```
 
-### Шаг 3.5: Валидация и повторный запуск
+### 3.2. Запуск волнами по 10
+
+Каждый агент в `agents.json` содержит поле `launch_prompt` - **готовый к использованию промпт**.
+Агент по этому промпту сам прочитает свой файл инструкций и выполнит анализ.
+
+**Запускай агентов волнами по 10 штук** (не больше) за один tool-calling ход:
+
+```
+Для каждого agent из agents.json:
+  task(
+    agent_type = "general-purpose",
+    mode       = "background",
+    name       = agent["name"],
+    prompt     = agent["launch_prompt"]
+  )
+```
+
+**Порядок волн:**
+1. Запусти первые 10 агентов (одним tool-calling ходом)
+2. **Подожди 60 секунд** (`bash: sleep 60`) - пауза для восстановления rate limit
+3. Запусти следующие 10 агентов
+4. **Подожди 60 секунд**
+5. Запусти оставшихся агентов
+6. Повторяй до запуска всех
+
+> **Почему 10, а не 36?** Sonnet-агенты потребляют значительный rate limit.
+> Запуск всех сразу приводит к массовым 429-ошибкам - агенты получают rate limit
+> на первом же запросе и завершаются без результата.
+
+### 3.3. Обработка ошибок при запуске
+
+- **"Maximum concurrent agent limit reached"**: подожди завершения текущих агентов, затем запусти оставшихся
+- **429 rate limit на первом ходе**: агент завершится с `total_turns: 0` и без файла результата. Будет перезапущен на шаге 3.5
+
+### 3.4. Проверка результатов
+
+После завершения **всех** агентов проверь, что файлы записаны:
+
+```bash
+# Должно совпадать с количеством агентов
+ls /tmp/otel-specs/results/*.json | wc -l
+```
+
+### 3.5: Валидация и повторный запуск
 
 > **КРИТИЧЕСКИ ВАЖНО:** Агенты обязаны вернуть данные по 100% секций и 100% ключевых слов.
 > Повторяй до тех пор, пока все не будут пройдены. Rate limit - не причина остановиться.
 
-После завершения всех агентов **обязательно** проверь количество требований:
+После завершения всех агентов **обязательно** выполни проверку:
 
-```python
-# Псевдокод валидации
-import json, os, time
+```bash
+python3 -c "
+import json, os
 
-with open("/tmp/otel-specs/agents.json") as f:
+with open('/tmp/otel-specs/agents.json') as f:
     agents = json.load(f)
 
-failed_agents = []
-missing_agents = []
+missing = []
+mismatched = []
 for agent in agents:
-    name = agent["name"]
-    result_path = f"/tmp/otel-specs/results/{name}.json"
-    if not os.path.exists(result_path):
-        missing_agents.append(name)
+    name = agent['name']
+    path = f\"/tmp/otel-specs/results/{name}.json\"
+    if not os.path.exists(path):
+        missing.append(name)
         continue
-    with open(result_path) as f:
+    with open(path) as f:
         result = json.load(f)
-
-    mismatches = []
-    for section in result["sections"]:
-        expected = section["expected_keywords"]
-        actual = len(section.get("requirements", []))
+    for section in result['sections']:
+        expected = section['expected_keywords']
+        actual = len(section.get('requirements', []))
         if actual != expected:
-            mismatches.append((section["section_id"], expected, actual))
+            mismatched.append(f'{name}: {section[\"section_id\"]} expected={expected} actual={actual}')
 
-    if mismatches:
-        failed_agents.append((name, mismatches))
+if missing:
+    print(f'❌ Отсутствуют результаты ({len(missing)}):')
+    for m in missing:
+        print(f'  {m}')
+if mismatched:
+    print(f'⚠️  Несовпадения keywords ({len(mismatched)}):')
+    for m in mismatched:
+        print(f'  {m}')
+if not missing and not mismatched:
+    print(f'✅ Все {len(agents)} агентов вернули корректные результаты')
+"
 ```
 
-Для каждого агента с несовпадениями или отсутствующим результатом:
-1. Удали его результат (если есть): `rm -f /tmp/otel-specs/results/<agent>.json`
-2. Подожди 30 секунд (задержка для rate limit): `time.sleep(30)`
-3. Перезапусти агента с **дополнительной инструкцией** в начале промпта:
+#### Rate limit (429) - отсутствующие результаты
+
+Если агенты упали по rate limit (результат отсутствует, `total_turns: 0` в `read_agent`):
+
+1. **Подожди 120 секунд** (`bash: sleep 120`) перед перезапуском - rate limit должен восстановиться
+2. Перезапускай **волнами по 5** (не 10!) - при повторе лимит ещё может быть частично исчерпан
+3. **Пауза 120 секунд** между волнами повторов
+4. Используй тот же `launch_prompt` из `agents.json`
+5. Если вторая попытка тоже упала в 429 - **увеличь паузу до 300 секунд** и повтори
+6. До 3 попыток на каждого агента
 
 ```
-⚠️ ПОВТОРНЫЙ ЗАПУСК: В предыдущей попытке количество требований не совпало с expected_keywords.
+Волна повтора:
+  sleep 120
+  → запусти 5 агентов
+  → дождись завершения
+  sleep 120
+  → запусти следующие 5
+  → ...
+```
+
+> **НЕ ОСТАНАВЛИВАЙСЯ** при rate limit. Увеличивай паузу и продолжай.
+> Смена модели (например, на `claude-sonnet-4`) допустима как крайняя мера,
+> если основная модель заблокирована более 10 минут.
+
+#### Несовпадения keywords
+
+Если агент вернул неверное количество требований:
+
+1. Удали результат: `rm -f /tmp/otel-specs/results/<name>.json`
+2. Перезапусти агента с **дополнительным префиксом** перед `launch_prompt`:
+
+```
+⚠️ ПОВТОРНЫЙ ЗАПУСК: В предыдущей попытке количество требований не совпало.
 Ошибки:
 - Секция <section_id>: ожидалось <expected>, получено <actual>
-Перечитай текст секции ВНИМАТЕЛЬНО и убедись, что ты нашёл РОВНО expected_keywords ключевых слов.
+Перечитай текст секции ВНИМАТЕЛЬНО и убедись, что нашёл РОВНО expected_keywords ключевых слов.
+
+<оригинальный launch_prompt>
 ```
 
-**Цикл повторов:**
-- Повторяй до 3 раз для каждого агента
-- Между повторами - задержка 30-60 секунд (rate limit)
-- Если агент не вернул результат (rate limit / ошибка) - увеличь задержку до 120 секунд
-- Если после 3 повторов count не совпадает - зафиксируй расхождение в предупреждениях
-
-> **НЕ ОСТАНАВЛИВАЙСЯ**, если rate limit. Сделай задержку и повтори.
+3. До 3 попыток; если не удалось - зафиксируй расхождение и переходи к шагу 4
 
 ## Шаг 4: Сборка итогового документа
 

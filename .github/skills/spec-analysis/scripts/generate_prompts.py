@@ -5,13 +5,17 @@
 и конфигурацию агентов.
 
 Использование:
-    python3 generate_prompts.py <output_dir>
+    python3 generate_prompts.py <output_dir> [<codebase_root>]
+
+Аргументы:
+    <output_dir>      - каталог с sections.json (от extract_requirements.py)
+    <codebase_root>   - корень репозитория (по умолчанию: определяется из расположения скрипта)
 
 Входные данные:
     <output_dir>/sections.json - извлечённые секции (из extract_requirements.py)
 
 Выходные данные:
-    <output_dir>/agents.json        - конфигурация агентов (имя → секции)
+    <output_dir>/agents.json        - конфигурация агентов (имя → секции, launch_prompt)
     <output_dir>/prompts/<name>.md  - промпт для каждого агента
     <output_dir>/results/           - каталог для результатов агентов (создаётся пустым)
 """
@@ -400,14 +404,45 @@ JSON-схема:
     return prompt
 
 
+def detect_codebase_root():
+    """Определяет корень репозитория из расположения скрипта.
+
+    Скрипт находится в .github/skills/spec-analysis/scripts/,
+    поэтому корень - на 4 уровня выше.
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root = os.path.normpath(os.path.join(script_dir, "..", "..", "..", ".."))
+    if os.path.exists(os.path.join(root, "lib.config")):
+        return root
+    return os.getcwd()
+
+
+def build_launch_prompt(agent_name, codebase_root, output_dir):
+    """Строит короткий промпт для запуска агента через task tool.
+
+    Агент получает этот промпт и сам читает свой файл инструкций.
+    """
+    prompt_path = os.path.join(output_dir, "prompts", f"{agent_name}.md")
+    results_path = os.path.join(output_dir, "results", f"{agent_name}.json")
+    return (
+        f"Read your full instructions from the file {prompt_path} "
+        f"and follow them precisely.\n\n"
+        f"The codebase is at {codebase_root} (src/, tests/, lib.config).\n"
+        f"Write your JSON result to {results_path} "
+        f"exactly as specified in the instructions."
+    )
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Использование: python3 generate_prompts.py <output_dir>")
+        print("Использование: python3 generate_prompts.py <output_dir> [<codebase_root>]")
         print()
-        print("  <output_dir> - каталог с sections.json (от extract_requirements.py)")
+        print("  <output_dir>    - каталог с sections.json (от extract_requirements.py)")
+        print("  <codebase_root> - корень репозитория (опционально)")
         sys.exit(1)
 
     output_dir = sys.argv[1]
+    codebase_root = sys.argv[2] if len(sys.argv) > 2 else detect_codebase_root()
     sections_file = os.path.join(output_dir, "sections.json")
 
     if not os.path.exists(sections_file):
@@ -440,8 +475,10 @@ def main():
             f.write(prompt)
 
         total_kw = sum(s["keywords"]["total"] for s in agent["sections"])
+        launch_prompt = build_launch_prompt(name, codebase_root, output_dir)
         agent_info = {
             "name": name,
+            "launch_prompt": launch_prompt,
             "code_dirs": agent["code_dirs"],
             "total_keywords": total_kw,
             "sections": [
