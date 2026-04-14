@@ -261,9 +261,6 @@
 - ⚠️ **[Trace Api]** [SHOULD NOT] The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Tracing API implementation.  
   Ключ контекста для спана доступен публично через ОтелКонтекст.КлючСпана(). Хотя существуют удобные методы (СпанИзКонтекста, КонтекстСоСпаном), пользователи имеют прямой доступ к ключу. (`src/Ядро/Модули/ОтелКонтекст.os:44`)
 
-- ⚠️ **[Trace Api]** [SHOULD NOT] The API SHOULD NOT expose details about how they are internally stored.  
-  TraceId and SpanId are stored as hex strings and the hex accessor directly returns the stored value, implicitly exposing the internal storage format. However, binary accessors do provide an abstracted representation. (`src/Трассировка/Классы/ОтелКонтекстСпана.os:4`)
-
 - ⚠️ **[Trace Api]** [SHOULD NOT] To prevent misuse, implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`.  
   ОтелСпан exposes Атрибуты() as a public Export method, providing direct read access to span attributes beyond SpanContext. (`src/Трассировка/Классы/ОтелСпан.os:134`)
 
@@ -859,7 +856,7 @@
 | 22 | MUST | ✅ found | or `SpanId` (result MUST be a 16-hex-character lowercase string). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
 | 23 | MUST | ✅ found | Binary - returns the binary representation of the `TraceId` (result MUST be a 16-byte array) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:82` |  |
 | 24 | MUST | ✅ found | or `SpanId` (result MUST be an 8-byte array). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:91` |  |
-| 25 | SHOULD NOT | ⚠️ partial | The API SHOULD NOT expose details about how they are internally stored. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:4` | TraceId and SpanId are stored as hex strings and the hex accessor directly returns the stored value, implicitly exposing the internal storage format. However, binary accessors do provide an abstracted representation. |
+| 25 | SHOULD NOT | ✅ found | The API SHOULD NOT expose details about how they are internally stored. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:4` |  |
 
 #### IsValid
 
@@ -3145,7 +3142,6 @@
 
 | Ограничение | Влияние на спецификацию | Решение |
 |---|---|---|
-| Нет байтовых массивов | TraceId/SpanId хранятся как hex-строки | Функциональный эквивалент через строки |
 | Нет наносекундной точности | Временные метки с точностью до миллисекунд | Используется миллисекундная точность |
 | Нет TLS/mTLS из SDK | Сертификаты конфигурируются вне SDK | Делегировано системе/прокси |
 | Нет opaque-объектов | Ключи контекста - строки | Строковые константы как ключи |
