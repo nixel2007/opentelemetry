@@ -15,11 +15,11 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 541 (78.1%) |
-| ⚠️ Частично (partial) | 109 (15.7%) |
-| ❌ Не реализовано (not_found) | 43 (6.2%) |
+| ✅ Реализовано (found) | 546 (78.8%) |
+| ⚠️ Частично (partial) | 105 (15.2%) |
+| ❌ Не реализовано (not_found) | 42 (6.1%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 371/418 (88.8%) |
+| **MUST/MUST NOT found** | 376/418 (89.9%) |
 | **SHOULD/SHOULD NOT found** | 170/275 (61.8%) |
 
 ## Соответствие по разделам (Stable)
@@ -30,11 +30,11 @@
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
 | Resource Sdk | 16 | 2 | 2 | 0 | 20 | 80.0% |
 | Trace Api | 103 | 15 | 4 | 0 | 122 | 84.4% |
-| Trace Sdk | 59 | 16 | 7 | 0 | 82 | 72.0% |
+| Trace Sdk | 60 | 15 | 7 | 0 | 82 | 73.2% |
 | Logs Api | 19 | 1 | 0 | 1 | 20 | 95.0% |
-| Logs Sdk | 48 | 14 | 2 | 0 | 64 | 75.0% |
+| Logs Sdk | 51 | 12 | 1 | 0 | 64 | 79.7% |
 | Metrics Api | 86 | 15 | 0 | 0 | 101 | 85.1% |
-| Metrics Sdk | 116 | 33 | 22 | 0 | 171 | 67.8% |
+| Metrics Sdk | 117 | 32 | 22 | 0 | 171 | 68.4% |
 | Otlp Exporter | 15 | 6 | 3 | 1 | 24 | 62.5% |
 | Propagators | 30 | 2 | 1 | 0 | 33 | 90.9% |
 | Env Vars | 19 | 3 | 2 | 0 | 24 | 79.2% |
@@ -97,20 +97,20 @@
 - ✅ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
   СброситьБуфер() и Закрыть() принимают параметр ТаймаутМс. ЭкспортироватьВсеПакеты() прерывается по таймауту через ТекущаяУниверсальнаяДатаВМиллисекундах(). (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68`)
 
-- ⚠️ **[Trace Sdk]** [MUST] Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
-  Закрыт is a plain Булево, not АтомарноеБулево - concurrent Shutdown calls may have race conditions; compare with ОтелПровайдерТрассировки which uses АтомарноеБулево for its Закрыт flag (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:47`)
+- ✅ **[Trace Sdk]** [MUST] Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
+  Флаг Закрыт реализован через АтомарноеБулево из библиотеки atomic - потокобезопасные операции Получить()/Установить(). (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:11`)
 
-- ❌ **[Logs Sdk]** [MUST NOT] Any modifications to parameters inside `Enabled` MUST NOT be propagated to the caller.  
-  LogRecordProcessor не реализует операцию Enabled. Интерфейс ИнтерфейсПроцессорЛогов не содержит метода Enabled. Фильтрация реализована на уровне ОтелЛоггер.Включен(), а не на уровне процессора. (-)
+- ✅ **[Logs Sdk]** [MUST NOT] Any modifications to parameters inside `Enabled` MUST NOT be propagated to the caller.  
+  Метод Включен() реализован на ИнтерфейсПроцессорЛогов и всех процессорах (Простой, Пакетный, Композитный). Параметры не модифицируются - процессоры возвращают только Булево. (`src/Логирование/Классы/ИнтерфейсПроцессорЛогов.os:18`)
 
-- ⚠️ **[Logs Sdk]** [MUST] The built-in LogRecordProcessors MUST do so.  
-  Встроенные процессоры экспортируют все буферизованные записи, но не вызывают ForceFlush на экспортере после экспорта, как требует предыдущее предложение. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70`)
+- ✅ **[Logs Sdk]** [MUST] The built-in LogRecordProcessors MUST do so.  
+  Пакетный процессор вызывает Экспортер.СброситьБуфер() после Экспортер.Экспортировать() в методе ЭкспортироватьПакет(). (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157`)
 
 - ✅ **[Logs Sdk]** [MUST] If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls.  
   Аналогично SpanProcessor - базовый пакетный процессор принимает ТаймаутМс и прерывает экспорт по таймауту. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68`)
 
-- ⚠️ **[Logs Sdk]** [MUST] LogRecordExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
-  Код экспортера содержит комментарий о необходимости потокобезопасности (строка 3-4), но переменная Закрыт - обычный Булево без атомарной защиты (не АтомарноеБулево). В отличие от ОтелПровайдерЛогирования, который использует АтомарноеБулево и СинхронизированнаяКарта, экспортер не использует примитивы синхронизации для флага Закрыт. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os:3`)
+- ✅ **[Logs Sdk]** [MUST] LogRecordExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
+  Флаг Закрыт реализован через АтомарноеБулево из библиотеки atomic - потокобезопасные операции Получить()/Установить(). (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os:10`)
 
 - ⚠️ **[Metrics Api]** [MUST] Therefore, this API MUST be structured to accept a variable number of `callback` functions, including none.  
   API создания асинхронных инструментов принимает 0 или 1 callback через параметр Callback = Неопределено. Переменное количество callback не поддерживается при создании - дополнительные добавляются через ДобавитьCallback() после создания (`src/Метрики/Классы/ОтелМетр.os:229`)
@@ -187,8 +187,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] ExemplarReservoir - all methods MUST be safe to be called concurrently.  
   Используется СинхронизированнаяКарта для Данные и Счетчики, АтомарноеЧисло для счетчиков измерений. Однако операции с внутренним Массивом экземпляров (Добавить, присваивание по индексу) в методе ДобавитьВРезервуар не синхронизированы - возможна гонка при конкурентных вызовах Предложить для одного КлючАтрибутов. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:167`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
-  Комментарий в коде признает необходимость конкурентной безопасности, но реализация не использует ни БлокировкаРесурса, ни АтомарноеБулево. Флаг Закрыт - обычный Булево без синхронизации. ForceFlush (СброситьБуфер) - пустой метод (inherently safe), но Shutdown и Export имеют гонку данных на флаге Закрыт. (`src/Экспорт/Классы/ОтелЭкспортерМетрик.os:3`)
+- ✅ **[Metrics Sdk]** [MUST] MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
+  Флаг Закрыт реализован через АтомарноеБулево из библиотеки atomic - потокобезопасные операции Получить()/Установить(). (`src/Экспорт/Классы/ОтелЭкспортерМетрик.os:12`)
 
 - ⚠️ **[Otlp Exporter]** [MUST] The following configuration options MUST be available to configure the OTLP exporter.  
   Endpoint, Protocol, Headers, Compression, Timeout доступны через env vars; Certificate File, Client key file, Client certificate file, Insecure не реализованы (TLS/mTLS - ограничение платформы OneScript) (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:130`)
@@ -1394,7 +1394,7 @@
 | 79 | MUST | ✅ found | Tracer Provider - Tracer creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:6` |  |
 | 80 | MUST | ✅ found | Sampler - `ShouldSample` and `GetDescription` MUST be safe to be called concurrently. | `src/Трассировка/Модули/ОтелСэмплер.os:140` |  |
 | 81 | MUST | ✅ found | Span processor - all methods MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:41` |  |
-| 82 | MUST | ⚠️ partial | Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:47` | Закрыт is a plain Булево, not АтомарноеБулево - concurrent Shutdown calls may have race conditions; compare with ОтелПровайдерТрассировки which uses АтомарноеБулево for its Закрыт flag |
+| 82 | MUST | ✅ found | Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:11` | Флаг Закрыт реализован через АтомарноеБулево - потокобезопасные операции. |
 
 ### Logs Api
 
@@ -1592,7 +1592,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 33 | MUST NOT | ❌ not_found | Any modifications to parameters inside `Enabled` MUST NOT be propagated to the caller. | - | LogRecordProcessor не реализует операцию Enabled. Интерфейс ИнтерфейсПроцессорЛогов не содержит метода Enabled. Фильтрация реализована на уровне ОтелЛоггер.Включен(), а не на уровне процессора. |
+| 33 | MUST NOT | ✅ found | Any modifications to parameters inside `Enabled` MUST NOT be propagated to the caller. | `src/Логирование/Классы/ИнтерфейсПроцессорЛогов.os:18` | Метод Включен() реализован на всех процессорах. Параметры не модифицируются - процессоры возвращают только Булево. |
 
 #### ShutDown
 
@@ -1614,7 +1614,7 @@
 |---|---|---|---|---|---|
 | 39 | SHOULD | ✅ found | This is a hint to ensure that any tasks associated with `LogRecord`s for which the `LogRecordProcessor` had already received events prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70` |  |
 | 40 | SHOULD | ⚠️ partial | In particular, if any `LogRecordProcessor` has any associated exporter, it SHOULD try to call the exporter's `Export` with all `LogRecord`s for which this was not already done and then invoke `ForceFlush` on it. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:120-135` | СброситьБуфер() вызывает ЭкспортироватьВсеПакеты(), который экспортирует все буферизованные записи через Экспортер.Экспортировать(). Однако после экспорта не вызывается Экспортер.СброситьБуфер() (ForceFlush экспортера). |
-| 41 | MUST | ⚠️ partial | The built-in LogRecordProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70` | Встроенные процессоры экспортируют все буферизованные записи, но не вызывают ForceFlush на экспортере после экспорта, как требует предыдущее предложение. |
+| 41 | MUST | ✅ found | The built-in LogRecordProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157` | Пакетный процессор вызывает Экспортер.СброситьБуфер() после Экспортер.Экспортировать(). |
 | 42 | MUST | ✅ found | If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` | Базовый пакетный процессор принимает ТаймаутМс и прерывает экспорт по таймауту. |
 | 43 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:131-135` | Асинхронная версия СброситьБуферАсинхронно() возвращает Обещание. Однако синхронный метод СброситьБуфер() является Процедурой (void) и не возвращает результат. |
 | 44 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the `LogRecordProcessor` exports the emitted `LogRecord`s. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107-111` |  |
@@ -1700,7 +1700,7 @@
 |---|---|---|---|---|---|
 | 62 | MUST | ✅ found | LoggerProvider - Logger creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:224` |  |
 | 63 | MUST | ✅ found | Logger - all methods MUST be safe to be called concurrently. | `src/Логирование/Классы/ОтелЛоггер.os:76` |  |
-| 64 | MUST | ⚠️ partial | LogRecordExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:3` | Код экспортера содержит комментарий о необходимости потокобезопасности (строка 3-4), но переменная Закрыт - обычный Булево без атомарной защиты (не АтомарноеБулево). В отличие от ОтелПровайдерЛогирования, который использует АтомарноеБулево и СинхронизированнаяКарта, экспортер не использует примитивы синхронизации для флага Закрыт. |
+| 64 | MUST | ✅ found | LogRecordExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерЛогов.os:10` | Флаг Закрыт реализован через АтомарноеБулево - потокобезопасные операции. |
 
 ### Metrics Api
 
@@ -2466,7 +2466,7 @@
 | 168 | MUST | ⚠️ partial | MeterProvider - Meter creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:241` | Meter creation использует СинхронизированнаяКарта (потокобезопасно). Однако ForceFlush (СброситьБуфер) и Shutdown (Закрыть) итерируют массив ЧитателиМетрик без блокировки, а флаг Закрыт - обычный Булево, не АтомарноеБулево. |
 | 169 | MUST | ⚠️ partial | ExemplarReservoir - all methods MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:167` | Используется СинхронизированнаяКарта для Данные и Счетчики, АтомарноеЧисло для счетчиков измерений. Однако операции с внутренним Массивом экземпляров (Добавить, присваивание по индексу) в методе ДобавитьВРезервуар не синхронизированы - возможна гонка при конкурентных вызовах Предложить для одного КлючАтрибутов. |
 | 170 | MUST | ✅ found | MetricReader - `Collect`, `ForceFlush` (for periodic exporting MetricReader) and `Shutdown` MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:12` |  |
-| 171 | MUST | ⚠️ partial | MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:3` | Комментарий в коде признает необходимость конкурентной безопасности, но реализация не использует ни БлокировкаРесурса, ни АтомарноеБулево. Флаг Закрыт - обычный Булево без синхронизации. ForceFlush (СброситьБуфер) - пустой метод (inherently safe), но Shutdown и Export имеют гонку данных на флаге Закрыт. |
+| 171 | MUST | ✅ found | MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:12` | Флаг Закрыт реализован через АтомарноеБулево - потокобезопасные операции. |
 
 ### Otlp Exporter
 
@@ -2985,7 +2985,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ⚠️ partial | `Enabled` MUST return `false` when either: there are no registered `LogRecordProcessors`; Logger is disabled (`LoggerConfig.enabled` is `false`); the provided severity is specified (i.e. not `0`) and is less than the configured `minimum_severity` in the `LoggerConfig`; `trace_based` is `true` in the `LoggerConfig` and the current context is associated with an unsampled trace; all registered `LogRecordProcessors` implement `Enabled`, and a call to `Enabled` on each of them returns `false`. | `src/Логирование/Классы/ОтелЛоггер.os:42` | Most conditions are correctly implemented (no processors, disabled logger, minimum severity, trace-based filtering). However, the last condition - checking if all registered LogRecordProcessors implement Enabled and each returns false - is not implemented. The code only checks ЕстьПроцессоры() (whether processors exist) but does not call individual processor Enabled methods. |
+| 1 | MUST | ✅ found | `Enabled` MUST return `false` when either: there are no registered `LogRecordProcessors`; Logger is disabled (`LoggerConfig.enabled` is `false`); the provided severity is specified (i.e. not `0`) and is less than the configured `minimum_severity` in the `LoggerConfig`; `trace_based` is `true` in the `LoggerConfig` and the current context is associated with an unsampled trace; all registered `LogRecordProcessors` implement `Enabled`, and a call to `Enabled` on each of them returns `false`. | `src/Логирование/Классы/ОтелЛоггер.os:42` | Все условия реализованы. Включен() вызывает Провайдер.Процессор().Включен() с OR-логикой через ОтелКомпозитныйПроцессорЛогов. |
 | 2 | SHOULD | ✅ found | Otherwise, it SHOULD return `true`. | `src/Логирование/Классы/ОтелЛоггер.os:61` |  |
 
 ### Metrics Api
