@@ -15,11 +15,11 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 533 (76.9%) |
+| ✅ Реализовано (found) | 537 (77.5%) |
 | ⚠️ Частично (partial) | 110 (15.9%) |
-| ❌ Не реализовано (not_found) | 50 (7.2%) |
+| ❌ Не реализовано (not_found) | 46 (6.6%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 363/418 (86.8%) |
+| **MUST/MUST NOT found** | 367/418 (87.8%) |
 | **SHOULD/SHOULD NOT found** | 170/275 (61.8%) |
 
 ## Соответствие по разделам (Stable)
@@ -37,7 +37,7 @@
 | Metrics Sdk | 116 | 33 | 22 | 0 | 171 | 67.8% |
 | Otlp Exporter | 11 | 7 | 6 | 1 | 24 | 45.8% |
 | Propagators | 30 | 2 | 1 | 0 | 33 | 90.9% |
-| Env Vars | 15 | 3 | 6 | 0 | 24 | 62.5% |
+| Env Vars | 19 | 3 | 2 | 0 | 24 | 79.2% |
 
 ## Ключевые несоответствия (Stable)
 
@@ -217,8 +217,8 @@
 - ⚠️ **[Env Vars]** [MUST] The SDK MUST interpret an empty value of an environment variable the same way as when the variable is unset.  
   Некоторые параметры проверяют пустую строку (строки 105, 137, 398, 411, 439, 447 через '<> ""'), но параметры использующие значение по умолчанию в Менеджер.Параметр(ключ, умолчание) не обрабатывают пустую строку как неустановленное значение - пустая строка обходит значение по умолчанию (например строки 150, 160, 177, 255, 291, 562) (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:105`)
 
-- ❌ **[Env Vars]** [MUST] For new implementations, these should be treated as MUST requirements.  
-  Как новая реализация, код должен обрабатывать числовые значения на уровне MUST (предупреждение + graceful ignore), но вызовы Число() (строки 160, 204, 215, 224-227, 263-266, 312, 399, 401, 412, 414, 440, 448) не обёрнуты в Попытка/Исключение, не генерируют предупреждений и не обрабатывают невалидные значения gracefully. (-)
+- ✅ **[Env Vars]** [MUST] For new implementations, these should be treated as MUST requirements.  
+  Все числовые env vars обрабатываются через БезопасноеЧисло(), которая логирует предупреждение и возвращает значение по умолчанию при невалидном вводе. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:590`)
 
 - ⚠️ **[Env Vars]** [MUST] For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting.  
   Для пропагаторов выводится предупреждение через Сообщить (строка 373) и значение пропускается. Но для OTEL_TRACES_SAMPLER (строка 216) нераспознанное значение молча заменяется на parentbased_always_on без предупреждения. Для OTEL_METRICS_EXEMPLAR_FILTER (ОтелПостроительПровайдераМетрик.os:123) нераспознанное значение игнорируется без предупреждения. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:373`)
@@ -226,14 +226,14 @@
 - ✅ **[Env Vars]** [MUST] Values MUST be deduplicated in order to register a `Propagator` only once.  
   СоздатьПропагаторы() выполняет дедупликацию через проверку уже добавленных типов перед созданием экземпляра. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:336`)
 
-- ❌ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
-  В коде обработки OTEL_TRACES_SAMPLER_ARG (ОтелАвтоконфигурация.os:203-204) значение напрямую преобразуется через Число() без обработки ошибок. Невалидный ввод (например, нечисловая строка) вызовет исключение вместо логирования. (-)
+- ✅ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
+  OTEL_TRACES_SAMPLER_ARG обрабатывается через БезопасноеЧисло() с умолчанием 1.0 и логированием предупреждения. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:208`)
 
-- ❌ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
-  Невалидный OTEL_TRACES_SAMPLER_ARG не игнорируется gracefully - вызов Число() с нечисловым значением приведёт к исключению, а не к игнорированию параметра. (-)
+- ✅ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
+  БезопасноеЧисло() возвращает умолчание (1.0) при невалидном вводе - реализация ведёт себя как если параметр не установлен. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:208`)
 
-- ❌ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
-  При невалидном OTEL_TRACES_SAMPLER_ARG реализация не ведёт себя так, как будто параметр не установлен. Вместо фолбэка на значение по умолчанию (1.0 для traceidratio) происходит исключение. (-)
+- ✅ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
+  При невалидном вводе БезопасноеЧисло() делает фолбэк на 1.0 (значение по умолчанию traceidratio) с логированием. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:219`)
 
 - ❌ **[Env Vars]** [MUST] When `OTEL_CONFIG_FILE` is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored.  
   Переменная OTEL_CONFIG_FILE не поддерживается в реализации. Нет кода, который бы проверял наличие этой переменной или реализовывал декларативную конфигурацию из файла. (-)
@@ -2710,7 +2710,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 11 | SHOULD | ✅ found | The following paragraph was added after stabilization and the requirements are thus qualified as "SHOULD" to allow implementations to avoid breaking changes. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:160` |  |
-| 12 | MUST | ❌ not_found | For new implementations, these should be treated as MUST requirements. | - | Как новая реализация, код должен обрабатывать числовые значения на уровне MUST (предупреждение + graceful ignore), но вызовы Число() (строки 160, 204, 215, 224-227, 263-266, 312, 399, 401, 412, 414, 440, 448) не обёрнуты в Попытка/Исключение, не генерируют предупреждений и не обрабатывают невалидные значения gracefully. |
+| 12 | MUST | ✅ found | For new implementations, these should be treated as MUST requirements. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:590` | Все числовые env vars обрабатываются через БезопасноеЧисло() с логированием и фолбэком на умолчание. |
 | 13 | SHOULD | ❌ not_found | For variables accepting a numeric value, if the user provides a value the implementation cannot parse, the implementation SHOULD generate a warning and gracefully ignore the setting, i.e., treat them as not set. | - | Все числовые параметры парсятся через Число() без обработки ошибок (например строка 160: Число(Менеджер.Параметр("otel.exporter.otlp.timeout", "10"))). Если пользователь задаст невалидное значение (например 'abc'), вызов Число() выбросит исключение вместо генерации предупреждения и использования значения по умолчанию. |
 
 #### Enum
@@ -2729,9 +2729,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 16 | MUST | ✅ found | Values MUST be deduplicated in order to register a `Propagator` only once. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:336` | СоздатьПропагаторы() дедуплицирует пропагаторы перед созданием. |
-| 17 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | В коде обработки OTEL_TRACES_SAMPLER_ARG (ОтелАвтоконфигурация.os:203-204) значение напрямую преобразуется через Число() без обработки ошибок. Невалидный ввод (например, нечисловая строка) вызовет исключение вместо логирования. |
-| 18 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | Невалидный OTEL_TRACES_SAMPLER_ARG не игнорируется gracefully - вызов Число() с нечисловым значением приведёт к исключению, а не к игнорированию параметра. |
-| 19 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | При невалидном OTEL_TRACES_SAMPLER_ARG реализация не ведёт себя так, как будто параметр не установлен. Вместо фолбэка на значение по умолчанию (1.0 для traceidratio) происходит исключение. |
+| 17 | MUST | ✅ found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:208` | БезопасноеЧисло() логирует предупреждение и возвращает умолчание 1.0 при невалидном вводе. |
+| 18 | MUST | ✅ found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:208` | Невалидный ввод игнорируется gracefully через фолбэк на умолчание. |
+| 19 | MUST | ✅ found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:219` | При невалидном вводе реализация ведёт себя как если параметр не установлен (фолбэк на 1.0). |
 
 #### Attribute Limits
 
