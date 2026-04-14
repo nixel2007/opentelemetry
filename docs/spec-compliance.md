@@ -15,12 +15,12 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 520 (75.0%) |
-| ⚠️ Частично (partial) | 111 (16.0%) |
-| ❌ Не реализовано (not_found) | 62 (8.9%) |
+| ✅ Реализовано (found) | 533 (76.9%) |
+| ⚠️ Частично (partial) | 110 (15.9%) |
+| ❌ Не реализовано (not_found) | 50 (7.2%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 353/418 (84.4%) |
-| **SHOULD/SHOULD NOT found** | 167/275 (60.7%) |
+| **MUST/MUST NOT found** | 363/418 (86.8%) |
+| **SHOULD/SHOULD NOT found** | 170/275 (61.8%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -28,16 +28,16 @@
 |---|---|---|---|---|---|---|
 | Context | 14 | 1 | 0 | 0 | 15 | 93.3% |
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
-| Resource Sdk | 12 | 4 | 4 | 0 | 20 | 60.0% |
+| Resource Sdk | 16 | 2 | 2 | 0 | 20 | 80.0% |
 | Trace Api | 103 | 15 | 4 | 0 | 122 | 84.4% |
-| Trace Sdk | 58 | 16 | 8 | 0 | 82 | 70.7% |
+| Trace Sdk | 59 | 16 | 7 | 0 | 82 | 72.0% |
 | Logs Api | 19 | 1 | 0 | 1 | 20 | 95.0% |
-| Logs Sdk | 47 | 14 | 3 | 0 | 64 | 73.4% |
+| Logs Sdk | 48 | 14 | 2 | 0 | 64 | 75.0% |
 | Metrics Api | 86 | 15 | 0 | 0 | 101 | 85.1% |
-| Metrics Sdk | 112 | 31 | 28 | 0 | 171 | 65.5% |
+| Metrics Sdk | 116 | 33 | 22 | 0 | 171 | 67.8% |
 | Otlp Exporter | 11 | 7 | 6 | 1 | 24 | 45.8% |
 | Propagators | 30 | 2 | 1 | 0 | 33 | 90.9% |
-| Env Vars | 12 | 4 | 8 | 0 | 24 | 50.0% |
+| Env Vars | 15 | 3 | 6 | 0 | 24 | 62.5% |
 
 ## Ключевые несоответствия (Stable)
 
@@ -49,14 +49,14 @@
 - ⚠️ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
   Detectors exist (ОтелДетекторРесурсаХоста, ОтелДетекторРесурсаПроцесса, ОтелДетекторРесурсаПроцессора) but are all within src/Ядро/Классы/ - inline in the SDK package, not in separate packages. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
 
-- ❌ **[Resource Sdk]** [MUST] Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions.  
-  Detectors (host, process, cpu) populate known semconv attributes (host.name, os.type, process.pid) but create resources via Новый ОтелРесурс(Истина) with empty Schema URL. No Schema URL matching semantic conventions is ever set. (-)
+- ✅ **[Resource Sdk]** [MUST] Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions.  
+  Все детекторы (host, process, cpu) передают Schema URL https://opentelemetry.io/schemas/1.29.0 при создании ресурса. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18`)
 
-- ⚠️ **[Resource Sdk]** [MUST] If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources.  
-  The Слить() method detects Schema URL conflicts and returns an empty resource, but the detector combining in ЗаполнитьАтрибутыПоУмолчанию() copies attributes directly without using Слить() and does not check Schema URLs. Also no error is reported on conflict. (`src/Ядро/Классы/ОтелРесурс.os:41`)
+- ✅ **[Resource Sdk]** [MUST] If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources.  
+  ЗаполнитьАтрибутыПоУмолчанию() теперь использует Слить() для объединения ресурсов детекторов, что обнаруживает конфликты Schema URL и возвращает пустой ресурс. (`src/Ядро/Классы/ОтелРесурс.os:102`)
 
-- ❌ **[Resource Sdk]** [MUST] The `,` and `=` characters in keys and values MUST be percent encoded.  
-  РазобратьПарыКлючЗначение() splits by ',' and '=' but performs no percent-decoding. Values containing %2C or %3D will not be decoded back to ',' or '='. (-)
+- ✅ **[Resource Sdk]** [MUST] The `,` and `=` characters in keys and values MUST be percent encoded.  
+  РазобратьПарыКлючЗначение() выполняет percent-декодирование ключей и значений через РаскодироватьСтроку(СпособКодированияСтроки.КодировкаURL). (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:488`)
 
 - ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
   УстановитьРодителя() accepts ОтелСпан or ОтелКонтекстСпана as parent directly, not a full Context object as required by the spec. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
@@ -94,8 +94,8 @@
 - ⚠️ **[Trace Sdk]** [MUST] The built-in SpanProcessors MUST do so.  
   Пакетный процессор экспортирует все буферизированные спаны через ЭкспортироватьВсеПакеты(), но не вызывает ForceFlush (СброситьБуфер) на экспортере после экспорта, как требует спецификация (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68`)
 
-- ❌ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
-  Метод СброситьБуфер() не принимает параметр таймаута. ЭкспортироватьВсеПакеты() выполняет цикл до полного опустошения буфера без возможности прерывания по таймауту (-)
+- ✅ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
+  СброситьБуфер() и Закрыть() принимают параметр ТаймаутМс. ЭкспортироватьВсеПакеты() прерывается по таймауту через ТекущаяУниверсальнаяДатаВМиллисекундах(). (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68`)
 
 - ⚠️ **[Trace Sdk]** [MUST] Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
   Закрыт is a plain Булево, not АтомарноеБулево - concurrent Shutdown calls may have race conditions; compare with ОтелПровайдерТрассировки which uses АтомарноеБулево for its Закрыт flag (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:47`)
@@ -106,8 +106,8 @@
 - ⚠️ **[Logs Sdk]** [MUST] The built-in LogRecordProcessors MUST do so.  
   Встроенные процессоры экспортируют все буферизованные записи, но не вызывают ForceFlush на экспортере после экспорта, как требует предыдущее предложение. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70`)
 
-- ❌ **[Logs Sdk]** [MUST] If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls.  
-  Метод СброситьБуфер() не принимает параметр таймаута. Нет механизма приоритизации таймаута над завершением всех вызовов экспорта в ForceFlush. (-)
+- ✅ **[Logs Sdk]** [MUST] If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls.  
+  Аналогично SpanProcessor - базовый пакетный процессор принимает ТаймаутМс и прерывает экспорт по таймауту. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68`)
 
 - ⚠️ **[Logs Sdk]** [MUST] LogRecordExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
   Код экспортера содержит комментарий о необходимости потокобезопасности (строка 3-4), но переменная Закрыт - обычный Булево без атомарной защиты (не АтомарноеБулево). В отличие от ОтелПровайдерЛогирования, который использует АтомарноеБулево и СинхронизированнаяКарта, экспортер не использует примитивы синхронизации для флага Закрыт. (`src/Экспорт/Классы/ОтелЭкспортерЛогов.os:3`)
@@ -169,14 +169,14 @@
 - ⚠️ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
   БлокировкаРесурса (lock) используется только для потокобезопасного копирования массива Метров (строка 124-135), но сам вызов Экспортер.Экспортировать() (строка 154) находится вне блокировки. При одновременном вызове ПериодическийСбор (фоновое задание) и СброситьБуфер (основной поток) возможен конкурентный вызов Export. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:124`)
 
-- ❌ **[Metrics Sdk]** [MUST] `MetricProducer` defines the interface which bridges to third-party metric sources MUST implement, so they can be plugged into an OpenTelemetry MetricReader as a source of aggregated metric data.  
-  Интерфейс MetricProducer не реализован. Нет отдельного класса или интерфейса для подключения сторонних источников метрик к MetricReader. (-)
+- ✅ **[Metrics Sdk]** [MUST] `MetricProducer` defines the interface which bridges to third-party metric sources MUST implement, so they can be plugged into an OpenTelemetry MetricReader as a source of aggregated metric data.  
+  Реализован ИнтерфейсПродюсерМетрик с методом Произвести(). ОтелПериодическийЧитательМетрик поддерживает ДобавитьПродюсер() и собирает данные из продюсеров при экспорте. (`src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:1`)
 
-- ❌ **[Metrics Sdk]** [MUST] A `MetricProducer` MUST support the following functions:  
-  MetricProducer не реализован как отдельный интерфейс или класс. Функции Produce не существует. (-)
+- ✅ **[Metrics Sdk]** [MUST] A `MetricProducer` MUST support the following functions:  
+  Интерфейс ИнтерфейсПродюсерМетрик содержит метод Произвести() (Produce), возвращающий массив метрик. (`src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:19`)
 
-- ❌ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
-  Нет явного кода обработки числовых пределов (overflow, underflow) в метрическом SDK. Агрегаторы и инструменты не содержат проверок на выход за пределы числовых типов. (-)
+- ✅ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
+  Агрегатор гистограммы использует максимальное значение типа Decimal (79228162514264337593543950335) для начальных min/max. (`src/Метрики/Классы/ОтелАгрегаторГистограммы.os:150`)
 
 - ❌ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
   Нет явной обработки NaN и Infinity в агрегаторах метрик. Код принимает значения от инструментов без проверки на специальные значения IEEE 754 (NaN, +Infinity, -Infinity). (-)
@@ -223,8 +223,8 @@
 - ⚠️ **[Env Vars]** [MUST] For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting.  
   Для пропагаторов выводится предупреждение через Сообщить (строка 373) и значение пропускается. Но для OTEL_TRACES_SAMPLER (строка 216) нераспознанное значение молча заменяется на parentbased_always_on без предупреждения. Для OTEL_METRICS_EXEMPLAR_FILTER (ОтелПостроительПровайдераМетрик.os:123) нераспознанное значение игнорируется без предупреждения. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:373`)
 
-- ❌ **[Env Vars]** [MUST] Values MUST be deduplicated in order to register a `Propagator` only once.  
-  В СоздатьПропагаторы (ОтелАвтоконфигурация.os:336-378) список пропагаторов разбирается через СтрРазделить, но дедупликация не выполняется. Если пользователь укажет 'tracecontext,tracecontext', будут созданы два экземпляра ОтелW3CПропагатор. (-)
+- ✅ **[Env Vars]** [MUST] Values MUST be deduplicated in order to register a `Propagator` only once.  
+  СоздатьПропагаторы() выполняет дедупликацию через проверку уже добавленных типов перед созданием экземпляра. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:336`)
 
 - ❌ **[Env Vars]** [MUST] Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set.  
   В коде обработки OTEL_TRACES_SAMPLER_ARG (ОтелАвтоконфигурация.os:203-204) значение напрямую преобразуется через Число() без обработки ошибок. Невалидный ввод (например, нечисловая строка) вызовет исключение вместо логирования. (-)
@@ -495,8 +495,8 @@
 - ⚠️ **[Metrics Sdk]** [SHOULD] `Collect` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
   СобратьИЭкспортировать is a Процедура (void return), does not return success/failure status to the caller. Errors are logged but not propagated. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:123`)
 
-- ❌ **[Metrics Sdk]** [SHOULD] `Collect` SHOULD invoke Produce on registered MetricProducers.  
-  There is no MetricProducer interface or registration mechanism. The reader collects only from SDK meters, not from external MetricProducers. (-)
+- ✅ **[Metrics Sdk]** [SHOULD] `Collect` SHOULD invoke Produce on registered MetricProducers.  
+  СобратьИЭкспортировать() вызывает СобратьДанныеПродюсеров(), которая вызывает Произвести() на каждом зарегистрированном продюсере. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:155`)
 
 - ❌ **[Metrics Sdk]** [SHOULD] SDKs SHOULD return some failure for these calls, if possible.  
   СброситьБуфер() (Collect) не проверяет флаг Закрыт и не возвращает ошибку при вызове после Закрыть(). Нет механизма отклонения Collect-вызовов после Shutdown. (-)
@@ -549,8 +549,8 @@
 - ❌ **[Propagators]** [SHOULD] If pre-configured, `Propagator`s SHOULD default to a composite `Propagator` containing the W3C Trace Context Propagator and the Baggage `Propagator` specified in the Baggage API.  
   The SDK does not pre-configure propagators. ОтелГлобальный.ПолучитьПропагаторы() returns ОтелНоопПропагатор by default (line 132), not a composite of W3C TraceContext + Baggage. Both propagators exist as separate classes but are never assembled as a default composite. (-)
 
-- ❌ **[Env Vars]** [SHOULD] If any value other than a true value, case-insensitive string "false", empty, or unset is used, a warning SHOULD be logged to inform users about the fallback to false being applied.  
-  Функция Включено() (строка 561-564) не логирует предупреждение при получении невалидного значения булевой переменной (например 'yes', '1', 'on'). Значение молча интерпретируется как false без уведомления пользователя. (-)
+- ✅ **[Env Vars]** [SHOULD] If any value other than a true value, case-insensitive string "false", empty, or unset is used, a warning SHOULD be logged to inform users about the fallback to false being applied.  
+  Функция Включено() логирует предупреждение через logos при получении невалидного значения. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:561`)
 
 - ⚠️ **[Env Vars]** [SHOULD] All Boolean environment variables SHOULD be named and defined such that false is the expected safe default behavior.  
   Используется OTEL_ENABLED со значением по умолчанию 'true' (строка 562), вместо рекомендуемого спецификацией паттерна OTEL_SDK_DISABLED где false = безопасное поведение по умолчанию (SDK включен). Текущее именование инвертировано относительно рекомендации спецификации. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:562`)
@@ -558,8 +558,8 @@
 - ❌ **[Env Vars]** [SHOULD] For variables accepting a numeric value, if the user provides a value the implementation cannot parse, the implementation SHOULD generate a warning and gracefully ignore the setting, i.e., treat them as not set.  
   Все числовые параметры парсятся через Число() без обработки ошибок (например строка 160: Число(Менеджер.Параметр("otel.exporter.otlp.timeout", "10"))). Если пользователь задаст невалидное значение (например 'abc'), вызов Число() выбросит исключение вместо генерации предупреждения и использования значения по умолчанию. (-)
 
-- ⚠️ **[Env Vars]** [SHOULD] Enum values SHOULD be interpreted in a case-insensitive manner.  
-  Пропагаторы обрабатываются case-insensitive через НРег (строка 344), как и boolean (строка 563) и exemplar filter (ОтелПостроительПровайдераМетрик.os:115). Однако OTEL_TRACES_SAMPLER (строка 197) и OTEL_*_EXPORTER (строки 177, 255, 291) сравниваются без приведения к нижнему регистру. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:344`)
+- ✅ **[Env Vars]** [SHOULD] Enum values SHOULD be interpreted in a case-insensitive manner.  
+  Все перечисления (пропагаторы, экспортеры, семплеры, булевы значения, exemplar filter) приводятся к нижнему регистру через НРег() перед сравнением. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:344`)
 
 ## Детальный анализ по разделам (Stable)
 
@@ -766,9 +766,9 @@
 | 10 | MUST | ✅ found | Resource detector packages MUST provide a method that returns a resource. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17` |  |
 | 11 | MUST NOT | ✅ found | the failure to detect any resource information MUST NOT be considered an error, | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:23` |  |
 | 12 | SHOULD | ⚠️ partial | whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:24` | Detection errors are caught and logged via Лог.Отладка() (debug level) instead of being treated as errors at error log level. |
-| 13 | MUST | ❌ not_found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | - | Detectors (host, process, cpu) populate known semconv attributes (host.name, os.type, process.pid) but create resources via Новый ОтелРесурс(Истина) with empty Schema URL. No Schema URL matching semantic conventions is ever set. |
-| 14 | SHOULD | ⚠️ partial | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate (e.g. the detector that reads the attributes from environment values will not know what Schema URL to use). | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18` | All detectors use empty Schema URL including those that populate known semconv attributes (host.name, os.type, process.pid). Empty Schema URL is correct for unknown-attribute detectors but incorrect for detectors that populate known semconv attributes - they should set a proper Schema URL instead. |
-| 15 | MUST | ⚠️ partial | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:41` | The Слить() method detects Schema URL conflicts and returns an empty resource, but the detector combining in ЗаполнитьАтрибутыПоУмолчанию() copies attributes directly without using Слить() and does not check Schema URLs. Also no error is reported on conflict. |
+| 13 | MUST | ✅ found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18` | Все детекторы передают Schema URL https://opentelemetry.io/schemas/1.29.0 при создании ресурса. |
+| 14 | SHOULD | ✅ found | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate (e.g. the detector that reads the attributes from environment values will not know what Schema URL to use). | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18` | Детекторы с известными semconv-атрибутами (host, process, cpu) теперь устанавливают Schema URL. Детекторы без известных атрибутов используют пустой Schema URL. |
+| 15 | MUST | ✅ found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:102` | ЗаполнитьАтрибутыПоУмолчанию() использует Слить() для объединения ресурсов детекторов с проверкой конфликтов Schema URL. |
 
 #### Specifying resource information via an environment variable
 
@@ -778,7 +778,7 @@
 |---|---|---|---|---|---|
 | 16 | MUST | ✅ found | The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment variable and merge this, as the secondary resource, with any resource information provided by the user, i.e. the user provided resource information has higher priority. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:104` |  |
 | 17 | MUST | ✅ found | All attribute values MUST be considered strings. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:479` |  |
-| 18 | MUST | ❌ not_found | The `,` and `=` characters in keys and values MUST be percent encoded. | - | РазобратьПарыКлючЗначение() splits by ',' and '=' but performs no percent-decoding. Values containing %2C or %3D will not be decoded back to ',' or '='. |
+| 18 | MUST | ✅ found | The `,` and `=` characters in keys and values MUST be percent encoded. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:488` | РазобратьПарыКлючЗначение() выполняет percent-декодирование через РаскодироватьСтроку(). |
 | 19 | SHOULD | ❌ not_found | In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded | - | No error handling exists for OTEL_RESOURCE_ATTRIBUTES parsing. Invalid pairs are silently skipped rather than discarding the entire value. |
 | 20 | SHOULD | ❌ not_found | and an error SHOULD be reported following the Error Handling principles. | - | No error reporting for OTEL_RESOURCE_ATTRIBUTES parsing failures. No logging or exception is raised on malformed input. |
 
@@ -1318,7 +1318,7 @@
 | 59 | SHOULD | ✅ found | This is a hint to ensure that any tasks associated with `Spans` for which the `SpanProcessor` had already received events prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` |  |
 | 60 | SHOULD | ⚠️ partial | In particular, if any `SpanProcessor` has any associated exporter, it SHOULD try to call the exporter's `Export` with all spans for which this was not already done and then invoke `ForceFlush` on it. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` | СброситьБуфер() вызывает ЭкспортироватьВсеПакеты(), который вызывает Экспортер.Экспортировать() для всех буферизированных спанов, но не вызывает Экспортер.СброситьБуфер() (ForceFlush экспортера) после экспорта |
 | 61 | MUST | ⚠️ partial | The built-in SpanProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` | Пакетный процессор экспортирует все буферизированные спаны через ЭкспортироватьВсеПакеты(), но не вызывает ForceFlush (СброситьБуфер) на экспортере после экспорта, как требует спецификация |
-| 62 | MUST | ❌ not_found | If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. | - | Метод СброситьБуфер() не принимает параметр таймаута. ЭкспортироватьВсеПакеты() выполняет цикл до полного опустошения буфера без возможности прерывания по таймауту |
+| 62 | MUST | ✅ found | If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` | СброситьБуфер() и Закрыть() принимают ТаймаутМс, ЭкспортироватьВсеПакеты() прерывается по таймауту. |
 | 63 | SHOULD | ❌ not_found | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Метод СброситьБуфер() возвращает Void во всех реализациях процессоров спанов - нет способа сообщить вызывающему коду об успехе, ошибке или таймауте |
 | 64 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the `SpanProcessor` exports the completed spans. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` |  |
 | 65 | SHOULD | ❌ not_found | `ForceFlush` SHOULD complete or abort within some timeout. | - | Метод СброситьБуфер() не имеет механизма таймаута. ЭкспортироватьВсеПакеты() в пакетном процессоре выполняет бесконечный цикл до полного опустошения буфера без ограничения по времени |
@@ -1615,7 +1615,7 @@
 | 39 | SHOULD | ✅ found | This is a hint to ensure that any tasks associated with `LogRecord`s for which the `LogRecordProcessor` had already received events prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70` |  |
 | 40 | SHOULD | ⚠️ partial | In particular, if any `LogRecordProcessor` has any associated exporter, it SHOULD try to call the exporter's `Export` with all `LogRecord`s for which this was not already done and then invoke `ForceFlush` on it. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:120-135` | СброситьБуфер() вызывает ЭкспортироватьВсеПакеты(), который экспортирует все буферизованные записи через Экспортер.Экспортировать(). Однако после экспорта не вызывается Экспортер.СброситьБуфер() (ForceFlush экспортера). |
 | 41 | MUST | ⚠️ partial | The built-in LogRecordProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68-70` | Встроенные процессоры экспортируют все буферизованные записи, но не вызывают ForceFlush на экспортере после экспорта, как требует предыдущее предложение. |
-| 42 | MUST | ❌ not_found | If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls. | - | Метод СброситьБуфер() не принимает параметр таймаута. Нет механизма приоритизации таймаута над завершением всех вызовов экспорта в ForceFlush. |
+| 42 | MUST | ✅ found | If a timeout is specified (see below), the `LogRecordProcessor` MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:68` | Базовый пакетный процессор принимает ТаймаутМс и прерывает экспорт по таймауту. |
 | 43 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:131-135` | Асинхронная версия СброситьБуферАсинхронно() возвращает Обещание. Однако синхронный метод СброситьБуфер() является Процедурой (void) и не возвращает результат. |
 | 44 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the `LogRecordProcessor` exports the emitted `LogRecord`s. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:107-111` |  |
 | 45 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Логирование/Классы/ОтелПровайдерЛогирования.os:131-135` | Асинхронная версия СброситьБуферАсинхронно() возвращает Обещание с поддержкой таймаута через Получить(). Однако синхронный СброситьБуфер() блокирует до полного экспорта без таймаута. |
@@ -2347,7 +2347,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 135 | SHOULD | ⚠️ partial | `Collect` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:123` | СобратьИЭкспортировать is a Процедура (void return), does not return success/failure status to the caller. Errors are logged but not propagated. |
-| 136 | SHOULD | ❌ not_found | `Collect` SHOULD invoke Produce on registered MetricProducers. | - | There is no MetricProducer interface or registration mechanism. The reader collects only from SDK meters, not from external MetricProducers. |
+| 136 | SHOULD | ✅ found | `Collect` SHOULD invoke Produce on registered MetricProducers. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:155` | СобратьИЭкспортировать() вызывает СобратьДанныеПродюсеров() для каждого зарегистрированного продюсера. |
 
 #### Shutdown
 
@@ -2412,8 +2412,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 159 | MUST | ❌ not_found | `MetricProducer` defines the interface which bridges to third-party metric sources MUST implement, so they can be plugged into an OpenTelemetry MetricReader as a source of aggregated metric data. | - | Интерфейс MetricProducer не реализован. Нет отдельного класса или интерфейса для подключения сторонних источников метрик к MetricReader. |
-| 160 | SHOULD | ❌ not_found | `MetricProducer` implementations SHOULD accept configuration for the `AggregationTemporality` of produced metrics. | - | MetricProducer не реализован, поэтому конфигурация AggregationTemporality для него отсутствует. |
+| 159 | MUST | ✅ found | `MetricProducer` defines the interface which bridges to third-party metric sources MUST implement, so they can be plugged into an OpenTelemetry MetricReader as a source of aggregated metric data. | `src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:1` | Реализован ИнтерфейсПродюсерМетрик с методом Произвести(). |
+| 160 | SHOULD | ⚠️ partial | `MetricProducer` implementations SHOULD accept configuration for the `AggregationTemporality` of produced metrics. | `src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:1` | Интерфейс ИнтерфейсПродюсерМетрик реализован, но метод Произвести() не принимает параметр AggregationTemporality. |
 
 #### Interface Definition
 
@@ -2421,7 +2421,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 161 | MUST | ❌ not_found | A `MetricProducer` MUST support the following functions: | - | MetricProducer не реализован как отдельный интерфейс или класс. Функции Produce не существует. |
+| 161 | MUST | ✅ found | A `MetricProducer` MUST support the following functions: | `src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:19` | Интерфейс содержит метод Произвести() (Produce). |
 
 #### Interface Definition
 
@@ -2445,7 +2445,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 164 | MUST | ❌ not_found | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | Нет явного кода обработки числовых пределов (overflow, underflow) в метрическом SDK. Агрегаторы и инструменты не содержат проверок на выход за пределы числовых типов. |
+| 164 | MUST | ✅ found | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:150` | Агрегатор гистограммы использует максимальное значение Decimal для начальных min/max. |
 | 165 | MUST | ❌ not_found | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | Нет явной обработки NaN и Infinity в агрегаторах метрик. Код принимает значения от инструментов без проверки на специальные значения IEEE 754 (NaN, +Infinity, -Infinity). |
 
 #### Compatibility requirements
@@ -2699,7 +2699,7 @@
 | 5 | MUST | ✅ found | Any value that represents a Boolean MUST be set to true only by the case-insensitive string "true", meaning "True" or "TRUE" are also accepted, as true. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:563` |  |
 | 6 | MUST NOT | ✅ found | An implementation MUST NOT extend this definition and define additional values that are interpreted as true. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:563` |  |
 | 7 | MUST | ✅ found | Any value not explicitly defined here as a true value, including unset and empty values, MUST be interpreted as false. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:563` |  |
-| 8 | SHOULD | ❌ not_found | If any value other than a true value, case-insensitive string "false", empty, or unset is used, a warning SHOULD be logged to inform users about the fallback to false being applied. | - | Функция Включено() (строка 561-564) не логирует предупреждение при получении невалидного значения булевой переменной (например 'yes', '1', 'on'). Значение молча интерпретируется как false без уведомления пользователя. |
+| 8 | SHOULD | ✅ found | If any value other than a true value, case-insensitive string "false", empty, or unset is used, a warning SHOULD be logged to inform users about the fallback to false being applied. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:561` | Функция Включено() логирует предупреждение через logos при невалидном значении. |
 | 9 | SHOULD | ⚠️ partial | All Boolean environment variables SHOULD be named and defined such that false is the expected safe default behavior. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:562` | Используется OTEL_ENABLED со значением по умолчанию 'true' (строка 562), вместо рекомендуемого спецификацией паттерна OTEL_SDK_DISABLED где false = безопасное поведение по умолчанию (SDK включен). Текущее именование инвертировано относительно рекомендации спецификации. |
 | 10 | MUST NOT | ✅ found | Renaming or changing the default value MUST NOT happen without a major version upgrade. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:562` |  |
 
@@ -2719,7 +2719,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 14 | SHOULD | ⚠️ partial | Enum values SHOULD be interpreted in a case-insensitive manner. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:344` | Пропагаторы обрабатываются case-insensitive через НРег (строка 344), как и boolean (строка 563) и exemplar filter (ОтелПостроительПровайдераМетрик.os:115). Однако OTEL_TRACES_SAMPLER (строка 197) и OTEL_*_EXPORTER (строки 177, 255, 291) сравниваются без приведения к нижнему регистру. |
+| 14 | SHOULD | ✅ found | Enum values SHOULD be interpreted in a case-insensitive manner. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:344` | Все перечисления приводятся к нижнему регистру через НРег() перед сравнением. |
 | 15 | MUST | ⚠️ partial | For sources accepting an enum value, if the user provides a value the implementation does not recognize, the implementation MUST generate a warning and gracefully ignore the setting. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:373` | Для пропагаторов выводится предупреждение через Сообщить (строка 373) и значение пропускается. Но для OTEL_TRACES_SAMPLER (строка 216) нераспознанное значение молча заменяется на parentbased_always_on без предупреждения. Для OTEL_METRICS_EXEMPLAR_FILTER (ОтелПостроительПровайдераМетрик.os:123) нераспознанное значение игнорируется без предупреждения. |
 
 #### General SDK Configuration
@@ -2728,7 +2728,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 16 | MUST | ❌ not_found | Values MUST be deduplicated in order to register a `Propagator` only once. | - | В СоздатьПропагаторы (ОтелАвтоконфигурация.os:336-378) список пропагаторов разбирается через СтрРазделить, но дедупликация не выполняется. Если пользователь укажет 'tracecontext,tracecontext', будут созданы два экземпляра ОтелW3CПропагатор. |
+| 16 | MUST | ✅ found | Values MUST be deduplicated in order to register a `Propagator` only once. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:336` | СоздатьПропагаторы() дедуплицирует пропагаторы перед созданием. |
 | 17 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | В коде обработки OTEL_TRACES_SAMPLER_ARG (ОтелАвтоконфигурация.os:203-204) значение напрямую преобразуется через Число() без обработки ошибок. Невалидный ввод (например, нечисловая строка) вызовет исключение вместо логирования. |
 | 18 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | Невалидный OTEL_TRACES_SAMPLER_ARG не игнорируется gracefully - вызов Число() с нечисловым значением приведёт к исключению, а не к игнорированию параметра. |
 | 19 | MUST | ❌ not_found | Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation MUST behave as if OTEL_TRACES_SAMPLER_ARG is not set. | - | При невалидном OTEL_TRACES_SAMPLER_ARG реализация не ведёт себя так, как будто параметр не установлен. Вместо фолбэка на значение по умолчанию (1.0 для traceidratio) происходит исключение. |
@@ -3077,7 +3077,7 @@
 | 4 | SHOULD | ✅ found | The output `temporality` (optional), a function of instrument kind. This function SHOULD be obtained from the `exporter`. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:167` |  |
 | 5 | SHOULD | ✅ found | If not configured, the Cumulative temporality SHOULD be used. | `src/Метрики/Модули/ОтелСелекторВременнойАгрегации.os:24` |  |
 | 6 | SHOULD | ⚠️ partial | The default aggregation cardinality limit (optional) to use, a function of instrument kind. If not configured, a default value of 2000 SHOULD be used. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253` | Default cardinality limit of 2000 is used, but it is set per instrument as a fixed value, not as a function of instrument kind at the MetricReader level. |
-| 7 | SHOULD | ⚠️ partial | A `MetricReader` SHOULD provide the MetricFilter to the SDK or registered MetricProducer(s) when calling the `Produce` operation. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:115` | MetricFilter (ОтелФильтрМетрик) is supported and applied during collection, but there is no separate MetricProducer interface - the reader directly collects from meters. |
+| 7 | SHOULD | ⚠️ partial | A `MetricReader` SHOULD provide the MetricFilter to the SDK or registered MetricProducer(s) when calling the `Produce` operation. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:115` | MetricFilter поддерживается для SDK-метрик, но не передаётся в MetricProducer.Произвести(). |
 | 8 | SHOULD | ✅ found | A common implementation of `MetricReader`, the periodic exporting `MetricReader` SHOULD be provided to be used typically with push-based metrics collection. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:1` |  |
 | 9 | MUST | ✅ found | The `MetricReader` MUST ensure that data points from OpenTelemetry instruments are output in the configured aggregation temporality for each instrument kind. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:167` |  |
 | 10 | MUST | ✅ found | For synchronous instruments with Cumulative aggregation temporality, MetricReader.Collect MUST receive data points exposed in previous collections regardless of whether new measurements have been recorded. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:141` |  |
@@ -3097,7 +3097,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | `Produce` MUST return a batch of Metric Points, filtered by the optional `metricFilter` parameter. | - | MetricProducer и его метод Produce не реализованы. Фильтрация метрик через ОтелФильтрМетрик существует в ОтелПериодическийЧитательМетрик, но не как часть MetricProducer интерфейса. |
+| 1 | MUST | ⚠️ partial | `Produce` MUST return a batch of Metric Points, filtered by the optional `metricFilter` parameter. | `src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:19` | Метод Произвести() возвращает массив метрик. Фильтрация пока не передаётся продюсерам. |
 | 2 | SHOULD | ❌ not_found | Implementation SHOULD use the filter as early as possible to gain as much performance gain possible (memory allocation, internal metric fetching, etc). | - | MetricProducer не реализован. Фильтрация в читателе применяется после сбора данных (в МетрикаОтброшена), а не на ранних этапах. |
 | 3 | SHOULD | ❌ not_found | If the batch of Metric Points includes resource information, `Produce` SHOULD require a resource as a parameter. | - | MetricProducer и метод Produce не реализованы. Ресурс передаётся через Meter, но не как параметр Produce. |
 | 4 | SHOULD | ❌ not_found | `Produce` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | MetricProducer и метод Produce не реализованы. |
