@@ -15,11 +15,11 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 537 (77.5%) |
-| ⚠️ Частично (partial) | 110 (15.9%) |
-| ❌ Не реализовано (not_found) | 46 (6.6%) |
+| ✅ Реализовано (found) | 541 (78.1%) |
+| ⚠️ Частично (partial) | 109 (15.7%) |
+| ❌ Не реализовано (not_found) | 43 (6.2%) |
 | ➖ Неприменимо (n_a) | 2 |
-| **MUST/MUST NOT found** | 367/418 (87.8%) |
+| **MUST/MUST NOT found** | 371/418 (88.8%) |
 | **SHOULD/SHOULD NOT found** | 170/275 (61.8%) |
 
 ## Соответствие по разделам (Stable)
@@ -35,7 +35,7 @@
 | Logs Sdk | 48 | 14 | 2 | 0 | 64 | 75.0% |
 | Metrics Api | 86 | 15 | 0 | 0 | 101 | 85.1% |
 | Metrics Sdk | 116 | 33 | 22 | 0 | 171 | 67.8% |
-| Otlp Exporter | 11 | 7 | 6 | 1 | 24 | 45.8% |
+| Otlp Exporter | 15 | 6 | 3 | 1 | 24 | 62.5% |
 | Propagators | 30 | 2 | 1 | 0 | 33 | 90.9% |
 | Env Vars | 19 | 3 | 2 | 0 | 24 | 79.2% |
 
@@ -193,20 +193,20 @@
 - ⚠️ **[Otlp Exporter]** [MUST] The following configuration options MUST be available to configure the OTLP exporter.  
   Endpoint, Protocol, Headers, Compression, Timeout доступны через env vars; Certificate File, Client key file, Client certificate file, Insecure не реализованы (TLS/mTLS - ограничение платформы OneScript) (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:130`)
 
-- ❌ **[Otlp Exporter]** [MUST] Each configuration option MUST be overridable by a signal specific option.  
-  Per-signal переменные окружения (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_HEADERS и т.д.) не поддерживаются; все сигналы используют общую конфигурацию (-)
+- ✅ **[Otlp Exporter]** [MUST] Each configuration option MUST be overridable by a signal specific option.  
+  Per-signal переменные окружения (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_HEADERS и т.д.) поддерживаются; каждый сигнал получает собственный транспорт через `СоздатьТранспортДляСигнала()` (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
 
 - ⚠️ **[Otlp Exporter]** [MUST] Options MUST be one of: `grpc`, `http/protobuf`, `http/json`.  
   Код принимает grpc и http/json, но http/protobuf не реализован полноценно - HTTP-транспорт всегда отправляет JSON; валидация допустимых значений протокола отсутствует (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:150`)
 
-- ⚠️ **[Otlp Exporter]** [MUST] Based on the environment variables above, the OTLP/HTTP exporter MUST construct URLs for each signal as follow:  
-  URL конструируются из базового OTEL_EXPORTER_OTLP_ENDPOINT + относительные пути (/v1/traces, /v1/logs, /v1/metrics), но per-signal endpoint переменные (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT и т.д.) не поддерживаются (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:35`)
+- ✅ **[Otlp Exporter]** [MUST] Based on the environment variables above, the OTLP/HTTP exporter MUST construct URLs for each signal as follow:  
+  URL конструируются из базового OTEL_EXPORTER_OTLP_ENDPOINT + относительные пути (/v1/traces, /v1/logs, /v1/metrics); per-signal endpoint переменные используются как есть (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
 
-- ❌ **[Otlp Exporter]** [MUST] For the per-signal variables (`OTEL_EXPORTER_OTLP_<signal>_ENDPOINT`), the URL MUST be used as-is without any modification.  
-  Per-signal endpoint переменные (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT) не поддерживаются (-)
+- ✅ **[Otlp Exporter]** [MUST] For the per-signal variables (`OTEL_EXPORTER_OTLP_<signal>_ENDPOINT`), the URL MUST be used as-is without any modification.  
+  Per-signal endpoint используется как есть, без добавления /v1/{signal} (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
 
-- ❌ **[Otlp Exporter]** [MUST] The only exception is that if an URL contains no path part, the root path `/` MUST be used (see Example 2).  
-  Per-signal endpoint переменные не поддерживаются, поэтому обработка пустого пути для per-signal URL не реализована (-)
+- ✅ **[Otlp Exporter]** [MUST] The only exception is that if an URL contains no path part, the root path `/` MUST be used (see Example 2).  
+  URL без пути нормализуется добавлением `/` в `НормализоватьURLДляPerSignal()` (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os`)
 
 - ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
   W3C TraceContext и W3C Baggage реализованы, но B3 пропагатор отсутствует (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
@@ -2477,7 +2477,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ⚠️ partial | The following configuration options MUST be available to configure the OTLP exporter. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:130` | Endpoint, Protocol, Headers, Compression, Timeout доступны через env vars; Certificate File, Client key file, Client certificate file, Insecure не реализованы (TLS/mTLS - ограничение платформы OneScript) |
-| 2 | MUST | ❌ not_found | Each configuration option MUST be overridable by a signal specific option. | - | Per-signal переменные окружения (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_TRACES_HEADERS и т.д.) не поддерживаются; все сигналы используют общую конфигурацию |
+| 2 | MUST | ✅ found | Each configuration option MUST be overridable by a signal specific option. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os` | Per-signal переменные окружения поддерживаются через `СоздатьТранспортДляСигнала()` |
 | 3 | MUST | ✅ found | The implementation MUST honor the following URL components: | `src/Экспорт/Классы/ОтелHttpТранспорт.os:104` |  |
 | 4 | MUST | ✅ found | When using `OTEL_EXPORTER_OTLP_ENDPOINT`, exporters MUST construct per-signal URLs as described below. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:35` |  |
 | 5 | SHOULD | ✅ found | The option SHOULD accept any form allowed by the underlying gRPC client implementation. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:147` |  |
@@ -2494,9 +2494,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 12 | MUST | ⚠️ partial | Based on the environment variables above, the OTLP/HTTP exporter MUST construct URLs for each signal as follow: | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:35` | URL конструируются из базового OTEL_EXPORTER_OTLP_ENDPOINT + относительные пути (/v1/traces, /v1/logs, /v1/metrics), но per-signal endpoint переменные (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT и т.д.) не поддерживаются |
-| 13 | MUST | ❌ not_found | For the per-signal variables (`OTEL_EXPORTER_OTLP_<signal>_ENDPOINT`), the URL MUST be used as-is without any modification. | - | Per-signal endpoint переменные (OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, OTEL_EXPORTER_OTLP_LOGS_ENDPOINT) не поддерживаются |
-| 14 | MUST | ❌ not_found | The only exception is that if an URL contains no path part, the root path `/` MUST be used (see Example 2). | - | Per-signal endpoint переменные не поддерживаются, поэтому обработка пустого пути для per-signal URL не реализована |
+| 12 | MUST | ✅ found | Based on the environment variables above, the OTLP/HTTP exporter MUST construct URLs for each signal as follow: | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os` | URL конструируются из базового endpoint + /v1/{signal}; per-signal endpoint используется как есть |
+| 13 | MUST | ✅ found | For the per-signal variables (`OTEL_EXPORTER_OTLP_<signal>_ENDPOINT`), the URL MUST be used as-is without any modification. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os` | Per-signal endpoint используется как есть |
+| 14 | MUST | ✅ found | The only exception is that if an URL contains no path part, the root path `/` MUST be used (see Example 2). | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os` | URL без пути нормализуется в `НормализоватьURLДляPerSignal()` |
 | 15 | MUST NOT | ✅ found | An SDK MUST NOT modify the URL in ways other than specified above. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:99` |  |
 
 #### Specify Protocol
