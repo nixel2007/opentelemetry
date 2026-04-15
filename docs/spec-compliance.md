@@ -49,17 +49,17 @@
 - ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
   УстановитьРодителя() accepts ОтелСпан and ОтелКонтекстСпана directly in addition to Context (Соответствие/ФиксированноеСоответствие), violating the requirement to only accept full Context as parent. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
 
-- ⚠️ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
-  Returns a non-recording span but creates a new SpanContext with parent's traceId and a fresh spanId instead of wrapping the parent's SpanContext directly as spec requires (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
+- ✅ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
+  Non-recording span теперь возвращает SpanContext родителя без создания нового spanId (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
 
-- ⚠️ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
-  Returns a non-recording span but with generated non-zero traceId and spanId instead of all-zero IDs as spec requires; ОтелНоопСпан default constructor supports all-zero IDs but this code path is not used (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
+- ✅ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
+  При отсутствии родителя возвращается ОтелНоопСпан с all-zero SpanContext (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
 
 - ⚠️ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`.  
   There is no separate InstrumentationLibrary class or accessor. Only InstrumentationScope (ОтелОбластьИнструментирования) is available, which contains the same name and version data but under a different type name. (`src/Трассировка/Классы/ОтелСпан.os:182`)
 
-- ⚠️ **[Trace Sdk]** [MUST] The built-in SpanProcessors MUST do so.  
-  Пакетный процессор корректно вызывает Экспортер.Экспортировать() и Экспортер.СброситьБуфер() при ForceFlush. Однако простой процессор (ОтелПростойПроцессорСпанов) в методе СброситьБуфер не вызывает Экспортер.СброситьБуфер() для сброса внутренних буферов экспортера. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157`)
+- ✅ **[Trace Sdk]** [MUST] The built-in SpanProcessors MUST do so.  
+  Оба процессора (простой и пакетный) вызывают Экспортер.СброситьБуфер() при ForceFlush (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:67`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
   ОтелПредставление defines ИсключенныеКлючиАтрибутов but ОтелМетр.ПрименитьПредставлениеКИнструменту and ОтелБазовыйСинхронныйИнструмент never apply the exclude-list. The field exists but exclusion is not implemented. (`src/Метрики/Классы/ОтелПредставление.os:56`)
@@ -85,8 +85,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] although individual reservoirs MUST still be instantiated per metric-timeseries  
   Кастомный резервуар из View применяется к инструменту целиком (src/Метрики/Классы/ОтелМетр.os:579-581), а не создается отдельный экземпляр на каждую серию (timeseries). Резервуар один на инструмент, внутри ключуется по атрибутам. (`src/Метрики/Классы/ОтелМетр.os:579`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
-  Периодический экспорт выполняется последовательно в фоновом задании, но вызов СброситьБуфер() из основного потока может привести к конкурентному вызову Экспортировать(), так как блокировка защищает только доступ к массиву Метры, а не сам вызов Export. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:166`)
+- ✅ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
+  Вызов Экспортировать() защищён блокировкой в СобратьИЭкспортировать() (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:199`)
 
 - ❌ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
   В коде SDK метрик нет явной обработки числовых пределов (переполнение, граничные значения). Агрегаторы (ОтелАгрегаторСуммы, ОтелАгрегаторГистограммы и др.) используют АтомарноеЧисло без проверок на переполнение или обработки ошибок числовых операций. (-)
@@ -177,8 +177,8 @@
 - ⚠️ **[Trace Sdk]** [SHOULD] The name of the configuration options SHOULD be `EventCountLimit` and `LinkCountLimit`.  
   The limits exist as МаксСобытий/МаксЛинков (УстановитьМаксСобытий/УстановитьМаксЛинков) rather than EventCountLimit/LinkCountLimit. Semantically equivalent but names do not match the spec recommendation. (`src/Трассировка/Классы/ОтелЛимитыСпана.os:34`)
 
-- ⚠️ **[Trace Sdk]** [SHOULD] SDKs SHOULD ignore these calls gracefully, if possible.  
-  Пакетный процессор проверяет флаг Закрыт в методе Обработать и игнорирует вызовы после shutdown. Однако простой процессор (ОтелПростойПроцессорСпанов) не имеет флага Закрыт и после вызова Закрыть последующие вызовы ПриЗавершении могут обратиться к закрытому экспортеру. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:43`)
+- ✅ **[Trace Sdk]** [SHOULD] SDKs SHOULD ignore these calls gracefully, if possible.  
+  Оба процессора (простой и пакетный) проверяют флаг Закрыт и игнорируют вызовы после shutdown (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:43`)
 
 - ❌ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
   Метод Закрыть объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения, исключения при таймауте или иного механизма оповещения вызывающего кода о результате. (-)
@@ -914,9 +914,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 120 | MUST | ⚠️ partial | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` | Returns a non-recording span but creates a new SpanContext with parent's traceId and a fresh spanId instead of wrapping the parent's SpanContext directly as spec requires |
+| 120 | MUST | ✅ found | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` |  |
 | 121 | SHOULD | ❌ not_found | If the `Span` in the parent `Context` is already non-recording, it SHOULD be returned directly without instantiating a new `Span`. | - | No optimization to return the parent non-recording span directly; always creates a new ОтелНоопСпан regardless of whether parent is already non-recording |
-| 122 | MUST | ⚠️ partial | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` | Returns a non-recording span but with generated non-zero traceId and spanId instead of all-zero IDs as spec requires; ОтелНоопСпан default constructor supports all-zero IDs but this code path is not used |
+| 122 | MUST | ✅ found | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` |  |
 
 ### Trace Sdk
 
@@ -1127,7 +1127,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 54 | SHOULD | ✅ found | `Shutdown` SHOULD be called only once for each `SpanProcessor` instance. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:81` |  |
-| 55 | SHOULD | ⚠️ partial | SDKs SHOULD ignore these calls gracefully, if possible. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:43` | Пакетный процессор проверяет флаг Закрыт в методе Обработать и игнорирует вызовы после shutdown. Однако простой процессор (ОтелПростойПроцессорСпанов) не имеет флага Закрыт и после вызова Закрыть последующие вызовы ПриЗавершении могут обратиться к закрытому экспортеру. |
+| 55 | SHOULD | ✅ found | SDKs SHOULD ignore these calls gracefully, if possible. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:43` |  |
 | 56 | SHOULD | ❌ not_found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Метод Закрыть объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения, исключения при таймауте или иного механизма оповещения вызывающего кода о результате. |
 | 57 | MUST | ✅ found | `Shutdown` MUST include the effects of `ForceFlush`. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83` |  |
 | 58 | SHOULD | ✅ found | `Shutdown` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:80` |  |
@@ -1140,7 +1140,7 @@
 |---|---|---|---|---|---|
 | 59 | SHOULD | ✅ found | This is a hint to ensure that any tasks associated with `Spans` for which the `SpanProcessor` had already received events prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:72` |  |
 | 60 | SHOULD | ✅ found | In particular, if any `SpanProcessor` has any associated exporter, it SHOULD try to call the exporter's `Export` with all spans for which this was not already done and then invoke `ForceFlush` on it. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157` |  |
-| 61 | MUST | ⚠️ partial | The built-in SpanProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157` | Пакетный процессор корректно вызывает Экспортер.Экспортировать() и Экспортер.СброситьБуфер() при ForceFlush. Однако простой процессор (ОтелПростойПроцессорСпанов) в методе СброситьБуфер не вызывает Экспортер.СброситьБуфер() для сброса внутренних буферов экспортера. |
+| 61 | MUST | ✅ found | The built-in SpanProcessors MUST do so. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:67` |  |
 | 62 | MUST | ✅ found | If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129` |  |
 | 63 | SHOULD | ❌ not_found | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Метод СброситьБуфер объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения или иного механизма оповещения вызывающего кода о результате операции. |
 | 64 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the `SpanProcessor` exports the completed spans. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:37` |  |
@@ -2188,7 +2188,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 141 | MUST | ⚠️ partial | The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:166` | Периодический экспорт выполняется последовательно в фоновом задании, но вызов СброситьБуфер() из основного потока может привести к конкурентному вызову Экспортировать(), так как блокировка защищает только доступ к массиву Метры, а не сам вызов Export. |
+| 141 | MUST | ✅ found | The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:199` |  |
 
 #### ForceFlush
 
