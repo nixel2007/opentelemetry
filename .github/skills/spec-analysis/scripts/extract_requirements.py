@@ -36,10 +36,8 @@ SPEC_URLS = {
 
 # Условные подразделы - применяются только при реализации фичи
 CONDITIONAL_SUBSECTIONS = {
-    r"^B3": "B3 Propagator (extension)",
     r"^GetAll": "GetAll Getter (post-stable extension)",
     r"^Resource detector name": "Resource Detector Naming (conditional)",
-    r"^Prometheus": "Prometheus Exporter (extension)",
 }
 
 # Deprecated секции

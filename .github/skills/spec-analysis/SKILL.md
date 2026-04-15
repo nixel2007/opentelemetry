@@ -53,10 +53,11 @@ description: >
 
 | Подраздел спецификации | Фича | Почему условная |
 |---|---|---|
-| B3 Extract / B3 Inject / B3 Fields | B3 Propagator | MAY be maintained as extension package |
 | GetAll | GetAll Getter | Добавляется после stable релиза Getter |
 | Resource detector name | Resource Detector Naming | Только для SDK с реализованными детекторами |
-| Prometheus Exporter | Prometheus Exporter | Extension package (реализован: ОтелПрометеусЧитательМетрик) |
+
+> B3 Propagator и Prometheus Exporter ранее были условными, но теперь реализованы
+> (ОтелB3Пропагатор, ОтелПрометеусЧитательМетрик) и считаются как universal.
 
 ## Шаг 1: Извлечение секций из спецификации
 
@@ -358,7 +359,8 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 При анализе учитывай, что OneScript не поддерживает:
 - Наносекундную точность времени (только миллисекунды)
 - TLS/mTLS конфигурацию сертификатов
-- B3/X-Ray пропагаторы (только W3C TraceContext и W3C Baggage)
+- X-Ray пропагатор (реализованы W3C TraceContext, W3C Baggage и B3)
+- Число = System.Decimal (не IEEE 754): NaN, Infinity, отрицательный ноль невозможны
 
 ## Версия спецификации
 
