@@ -91,8 +91,8 @@
 - ⚠️ **[Env Vars]** [MUST] Values MUST be deduplicated in order to register a Propagator only once.  
   Правильная дедупликация пропагаторов реализована через Соответствие как Set, но используется неправильная переменная окружения - код читает otel.propagators вместо OTEL_PROPAGATORS (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:468-474`)
 
-- ❌ **[Env Vars]** [MUST] When OTEL_CONFIG_FILE is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored.  
-  Декларативная конфигурация через OTEL_CONFIG_FILE не реализована в текущем SDK. Поддерживаются только переменные окружения через configor. (-)
+- ✅ **[Env Vars]** [MUST] When OTEL_CONFIG_FILE is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored.  
+  Реализовано в ОтелФайловаяКонфигурация + ОтелПодстановкаПеременных. При наличии OTEL_CONFIG_FILE автоконфигурация делегирует парсинг YAML-файла с подстановкой переменных окружения. (src/Конфигурация/Модули/)
 
 ### SHOULD/SHOULD NOT несоответствия
 
@@ -2540,7 +2540,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 24 | MUST | ❌ not_found | When OTEL_CONFIG_FILE is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored. | - | Декларативная конфигурация через OTEL_CONFIG_FILE не реализована в текущем SDK. Поддерживаются только переменные окружения через configor. |
+| 24 | MUST | ✅ verified | When OTEL_CONFIG_FILE is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored. | src/Конфигурация/Модули/ОтелФайловаяКонфигурация.os, src/Конфигурация/Модули/ОтелПодстановкаПеременных.os | Реализовано: YAML-парсинг с подстановкой переменных окружения, 12 DTO-классов дата-модели. |
 
 ## Требования Development-статуса
 
