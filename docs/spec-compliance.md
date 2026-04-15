@@ -1,7 +1,7 @@
 # Анализ соответствия спецификации OpenTelemetry v1.55.0
 
 > **Версия спецификации**: [v1.55.0](https://opentelemetry.io/docs/specs/otel/)
-> **Дата анализа**: 2026-04-14
+> **Дата анализа**: 2026-04-15
 > **Методология**: spec-first - извлечены все MUST/SHOULD требования из спецификации, затем каждое прослежено до кода
 
 ## Сводка (Stable)
@@ -11,16 +11,16 @@
 | Показатель | Значение |
 |---|---|
 | Всего keywords в спецификации | 824 |
-| Stable + universal keywords | 694 |
-| Conditional keywords | 13 |
+| Stable + universal keywords | 701 |
+| Conditional keywords | 6 |
 | Development keywords | 123 |
-| Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 582 (84.0%) |
-| ⚠️ Частично (partial) | 69 (10.0%) |
-| ❌ Не реализовано (not_found) | 40 (5.8%) |
-| ➖ Неприменимо (n_a) | 3 |
-| **MUST/MUST NOT found** | 400/416 (96.2%) |
-| **SHOULD/SHOULD NOT found** | 182/275 (66.2%) |
+| Найдено требований (Stable universal) | 700 |
+| ✅ Реализовано (found) | 585 (83.6%) |
+| ⚠️ Частично (partial) | 70 (10.0%) |
+| ❌ Не реализовано (not_found) | 45 (6.4%) |
+| ➖ Неприменимо (n_a) | 1 |
+| **MUST/MUST NOT found** | 400/425 (94.1%) |
+| **SHOULD/SHOULD NOT found** | 185/275 (67.3%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -28,38 +28,44 @@
 |---|---|---|---|---|---|---|
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
-| Resource Sdk | 17 | 1 | 2 | 0 | 20 | 85.0% |
-| Trace Api | 112 | 8 | 2 | 0 | 122 | 91.8% |
-| Trace Sdk | 63 | 13 | 6 | 0 | 82 | 76.8% |
+| Resource Sdk | 16 | 2 | 2 | 0 | 20 | 80.0% |
+| Trace Api | 111 | 8 | 3 | 0 | 122 | 91.0% |
+| Trace Sdk | 64 | 12 | 6 | 0 | 82 | 78.0% |
 | Logs Api | 20 | 1 | 0 | 0 | 21 | 95.2% |
 | Logs Sdk | 53 | 8 | 3 | 0 | 64 | 82.8% |
 | Metrics Api | 90 | 7 | 2 | 1 | 99 | 90.9% |
-| Metrics Sdk | 127 | 23 | 19 | 2 | 171 | 74.3% |
+| Metrics Sdk | 126 | 24 | 21 | 0 | 171 | 73.7% |
 | Otlp Exporter | 18 | 3 | 4 | 0 | 25 | 72.0% |
-| Propagators | 33 | 0 | 0 | 0 | 33 | 100.0% |
+| Propagators | 34 | 4 | 2 | 0 | 40 | 85.0% |
 | Env Vars | 22 | 0 | 2 | 0 | 24 | 91.7% |
 
 ## Ключевые несоответствия (Stable)
 
 ### MUST/MUST NOT нарушения
 
-- ✅ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
-  Resource detectors (host, process, processor) are basic OS-level detectors, NOT platform-specific (Docker/K8s) or vendor-specific (EKS/AKS/GKE). This requirement does not apply to them. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
+- ⚠️ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
+  Detectors (host, process, processor) are implemented as separate classes but are bundled within the SDK package (src/Ядро/Классы/), not as separate packages. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
 
-- ✅ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
-  УстановитьРодителя() now validates that only Context (Соответствие/ФиксированноеСоответствие) is accepted and throws an exception for Span/SpanContext. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
+- ⚠️ **[Trace Api]** [MUST] In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged.  
+  ПолучитьТрассировщик принимает ИмяБиблиотеки и вернёт рабочий трассировщик даже с пустым именем (не бросает исключение), но нет явной проверки на невалидное имя, нет логирования предупреждения, и имя не принудительно устанавливается в пустую строку (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60`)
 
-- ✅ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
-  Non-recording span теперь возвращает SpanContext родителя без создания нового spanId (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
+- ⚠️ **[Trace Api]** [MUST NOT] alternative implementations MUST NOT allow callers to create `Span`s directly.  
+  OneScript does not support private constructors or access modifiers. ОтелСпан constructor is technically accessible via Новый ОтелСпан(...), though the intended API is through Tracer only. (`src/Трассировка/Классы/ОтелСпан.os:599`)
 
-- ✅ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
-  При отсутствии родителя возвращается ОтелНоопСпан с all-zero SpanContext (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
+- ⚠️ **[Trace Api]** [MUST NOT] There MUST NOT be any API for creating a `Span` other than with a `Tracer`.  
+  OneScript does not support private constructors or access modifiers. ОтелСпан constructor is technically accessible via Новый ОтелСпан(...), though the intended API is through Tracer only. (`src/Трассировка/Классы/ОтелСпан.os:599`)
 
-- ✅ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`.  
-  ОтелОбластьИнструментирования предоставляет deprecated-метод БиблиотекаИнструментирования(), возвращающий ЭтотОбъект - обратная совместимость обеспечена. (`src/Ядро/Классы/ОтелОбластьИнструментирования.os:57`)
+- ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
+  ОтелПостроительСпана.УстановитьРодителя() correctly accepts only Context (Соответствие) and rejects Span/SpanContext. However, ОтелТрассировщик.НачатьДочернийСпан() is a public Export method that accepts ОтелСпан or ОтелКонтекстСпана directly as parent. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
 
-- ✅ **[Trace Sdk]** [MUST] The built-in SpanProcessors MUST do so.  
-  Оба процессора (простой и пакетный) вызывают Экспортер.СброситьБуфер() при ForceFlush (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:67`)
+- ⚠️ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`.  
+  There is no separate InstrumentationLibrary class or accessor. Only InstrumentationScope (ОтелОбластьИнструментирования) is available, which contains the same name and version data but under a different type name. (`src/Трассировка/Классы/ОтелСпан.os:182`)
+
+- ⚠️ **[Trace Sdk]** [MUST] `Shutdown` MUST include the effects of `ForceFlush`.  
+  ОтелПакетныйПроцессорСпанов включает эффект ForceFlush (вызывает ЭкспортироватьВсеПакеты в Закрыть), но ОтелПростойПроцессорСпанов не вызывает Экспортер.СброситьБуфер() перед Экспортер.Закрыть() (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83`)
+
+- ⚠️ **[Trace Sdk]** [MUST] If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls.  
+  ОтелПакетныйПроцессорСпанов проверяет таймаут в цикле экспорта (ЭкспортироватьВсеПакеты), но ОтелПростойПроцессорСпанов полностью игнорирует параметр ТаймаутМс в СброситьБуфер (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
   ОтелПредставление defines ИсключенныеКлючиАтрибутов but ОтелМетр.ПрименитьПредставлениеКИнструменту and ОтелБазовыйСинхронныйИнструмент never apply the exclude-list. The field exists but exclusion is not implemented. (`src/Метрики/Классы/ОтелПредставление.os:56`)
@@ -67,8 +73,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
   Same as above - the exclude-list is defined in ОтелПредставление but never applied, so the 'keep all other attributes' behavior in exclude-list context is not implemented. (`src/Метрики/Классы/ОтелПредставление.os:56`)
 
-- ✅ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance.  
-  ОтелПериодическийЧитательМетрик содержит СелекторАгрегации - настраиваемую карту агрегаций по виду инструмента. Методы АгрегацияПоУмолчанию()/УстановитьАгрегациюПоУмолчанию() позволяют конфигурировать. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85`)
+- ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance.  
+  Default aggregation per instrument type exists (Counter→Sum, Histogram→ExplicitBucketHistogram, Gauge→LastValue), but it is hardcoded in ОтелМетр, not configurable per MetricReader instance. MetricReader has no aggregation property. (`src/Метрики/Классы/ОтелМетр.os:48`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation_cardinality_limit` value, the `MeterProvider` MUST apply the default aggregation cardinality limit the `MetricReader` is configured with.  
   Default cardinality limit of 2000 is hardcoded in ОтелБазовыйСинхронныйИнструмент and ОтелМетр. The spec requires the default to come from MetricReader configuration, but ОтелПериодическийЧитательМетрик has no cardinality limit property. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253`)
@@ -85,20 +91,29 @@
 - ⚠️ **[Metrics Sdk]** [MUST] although individual reservoirs MUST still be instantiated per metric-timeseries  
   Кастомный резервуар из View применяется к инструменту целиком (src/Метрики/Классы/ОтелМетр.os:579-581), а не создается отдельный экземпляр на каждую серию (timeseries). Резервуар один на инструмент, внутри ключуется по атрибутам. (`src/Метрики/Классы/ОтелМетр.os:579`)
 
-- ✅ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
-  Вызов Экспортировать() защищён блокировкой в СобратьИЭкспортировать() (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:199`)
+- ⚠️ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
+  Периодический экспорт выполняется последовательно в фоновом задании, но вызов СброситьБуфер() из основного потока может привести к конкурентному вызову Экспортировать(), так как блокировка защищает только доступ к массиву Метры, а не сам вызов Export. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:166`)
 
-- ➖ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
-  OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity, отрицательный ноль невозможны. Операции, порождающие такие значения, выбрасывают исключение. Переполнение Decimal также вызывает исключение - graceful handling обеспечен платформой. (-)
+- ❌ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
+  В коде SDK метрик нет явной обработки числовых пределов (переполнение, граничные значения). Агрегаторы (ОтелАгрегаторСуммы, ОтелАгрегаторГистограммы и др.) используют АтомарноеЧисло без проверок на переполнение или обработки ошибок числовых операций. (-)
 
-- ➖ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
-  OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity и другие специальные значения IEEE 754 структурно невозможны. Все значения Decimal являются нормальными числами. Требование неприменимо к платформе. (-)
+- ❌ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
+  Нет явной обработки NaN, Infinity и других специальных значений IEEE 754 при записи измерений. Агрегаторы и инструменты не проверяют входные значения на NaN/Infinity - такие значения молча пропагируются и могут повредить агрегацию. (-)
 
-- ✅ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  W3C TraceContext, W3C Baggage, and B3 propagators are all implemented and distributed as part of the core package. (`src/Пропагация/Классы/ОтелB3Пропагатор.os:1`)
+- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
+  W3C TraceContext, W3C Baggage и B3 все находятся в основном пакете, а не в отдельных extension-пакетах. W3C MAY быть частью API, но B3 по спеке должен быть отдельным extension-пакетом. (`lib.config:115`)
 
-- ✅ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  W3C TraceContext, W3C Baggage, and B3 propagators are distributed as part of core package (allowed by MAY clause). (`src/Пропагация/Классы/ОтелB3Пропагатор.os:1`)
+- ⚠️ **[Propagators]** [MUST] MUST preserve a debug trace flag, if received, and propagate it with subsequent requests.  
+  Debug-флаг извлекается (X-B3-Flags=1 и 'd' в single-header) и конвертируется в sampled=true, но не сохраняется как отдельный debug-флаг. При inject X-B3-Flags не устанавливается - только X-B3-Sampled. Debug-флаг теряется при пропагации. (`src/Пропагация/Классы/ОтелB3Пропагатор.os:139`)
+
+- ⚠️ **[Propagators]** [MUST] MUST default to injecting B3 using the single-header format  
+  Метод Внедрить() использует multi-header формат по умолчанию (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled), а спецификация требует single-header формат (b3: {traceId}-{spanId}-{sampling}). (`src/Пропагация/Классы/ОтелB3Пропагатор.os:27`)
+
+- ❌ **[Propagators]** [MUST] MUST provide configuration to change the default injection format to B3 multi-header  
+  Класс ОтелB3Пропагатор не предоставляет конфигурации для переключения между single-header и multi-header форматами. Формат жёстко задан как multi-header. (-)
+
+- ⚠️ **[Propagators]** [MUST] Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation.  
+  Метод Поля() возвращает 5 заголовков (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled, X-B3-ParentSpanId, X-B3-Flags), но inject использует только 3 (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled). Также нет адаптации к сконфигурированному формату, т.к. конфигурация формата отсутствует. (`src/Пропагация/Классы/ОтелB3Пропагатор.os:83`)
 
 - ❌ **[Env Vars]** [MUST] When `OTEL_CONFIG_FILE` is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored.  
   OTEL_CONFIG_FILE is not supported at all. The autoconfig module has no code to read or handle this environment variable, so the requirement to ignore other env vars when it is set is not implemented. (-)
@@ -106,40 +121,37 @@
 ### SHOULD/SHOULD NOT несоответствия
 
 - ⚠️ **[Baggage Api]** [SHOULD NOT] The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation.  
-  Удобные методы для работы с Baggage в контексте предоставлены (BaggageИзКонтекста, КонтекстСBaggage, ТекущийBaggage, СделатьBaggageТекущим), но ключ контекста также доступен пользователям через публичный экспортный метод КлючBaggage() в строке 53 (`src/Ядро/Модули/ОтелКонтекст.os:53`)
+  Convenience methods exist (BaggageИзКонтекста, КонтекстСBaggage, ТекущийBaggage, СделатьBaggageТекущим) so users don't need the key directly, but the context key is publicly exposed via КлючBaggage() export function at line 53, giving API users direct access contrary to the SHOULD NOT recommendation. (`src/Ядро/Модули/ОтелКонтекст.os:53`)
 
-- ⚠️ **[Resource Sdk]** [SHOULD] Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error.  
-  Errors during detection are logged at Debug level (Лог.Отладка) rather than Error level; the spec says detection errors SHOULD be considered an error. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:25`)
-
-- ❌ **[Resource Sdk]** [SHOULD] In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles.  
-  No error handling (try/catch) around OTEL_RESOURCE_ATTRIBUTES parsing in СоздатьРесурс(); a decoding failure would result in an unhandled exception rather than a clean discard of the entire value. (-)
+- ⚠️ **[Resource Sdk]** [SHOULD] an error that occurs during an attempt to detect resource information SHOULD be considered an error.  
+  Errors during detection are caught and logged at Debug level (Лог.Отладка), not at Error level. Per spec they SHOULD be considered errors. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:25`)
 
 - ❌ **[Resource Sdk]** [SHOULD] In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles.  
-  No error reporting mechanism around OTEL_RESOURCE_ATTRIBUTES parsing; errors during decoding are not caught and reported via the Error Handling principles. (-)
+  No try/catch around OTEL_RESOURCE_ATTRIBUTES parsing in СоздатьРесурс(); errors propagate as unhandled exceptions instead of discarding the value. (-)
 
-- ⚠️ **[Trace Api]** [SHOULD] its `name` property SHOULD be set to an empty string,  
-  Нет явной нормализации невалидного имени (null/Неопределено) в пустую строку. Если передано Неопределено, оно сохраняется как есть, а не преобразуется в пустую строку. (`src/Ядро/Классы/ОтелОбластьИнструментирования.os:93`)
+- ❌ **[Resource Sdk]** [SHOULD] In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles.  
+  No error reporting mechanism for OTEL_RESOURCE_ATTRIBUTES parsing failures; exceptions propagate uncaught instead of being reported per Error Handling principles. (-)
 
-- ❌ **[Trace Api]** [SHOULD] and a message reporting that the specified value is invalid SHOULD be logged.  
-  Отсутствует логирование предупреждения при передаче невалидного (пустого или null) имени в ПолучитьТрассировщик(). Код не проверяет валидность имени и не выводит предупреждений. (-)
+- ❌ **[Trace Api]** [SHOULD] In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged.  
+  Нет явной проверки на невалидное имя и принудительной установки его в пустую строку - ОбластьИнструментирования просто принимает имя как есть без валидации (-)
 
-- ⚠️ **[Trace Api]** [SHOULD NOT] The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Tracing API implementation.  
-  Ключ контекста спана (КлючСпана) доступен через экспортную функцию ОтелКонтекст.КлючСпана(). Хотя пользователи могут использовать высокоуровневые методы (СпанИзКонтекста, КонтекстСоСпаном), ключ технически доступен через публичный API. (`src/Ядро/Модули/ОтелКонтекст.os:44`)
+- ❌ **[Trace Api]** [SHOULD] In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged.  
+  Нет логирования сообщения о невалидном имени - в коде ПолучитьТрассировщик отсутствует вызов логгера при пустом или null имени (-)
 
-- ⚠️ **[Trace Api]** [SHOULD NOT] `Span`s are not meant to be used to propagate information within a process. To prevent misuse, implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`.  
-  ОтелСпан exposes Атрибуты() as a public export method providing direct access to span attributes. While needed for SDK export, the API-level recommendation is to not expose attributes beyond SpanContext. (`src/Трассировка/Классы/ОтелСпан.os:146`)
+- ⚠️ **[Trace Api]** [SHOULD NOT] implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`.  
+  ОтелСпан exposes Атрибуты() publicly. The spec recommends not providing access to attributes besides SpanContext to prevent misuse for in-process propagation. The single-class design (Span = ReadableSpan) requires exposing attributes for processors/exporters. (`src/Трассировка/Классы/ОтелСпан.os:146`)
 
 - ⚠️ **[Trace Api]** [SHOULD NOT] If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type).  
-  ОтелНоопСпан is registered as a public class in lib.config (line 32) and is directly accessible by name; could have been hidden behind a factory function (`src/Трассировка/Классы/ОтелНоопСпан.os:1`)
+  ОтелНоопСпан is a publicly exposed class registered in lib.config. A factory function could hide the type, but the class is directly accessible. OneScript does not support interfaces, limiting the ability to hide the concrete type. (`src/Трассировка/Классы/ОтелНоопСпан.os:1`)
 
 - ⚠️ **[Trace Api]** [SHOULD] If a new type is required to be publicly exposed, it SHOULD be named `NonRecordingSpan`.  
-  Class is named ОтелНоопСпан (NoopSpan) instead of ОтелНеЗаписывающийСпан (NonRecordingSpan) as spec recommends (`src/Трассировка/Классы/ОтелНоопСпан.os:1`)
+  The class is named ОтелНоопСпан (NoopSpan) instead of ОтелНеЗаписывающийСпан (NonRecordingSpan) as recommended by the spec. (`src/Трассировка/Классы/ОтелНоопСпан.os:1`)
 
 - ⚠️ **[Trace Api]** [SHOULD] Link - Links are immutable and SHOULD be safe for concurrent use by default.  
-  Links are stored as mutable Соответствие objects without a dedicated immutable Link class; no thread-safety documentation or guarantees for links (`src/Трассировка/Классы/ОтелСпан.os:384`)
+  Links are stored as mutable Соответствие (Map) objects without a dedicated immutable Link class. No documentation states they are immutable or thread-safe, unlike Event which has explicit immutability documentation. (`src/Трассировка/Классы/ОтелСпан.os:384`)
 
 - ❌ **[Trace Api]** [SHOULD] If the `Span` in the parent `Context` is already non-recording, it SHOULD be returned directly without instantiating a new `Span`.  
-  No optimization to return the parent non-recording span directly; always creates a new ОтелНоопСпан regardless of whether parent is already non-recording (-)
+  ОтелТрассировщик.НачатьСпан() always creates a new ОтелНоопСпан(КонтекстРодителяСпана) when sampling fails, even if the parent Span is already non-recording. There is no check to return the existing parent Span directly. (-)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] After the call to `Shutdown`, subsequent attempts to get a `Tracer` are not allowed. SDKs SHOULD return a valid no-op Tracer for these calls, if possible.  
   После Shutdown ПолучитьТрассировщик возвращает обычный ОтелТрассировщик, а не no-op. Возвращённый трассировщик всё ещё ссылается на закрытый провайдер и пытается создавать реальные спаны через закрытые процессоры. (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:67`)
@@ -162,38 +174,29 @@
 - ❌ **[Trace Sdk]** [SHOULD NOT] Span Exporters MUST receive those spans which have `Sampled` flag set to true and they SHOULD NOT receive the ones that do not.  
   No filtering of non-sampled spans (Sampled=false, IsRecording=true) before the exporter. The processors pass all received spans to the exporter regardless of the Sampled flag. (-)
 
-- ⚠️ **[Trace Sdk]** [SHOULD] For root span contexts, the SDK SHOULD implement the TraceID randomness requirements of the W3C Trace Context Level 2 Candidate Recommendation when generating TraceID values.  
-  TraceIDs are generated using УникальныйИдентификатор (UUID v4), which provides pseudo-random values with ~122 bits of randomness. While UUID v4 likely satisfies the 56-bit randomness requirement in the rightmost 7 bytes, the implementation does not explicitly follow W3C Trace Context Level 2 requirements and does not validate or document compliance with the specific randomness format. (`src/Ядро/Модули/ОтелУтилиты.os:85`)
-
 - ❌ **[Trace Sdk]** [SHOULD] For root span contexts, the SDK SHOULD set the `Random` flag in the trace flags when it generates TraceIDs that meet the W3C Trace Context Level 2 randomness requirements.  
-  The SDK does not set the Random trace flag. ВычислитьФлагиТрассировки() in ОтелТрассировщик.os only sets the Sampled flag (bit 0, value 0 or 1). The W3C Level 2 Random flag is not implemented. (-)
+  ВычислитьФлагиТрассировки() устанавливает только флаг Sampled (бит 0), но не устанавливает флаг Random (бит 1) для корневых спанов (-)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] For all span contexts, OpenTelemetry samplers SHOULD presume that TraceIDs meet the W3C Trace Context Level 2 randomness requirements, unless an explicit randomness value is present in the `rv` sub-key of the OpenTelemetry TraceState.  
-  Sampler presumes randomness from TraceID (uses first 8 hex chars in СэмплироватьПоДоле), but does not check for the `rv` sub-key in OpenTelemetry TraceState as an alternative randomness source. (`src/Трассировка/Модули/ОтелСэмплер.os:277`)
+  The TraceIdRatioBased sampler presumes TraceID randomness by using the first 8 hex characters of the TraceId as a hash for ratio-based sampling. However, there is no check for the `rv` sub-key in the OpenTelemetry TraceState as an alternative source of randomness when TraceIDs are non-random. (`src/Трассировка/Модули/ОтелСэмплер.os:290`)
 
 - ❌ **[Trace Sdk]** [SHOULD] If the SDK uses an `IdGenerator` extension point, the SDK SHOULD allow the extension to determine whether the Random flag is set when new IDs are generated.  
-  The SDK has an IdGenerator extension point (УстановитьГенераторИд in builder/provider) but provides no mechanism for the extension to signal whether it produces random IDs, and the SDK does not set the W3C Random flag based on the generator. (-)
-
-- ⚠️ **[Trace Sdk]** [SHOULD] The name of the configuration options SHOULD be `EventCountLimit` and `LinkCountLimit`.  
-  The limits exist as МаксСобытий/МаксЛинков (УстановитьМаксСобытий/УстановитьМаксЛинков) rather than EventCountLimit/LinkCountLimit. Semantically equivalent but names do not match the spec recommendation. (`src/Трассировка/Классы/ОтелЛимитыСпана.os:34`)
-
-- ✅ **[Trace Sdk]** [SHOULD] SDKs SHOULD ignore these calls gracefully, if possible.  
-  Оба процессора (простой и пакетный) проверяют флаг Закрыт и игнорируют вызовы после shutdown (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:43`)
+  The SDK has an IdGenerator extension point (ОтелПостроительПровайдераТрассировки.УстановитьГенераторИд), but there is no mechanism for the custom IdGenerator to signal whether its generated IDs meet randomness requirements. The Random flag in trace context is not influenced by the IdGenerator. (-)
 
 - ❌ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  Метод Закрыть объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения, исключения при таймауте или иного механизма оповещения вызывающего кода о результате. (-)
+  Методы Закрыть являются процедурами (void) без возвращаемого значения - нет способа сообщить вызывающему коду об успехе, неудаче или таймауте (-)
+
+- ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
+  ОтелПакетныйПроцессорСпанов учитывает таймаут через ЭкспортироватьВсеПакеты, но ОтелПростойПроцессорСпанов игнорирует параметр ТаймаутМс (помечен BSLLS:UnusedParameters-off) (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83`)
 
 - ❌ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  Метод СброситьБуфер объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения или иного механизма оповещения вызывающего кода о результате операции. (-)
+  Методы СброситьБуфер являются процедурами (void) без возвращаемого значения - нет способа сообщить вызывающему коду об успехе, неудаче или таймауте (-)
+
+- ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout.  
+  ОтелПакетныйПроцессорСпанов проверяет таймаут в цикле, но ОтелПростойПроцессорСпанов игнорирует параметр ТаймаутМс в СброситьБуфер (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129`)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  СброситьБуфер() объявлена как Процедура (void), не возвращает статус успеха/ошибки/таймаута. Вызывающий код не может узнать результат операции. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44`)
-
-- ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the exporter exports the completed spans.  
-  Метод СброситьБуфер() существует, но в SDK отсутствует документация, рекомендующая вызывать ForceFlush только в необходимых случаях (FaaS и т.п.). (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44`)
-
-- ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event.  
-  СброситьБуфер() экспортера не принимает параметр таймаута. Для синхронного экспортера метод - no-op и завершается мгновенно, но API не предоставляет механизма контроля таймаута для будущих реализаций. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44`)
+  СброситьБуфер() is a Процедура (void), not a Функция - it does not return a success/failure/timeout status to the caller. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44`)
 
 - ⚠️ **[Logs Api]** [SHOULD] The API SHOULD be documented that instrumentation authors needs to call this API each time they emit a LogRecord to ensure they have the most up-to-date response.  
   Метод Включен() задокументирован, но документация не упоминает, что результат может меняться со временем и что авторы инструментирования должны вызывать его каждый раз перед созданием LogRecord. (`src/Логирование/Классы/ОтелЛоггер.os:28-41`)
@@ -381,6 +384,9 @@
 - ❌ **[Otlp Exporter]** [SHOULD] The resulting User-Agent SHOULD include the exporter's default User-Agent string.  
   No User-Agent header is emitted by the exporter (-)
 
+- ❌ **[Propagators]** [SHOULD] If pre-configured, `Propagator`s SHOULD default to a composite `Propagator` containing the W3C Trace Context Propagator and the Baggage `Propagator` specified in the Baggage API.  
+  SDK не предоставляет предварительно сконфигурированных пропагаторов. ОтелГлобальный.ПолучитьПропагаторы() возвращает ОтелНоопПропагатор по умолчанию, а не композитный пропагатор с W3C TraceContext и Baggage. (-)
+
 - ❌ **[Env Vars]** [SHOULD] If any value other than a true value, case-insensitive string "false", empty, or unset is used, a warning SHOULD be logged to inform users about the fallback to false being applied.  
   Функция Включено (line 762) не логирует предупреждение при невалидных булевых значениях (например, "yes", "1"); просто молча возвращает Ложь (-)
 
@@ -394,7 +400,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ✅ found | A `Context` MUST be immutable, and its write operations MUST result in the creation of a new `Context` containing the original values and the specified values updated. | `src/Ядро/Модули/ОтелКонтекст.os:383` |  |
+| 1 | MUST | ✅ found | A `Context` MUST be immutable, and its write operations MUST result in the creation of a new `Context` containing the original values and the specified values updated. | `src/Ядро/Модули/ОтелКонтекст.os:19` |  |
 | 2 | MUST | ✅ found | A `Context` MUST be immutable, and its write operations MUST result in the creation of a new `Context` containing the original values and the specified values updated. | `src/Ядро/Модули/ОтелКонтекст.os:127` |  |
 | 3 | MUST | ✅ found | In the cases where an extremely clear, pre-existing option is not available, OpenTelemetry MUST provide its own `Context` implementation. | `src/Ядро/Модули/ОтелКонтекст.os:1` |  |
 
@@ -432,7 +438,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 11 | SHOULD | ✅ found | These operations SHOULD only be used to implement automatic scope switching and define higher level APIs by SDK components and OpenTelemetry instrumentation libraries. | `src/Ядро/Модули/ОтелКонтекст.os:63` |  |
+| 11 | SHOULD | ✅ found | These operations SHOULD only be used to implement automatic scope switching and define higher level APIs by SDK components and OpenTelemetry instrumentation libraries. | `src/Ядро/Модули/ОтелКонтекст.os:203` |  |
 
 #### Get current Context
 
@@ -468,9 +474,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | Each name in `Baggage` MUST be associated with exactly one value. | `src/Ядро/Классы/ОтелBaggage.os:3` |  |
-| 2 | SHOULD NOT | ✅ found | Language API SHOULD NOT restrict which strings are used as baggage names. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
-| 3 | MUST | ✅ found | Language API MUST accept any valid UTF-8 string as baggage value in `Set` and return the same value from `Get`. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
-| 4 | MUST | ✅ found | Language API MUST treat both baggage names and values as case sensitive. | `src/Ядро/Классы/ОтелBaggage.os:3` |  |
+| 2 | SHOULD NOT | ✅ found | Language API SHOULD NOT restrict which strings are used as baggage names. | `src/Ядро/Классы/ОтелПостроительBaggage.os:23` |  |
+| 3 | MUST | ✅ found | Language API MUST accept any valid UTF-8 string as baggage value in `Set` and return the same value from `Get`. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
+| 4 | MUST | ✅ found | Language API MUST treat both baggage names and values as case sensitive. | `src/Ядро/Классы/ОтелBaggage.os:152` |  |
 | 5 | MUST | ✅ found | The Baggage API MUST be fully functional in the absence of an installed SDK. | `src/Ядро/Классы/ОтелBaggage.os:1` |  |
 | 6 | MUST | ✅ found | The `Baggage` container MUST be immutable, so that the containing `Context` also remains immutable. | `src/Ядро/Классы/ОтелBaggage.os:154` |  |
 
@@ -480,7 +486,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 7 | MUST | ✅ found | To access the value for a name/value pair set by a prior event, the Baggage API MUST provide a function that takes the name as input, and returns a value associated with the given name, or null if the given name is not present. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
+| 7 | MUST | ✅ found | the Baggage API MUST provide a function that takes the name as input, and returns a value associated with the given name, or null if the given name is not present. | `src/Ядро/Классы/ОтелBaggage.os:38` |  |
 
 #### Get All Values
 
@@ -496,7 +502,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ✅ found | To record the value for a name/value pair, the Baggage API MUST provide a function which takes a name, and a value as input. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
+| 9 | MUST | ✅ found | the Baggage API MUST provide a function which takes a name, and a value as input. | `src/Ядро/Классы/ОтелBaggage.os:68` |  |
 
 #### Remove Value
 
@@ -513,9 +519,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 11 | MUST | ✅ found | If an implementation of this API does not operate directly on the `Context`, it MUST provide the following functionality to interact with a `Context` instance: | `src/Ядро/Модули/ОтелКонтекст.os:156` |  |
-| 12 | SHOULD NOT | ⚠️ partial | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:53` | Удобные методы для работы с Baggage в контексте предоставлены (BaggageИзКонтекста, КонтекстСBaggage, ТекущийBaggage, СделатьBaggageТекущим), но ключ контекста также доступен пользователям через публичный экспортный метод КлючBaggage() в строке 53 |
+| 12 | SHOULD NOT | ⚠️ partial | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Baggage API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:53` | Convenience methods exist (BaggageИзКонтекста, КонтекстСBaggage, ТекущийBaggage, СделатьBaggageТекущим) so users don't need the key directly, but the context key is publicly exposed via КлючBaggage() export function at line 53, giving API users direct access contrary to the SHOULD NOT recommendation. |
 | 13 | SHOULD | ✅ found | If the language has support for implicitly propagated `Context` (see here), the API SHOULD also provide the following functionality: | `src/Ядро/Модули/ОтелКонтекст.os:100` |  |
-| 14 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Модули/ОтелКонтекст.os:187` |  |
+| 14 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Классы/ОтелBaggage.os:16` |  |
 
 #### Clear Baggage in the Context
 
@@ -550,7 +556,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | MUST | ✅ found | The SDK MUST allow for creation of `Resources` and for associating them with telemetry. | `src/Ядро/Классы/ОтелРесурс.os:99` |  |
-| 2 | MUST | ✅ found | When associated with a `TracerProvider`, all `Span`s produced by any `Tracer` from the provider MUST be associated with this `Resource`. | `src/Трассировка/Классы/ОтелТрассировщик.os:90` |  |
+| 2 | MUST | ✅ found | all `Span`s produced by any `Tracer` from the provider MUST be associated with this `Resource`. | `src/Трассировка/Классы/ОтелТрассировщик.os:95` |  |
 
 #### SDK-provided resource attributes
 
@@ -559,7 +565,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 3 | MUST | ✅ found | The SDK MUST provide access to a Resource with at least the attributes listed at Semantic Attributes with SDK-provided Default Value. | `src/Ядро/Классы/ОтелРесурс.os:107` |  |
-| 4 | MUST | ✅ found | This resource MUST be associated with a `TracerProvider` or `MeterProvider` if another resource was not explicitly specified. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:296` |  |
+| 4 | MUST | ✅ found | This resource MUST be associated with a `TracerProvider` or `MeterProvider` if another resource was not explicitly specified. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:314` |  |
 
 #### Create
 
@@ -567,7 +573,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 5 | MUST | ✅ found | The interface MUST provide a way to create a new resource, from `Attributes`. | `src/Ядро/Классы/ОтелРесурс.os:99` |  |
+| 5 | MUST | ✅ found | The interface MUST provide a way to create a new resource, from `Attributes`. | `src/Ядро/Классы/ОтелПостроительРесурса.os:61` |  |
 
 #### Merge
 
@@ -585,12 +591,12 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ✅ found | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1` | Resource detectors (host, process, processor) are basic OS-level detectors, not platform-specific. This requirement does not apply to them. |
+| 9 | MUST | ⚠️ partial | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1` | Detectors (host, process, processor) are implemented as separate classes but are bundled within the SDK package (src/Ядро/Классы/), not as separate packages. |
 | 10 | MUST | ✅ found | Resource detector packages MUST provide a method that returns a resource. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17` |  |
-| 11 | MUST NOT | ✅ found | Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:24` |  |
-| 12 | SHOULD | ⚠️ partial | Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:25` | Errors during detection are logged at Debug level (Лог.Отладка) rather than Error level; the spec says detection errors SHOULD be considered an error. |
+| 11 | MUST NOT | ✅ found | failure to detect any resource information MUST NOT be considered an error, | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:24` |  |
+| 12 | SHOULD | ⚠️ partial | an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:25` | Errors during detection are caught and logged at Debug level (Лог.Отладка), not at Error level. Per spec they SHOULD be considered errors. |
 | 13 | MUST | ✅ found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18` |  |
-| 14 | SHOULD | ✅ found | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate (e.g. the detector that reads the attributes from environment values will not know what Schema URL to use). | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18` |  |
+| 14 | SHOULD | ✅ found | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:117` |  |
 | 15 | MUST | ✅ found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:43` |  |
 
 #### Specifying resource information via an environment variable
@@ -599,11 +605,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 16 | MUST | ✅ found | The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment variable and merge this, as the secondary resource, with any resource information provided by the user, i.e. the user provided resource information has higher priority. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:114` |  |
-| 17 | MUST | ✅ found | All attribute values MUST be considered strings. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:693` |  |
+| 16 | MUST | ✅ found | The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment variable and merge this, as the secondary resource, with any resource information provided by the user, i.e. the user provided resource information has higher priority. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:119` |  |
+| 17 | MUST | ✅ found | All attribute values MUST be considered strings. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:126` |  |
 | 18 | MUST | ✅ found | The `,` and `=` characters in keys and values MUST be percent encoded. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:694` |  |
-| 19 | SHOULD | ❌ not_found | In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles. | - | No error handling (try/catch) around OTEL_RESOURCE_ATTRIBUTES parsing in СоздатьРесурс(); a decoding failure would result in an unhandled exception rather than a clean discard of the entire value. |
-| 20 | SHOULD | ❌ not_found | In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles. | - | No error reporting mechanism around OTEL_RESOURCE_ATTRIBUTES parsing; errors during decoding are not caught and reported via the Error Handling principles. |
+| 19 | SHOULD | ❌ not_found | In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles. | - | No try/catch around OTEL_RESOURCE_ATTRIBUTES parsing in СоздатьРесурс(); errors propagate as unhandled exceptions instead of discarding the value. |
+| 20 | SHOULD | ❌ not_found | In case of any error, e.g. failure during the decoding process, the entire environment variable value SHOULD be discarded and an error SHOULD be reported following the Error Handling principles. | - | No error reporting mechanism for OTEL_RESOURCE_ATTRIBUTES parsing failures; exceptions propagate uncaught instead of being reported per Error Handling principles. |
 
 ### Trace Api
 
@@ -614,7 +620,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 1 | SHOULD | ✅ found | Thus, the API SHOULD provide a way to set/register and access a global default `TracerProvider`. | `src/Ядро/Модули/ОтелГлобальный.os:31` |  |
-| 2 | SHOULD | ✅ found | Thus, implementations of `TracerProvider` SHOULD allow creating an arbitrary number of `TracerProvider` instances. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:286` |  |
+| 2 | SHOULD | ✅ found | Thus, implementations of `TracerProvider` SHOULD allow creating an arbitrary number of `TracerProvider` instances. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:304` |  |
 
 #### TracerProvider operations
 
@@ -622,7 +628,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 3 | MUST | ✅ found | The `TracerProvider` MUST provide the following functions: * Get a `Tracer` | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60` |  |
+| 3 | MUST | ✅ found | The `TracerProvider` MUST provide the following functions: Get a `Tracer` | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60` |  |
 
 #### Get a Tracer
 
@@ -632,10 +638,10 @@
 |---|---|---|---|---|---|
 | 4 | MUST | ✅ found | This API MUST accept the following parameters: | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60` |  |
 | 5 | SHOULD | ✅ found | This name SHOULD uniquely identify the instrumentation scope, such as the instrumentation library (e.g. `io.opentelemetry.contrib.mongodb`), package, module or class name. | `src/Ядро/Классы/ОтелОбластьИнструментирования.os:57` |  |
-| 6 | MUST | ✅ found | In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60` |  |
-| 7 | SHOULD | ⚠️ partial | its `name` property SHOULD be set to an empty string, | `src/Ядро/Классы/ОтелОбластьИнструментирования.os:93` | Нет явной нормализации невалидного имени (null/Неопределено) в пустую строку. Если передано Неопределено, оно сохраняется как есть, а не преобразуется в пустую строку. |
-| 8 | SHOULD | ❌ not_found | and a message reporting that the specified value is invalid SHOULD be logged. | - | Отсутствует логирование предупреждения при передаче невалидного (пустого или null) имени в ПолучитьТрассировщик(). Код не проверяет валидность имени и не выводит предупреждений. |
-| 9 | MUST NOT | ✅ found | Implementations MUST NOT require users to repeatedly obtain a `Tracer` again with the same identity to pick up configuration changes. | `src/Трассировка/Классы/ОтелТрассировщик.os:9` |  |
+| 6 | MUST | ⚠️ partial | In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:60` | ПолучитьТрассировщик принимает ИмяБиблиотеки и вернёт рабочий трассировщик даже с пустым именем (не бросает исключение), но нет явной проверки на невалидное имя, нет логирования предупреждения, и имя не принудительно устанавливается в пустую строку |
+| 7 | SHOULD | ❌ not_found | In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged. | - | Нет явной проверки на невалидное имя и принудительной установки его в пустую строку - ОбластьИнструментирования просто принимает имя как есть без валидации |
+| 8 | SHOULD | ❌ not_found | In case an invalid name (null or empty string) is specified, a working Tracer implementation MUST be returned as a fallback rather than returning null or throwing an exception, its `name` property SHOULD be set to an empty string, and a message reporting that the specified value is invalid SHOULD be logged. | - | Нет логирования сообщения о невалидном имени - в коде ПолучитьТрассировщик отсутствует вызов логгера при пустом или null имени |
+| 9 | MUST NOT | ✅ found | Implementations MUST NOT require users to repeatedly obtain a `Tracer` again with the same identity to pick up configuration changes. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:145` |  |
 
 #### Context Interaction
 
@@ -644,9 +650,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 10 | MUST | ✅ found | The API MUST provide the following functionality to interact with a `Context` instance: | `src/Ядро/Модули/ОтелКонтекст.os:141` |  |
-| 11 | SHOULD NOT | ⚠️ partial | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Tracing API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:44` | Ключ контекста спана (КлючСпана) доступен через экспортную функцию ОтелКонтекст.КлючСпана(). Хотя пользователи могут использовать высокоуровневые методы (СпанИзКонтекста, КонтекстСоСпаном), ключ технически доступен через публичный API. |
+| 11 | SHOULD NOT | ✅ found | The functionality listed above is necessary because API users SHOULD NOT have access to the Context Key used by the Tracing API implementation. | `src/Ядро/Модули/ОтелКонтекст.os:44` |  |
 | 12 | SHOULD | ✅ found | If the language has support for implicitly propagated `Context` (see here), the API SHOULD also provide the following functionality: | `src/Ядро/Модули/ОтелКонтекст.os:90` |  |
-| 13 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Модули/ОтелКонтекст.os:1` |  |
+| 13 | SHOULD | ✅ found | This functionality SHOULD be fully implemented in the API when possible. | `src/Ядро/Модули/ОтелКонтекст.os:219` |  |
 
 #### Tracer operations
 
@@ -654,8 +660,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 14 | MUST | ✅ found | The `Tracer` MUST provide functions to: * Create a new `Span` (see the section on `Span`) | `src/Трассировка/Классы/ОтелТрассировщик.os:27` |  |
-| 15 | SHOULD | ✅ found | The `Tracer` SHOULD provide functions to: * Report if `Tracer` is `Enabled` | `src/Трассировка/Классы/ОтелТрассировщик.os:38` |  |
+| 14 | MUST | ✅ found | The `Tracer` MUST provide functions to: Create a new `Span` (see the section on `Span`) | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
+| 15 | SHOULD | ✅ found | The `Tracer` SHOULD provide functions to: Report if `Tracer` is `Enabled` | `src/Трассировка/Классы/ОтелТрассировщик.os:38` |  |
 
 #### SpanContext
 
@@ -665,8 +671,8 @@
 |---|---|---|---|---|---|
 | 16 | MUST | ✅ found | The API MUST implement methods to create a `SpanContext`. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:252` |  |
 | 17 | SHOULD | ✅ found | These methods SHOULD be the only way to create a `SpanContext`. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:252` |  |
-| 18 | MUST | ✅ found | This functionality MUST be fully implemented in the API, | `src/Трассировка/Классы/ОтелКонтекстСпана.os:1` |  |
-| 19 | SHOULD NOT | ✅ found | and SHOULD NOT be overridable. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:1` |  |
+| 18 | MUST | ✅ found | This functionality MUST be fully implemented in the API, and SHOULD NOT be overridable. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:1` |  |
+| 19 | SHOULD NOT | ✅ found | This functionality MUST be fully implemented in the API, and SHOULD NOT be overridable. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:1` |  |
 
 #### Retrieving the TraceId and SpanId
 
@@ -675,10 +681,10 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 20 | MUST | ✅ found | The API MUST allow retrieving the `TraceId` and `SpanId` in the following forms: | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
-| 21 | MUST | ✅ found | Hex - returns the lowercase hex encoded `TraceId` (result MUST be a 32-hex-character lowercase string) or `SpanId` | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
-| 22 | MUST | ✅ found | (result MUST be a 16-hex-character lowercase string). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
-| 23 | MUST | ✅ found | Binary - returns the binary representation of the `TraceId` (result MUST be a 16-byte array) or `SpanId` | `src/Трассировка/Классы/ОтелКонтекстСпана.os:84` |  |
-| 24 | MUST | ✅ found | (result MUST be an 8-byte array). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:93` |  |
+| 21 | MUST | ✅ found | Hex - returns the lowercase hex encoded `TraceId` (result MUST be a 32-hex-character lowercase string) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:23` |  |
+| 22 | MUST | ✅ found | or `SpanId` (result MUST be a 16-hex-character lowercase string). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:32` |  |
+| 23 | MUST | ✅ found | Binary - returns the binary representation of the `TraceId` (result MUST be a 16-byte array) | `src/Трассировка/Классы/ОтелКонтекстСпана.os:84` |  |
+| 24 | MUST | ✅ found | or `SpanId` (result MUST be an 8-byte array). | `src/Трассировка/Классы/ОтелКонтекстСпана.os:93` |  |
 | 25 | SHOULD NOT | ✅ found | The API SHOULD NOT expose details about how they are internally stored. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:4` |  |
 
 #### IsValid
@@ -696,8 +702,8 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 27 | MUST | ✅ found | An API called `IsRemote`, that returns a boolean value, which is `true` if the SpanContext was propagated from a remote parent, MUST be provided. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:60` |  |
-| 28 | MUST | ✅ found | When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true, whereas for the SpanContext of any child spans it MUST return false. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:126` |  |
-| 29 | MUST | ✅ found | When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true, whereas for the SpanContext of any child spans it MUST return false. | `src/Трассировка/Классы/ОтелСпан.os:627` |  |
+| 28 | MUST | ✅ found | When extracting a `SpanContext` through the Propagators API, `IsRemote` MUST return true, | `src/Пропагация/Классы/ОтелW3CПропагатор.os:126` |  |
+| 29 | MUST | ✅ found | whereas for the SpanContext of any child spans it MUST return false. | `src/Трассировка/Классы/ОтелКонтекстСпана.os:256` |  |
 
 #### TraceState
 
@@ -719,13 +725,13 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 37 | SHOULD | ✅ found | The span name SHOULD be the most general string that identifies a (statistically) interesting class of Spans, rather than individual Span instances while still being human-readable. | - |  |
-| 38 | SHOULD | ✅ found | Generality SHOULD be prioritized over human-readability. | - |  |
+| 37 | SHOULD | ✅ found | The span name SHOULD be the most general string that identifies a (statistically) interesting class of Spans, rather than individual Span instances while still being human-readable. | `src/Трассировка/Классы/ОтелСпан.os:259` |  |
+| 38 | SHOULD | ✅ found | Generality SHOULD be prioritized over human-readability. | `src/Трассировка/Классы/ОтелСпан.os:259` |  |
 | 39 | SHOULD | ✅ found | A `Span`'s start time SHOULD be set to the current time on span creation. | `src/Трассировка/Классы/ОтелСпан.os:632` |  |
 | 40 | SHOULD | ✅ found | After the `Span` is created, it SHOULD be possible to change its name, set its `Attribute`s, add `Event`s, and set the `Status`. | `src/Трассировка/Классы/ОтелСпан.os:259` |  |
 | 41 | MUST NOT | ✅ found | These MUST NOT be changed after the `Span`'s end time has been set. | `src/Трассировка/Классы/ОтелСпан.os:260` |  |
-| 42 | SHOULD NOT | ⚠️ partial | `Span`s are not meant to be used to propagate information within a process. To prevent misuse, implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`. | `src/Трассировка/Классы/ОтелСпан.os:146` | ОтелСпан exposes Атрибуты() as a public export method providing direct access to span attributes. While needed for SDK export, the API-level recommendation is to not expose attributes beyond SpanContext. |
-| 43 | MUST NOT | ✅ found | However, alternative implementations MUST NOT allow callers to create `Span`s directly. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
+| 42 | SHOULD NOT | ⚠️ partial | implementations SHOULD NOT provide access to a `Span`'s attributes besides its `SpanContext`. | `src/Трассировка/Классы/ОтелСпан.os:146` | ОтелСпан exposes Атрибуты() publicly. The spec recommends not providing access to attributes besides SpanContext to prevent misuse for in-process propagation. The single-class design (Span = ReadableSpan) requires exposing attributes for processors/exporters. |
+| 43 | MUST NOT | ⚠️ partial | alternative implementations MUST NOT allow callers to create `Span`s directly. | `src/Трассировка/Классы/ОтелСпан.os:599` | OneScript does not support private constructors or access modifiers. ОтелСпан constructor is technically accessible via Новый ОтелСпан(...), though the intended API is through Tracer only. |
 | 44 | MUST | ✅ found | All `Span`s MUST be created via a `Tracer`. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
 
 #### Span Creation
@@ -734,18 +740,18 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 45 | MUST NOT | ✅ found | There MUST NOT be any API for creating a `Span` other than with a `Tracer`. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
-| 46 | MUST NOT | ✅ found | In languages with implicit `Context` propagation, `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default, but this functionality MAY be offered additionally as a separate operation. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
+| 45 | MUST NOT | ⚠️ partial | There MUST NOT be any API for creating a `Span` other than with a `Tracer`. | `src/Трассировка/Классы/ОтелСпан.os:599` | OneScript does not support private constructors or access modifiers. ОтелСпан constructor is technically accessible via Новый ОтелСпан(...), though the intended API is through Tracer only. |
+| 46 | MUST NOT | ✅ found | In languages with implicit `Context` propagation, `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default, | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
 | 47 | MUST | ✅ found | The API MUST accept the following parameters: | `src/Трассировка/Классы/ОтелПостроительСпана.os:192` |  |
-| 48 | MUST NOT | ✅ found | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | УстановитьРодителя() now validates that only Context is accepted and throws exception for Span/SpanContext. |
-| 49 | MUST | ✅ found | The semantic parent of the Span MUST be determined according to the rules described in Determining the Parent Span from a Context. | `src/Трассировка/Классы/ОтелТрассировщик.os:57` |  |
-| 50 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling `SetAttribute` later, as samplers can only consider information already present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:71` |  |
+| 48 | MUST NOT | ⚠️ partial | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | ОтелПостроительСпана.УстановитьРодителя() correctly accepts only Context (Соответствие) and rejects Span/SpanContext. However, ОтелТрассировщик.НачатьДочернийСпан() is a public Export method that accepts ОтелСпан or ОтелКонтекстСпана directly as parent. |
+| 49 | MUST | ✅ found | The semantic parent of the Span MUST be determined according to the rules described in Determining the Parent Span from a Context. | `src/Трассировка/Классы/ОтелТрассировщик.os:60` |  |
+| 50 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling `SetAttribute` later, as samplers can only consider information already present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:72` |  |
 | 51 | SHOULD | ✅ found | `Start timestamp`, default to current time. This argument SHOULD only be set when span creation time has already passed. | `src/Трассировка/Классы/ОтелПостроительСпана.os:114` |  |
-| 52 | MUST NOT | ✅ found | If API is called at a moment of a Span logical start, API user MUST NOT explicitly set this argument. | `src/Трассировка/Классы/ОтелПостроительСпана.os:114` |  |
-| 53 | MUST | ✅ found | Implementations MUST provide an option to create a `Span` as a root span, and MUST generate a new `TraceId` for each root span created. | `src/Трассировка/Классы/ОтелТрассировщик.os:113` |  |
-| 54 | MUST | ✅ found | Implementations MUST provide an option to create a `Span` as a root span, and MUST generate a new `TraceId` for each root span created. | `src/Трассировка/Классы/ОтелТрассировщик.os:114` |  |
-| 55 | MUST | ✅ found | For a Span with a parent, the `TraceId` MUST be the same as the parent. | `src/Трассировка/Классы/ОтелТрассировщик.os:61` |  |
-| 56 | MUST | ✅ found | Also, the child span MUST inherit all `TraceState` values of its parent by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:239` |  |
+| 52 | MUST NOT | ✅ found | If API is called at a moment of a Span logical start, API user MUST NOT explicitly set this argument. | `src/Трассировка/Классы/ОтелСпан.os:632` |  |
+| 53 | MUST | ✅ found | Implementations MUST provide an option to create a `Span` as a root span, | `src/Трассировка/Классы/ОтелТрассировщик.os:118` |  |
+| 54 | MUST | ✅ found | and MUST generate a new `TraceId` for each root span created. | `src/Трассировка/Классы/ОтелТрассировщик.os:122` |  |
+| 55 | MUST | ✅ found | For a Span with a parent, the `TraceId` MUST be the same as the parent. | `src/Трассировка/Классы/ОтелТрассировщик.os:64` |  |
+| 56 | MUST | ✅ found | Also, the child span MUST inherit all `TraceState` values of its parent by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:264` |  |
 | 57 | MUST | ✅ found | Any span that is created MUST also be ended. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
 
 #### Specifying links
@@ -763,7 +769,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 59 | MUST | ✅ found | The Span interface MUST provide: | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
-| 60 | MUST | ✅ found | The returned value MUST be the same for the entire Span lifetime. | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
+| 60 | MUST | ✅ found | The returned value MUST be the same for the entire Span lifetime. | `src/Трассировка/Классы/ОтелСпан.os:627` |  |
 
 #### IsRecording
 
@@ -771,10 +777,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 61 | SHOULD | ✅ found | After a `Span` is ended, it SHOULD become non-recording and `IsRecording` SHOULD always return `false`. | `src/Трассировка/Классы/ОтелСпан.os:246` |  |
+| 61 | SHOULD | ✅ found | After a `Span` is ended, it SHOULD become non-recording and `IsRecording` SHOULD always return `false`. | `src/Трассировка/Классы/ОтелСпан.os:247` |  |
 | 62 | SHOULD | ✅ found | After a `Span` is ended, it SHOULD become non-recording and `IsRecording` SHOULD always return `false`. | `src/Трассировка/Классы/ОтелСпан.os:247` |  |
 | 63 | SHOULD NOT | ✅ found | `IsRecording` SHOULD NOT take any parameters. | `src/Трассировка/Классы/ОтелСпан.os:246` |  |
-| 64 | SHOULD | ✅ found | This flag SHOULD be used to avoid expensive computations of a Span attributes or events in case when a Span is definitely not recorded. | `src/Трассировка/Классы/ОтелСпан.os:246` |  |
+| 64 | SHOULD | ✅ found | This flag SHOULD be used to avoid expensive computations of a Span attributes or events in case when a Span is definitely not recorded. | `src/Трассировка/Классы/ОтелСпан.os:276` |  |
 
 #### Set Attributes
 
@@ -794,7 +800,7 @@
 |---|---|---|---|---|---|
 | 68 | MUST | ✅ found | A `Span` MUST have the ability to add events. | `src/Трассировка/Классы/ОтелСпан.os:305` |  |
 | 69 | MUST | ✅ found | The Span interface MUST provide: | `src/Трассировка/Классы/ОтелСпан.os:305` |  |
-| 70 | SHOULD | ✅ found | Events SHOULD preserve the order in which they are recorded. | `src/Трассировка/Классы/ОтелСпан.os:636` |  |
+| 70 | SHOULD | ✅ found | Events SHOULD preserve the order in which they are recorded. | `src/Трассировка/Классы/ОтелСпан.os:309` |  |
 
 #### Add Link
 
@@ -817,7 +823,7 @@
 | 76 | SHOULD | ✅ found | The status code SHOULD remain unset, except for the following circumstances: | `src/Трассировка/Классы/ОтелСпан.os:637` |  |
 | 77 | SHOULD | ✅ found | An attempt to set value `Unset` SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:436` |  |
 | 78 | SHOULD | ✅ found | When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable. | `src/Трассировка/Классы/ОтелСпан.os:425` |  |
-| 79 | SHOULD | ✅ found | For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | `src/Трассировка/Классы/ОтелСпан.os:425` |  |
+| 79 | SHOULD | ✅ found | Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | `src/Трассировка/Классы/ОтелСпан.os:425` |  |
 | 80 | SHOULD NOT | ✅ found | Generally, Instrumentation Libraries SHOULD NOT set the status code to `Ok`, unless explicitly configured to do so. | `src/Трассировка/Классы/ОтелСпан.os:425` |  |
 | 81 | SHOULD | ✅ found | Instrumentation Libraries SHOULD leave the status code as `Unset` unless there is an error, as described above. | `src/Трассировка/Классы/ОтелСпан.os:637` |  |
 | 82 | SHOULD | ✅ found | When span status is set to `Ok` it SHOULD be considered final and any further attempts to change it SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:431` |  |
@@ -830,14 +836,14 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 85 | SHOULD | ✅ found | Implementations SHOULD ignore all subsequent calls to `End` and any other Span methods, i.e. the Span becomes non-recording by being ended | `src/Трассировка/Классы/ОтелСпан.os:460` |  |
+| 85 | SHOULD | ✅ found | Implementations SHOULD ignore all subsequent calls to `End` and any other Span methods, i.e. the Span becomes non-recording by being ended (there might be exceptions when Tracer is streaming events and has no mutable state associated with the `Span`). | `src/Трассировка/Классы/ОтелСпан.os:460` |  |
 | 86 | MUST | ✅ found | However, all API implementations of such methods MUST internally call the `End` method and be documented to do so. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
 | 87 | MUST NOT | ✅ found | `End` MUST NOT have any effects on child spans. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
 | 88 | MUST NOT | ✅ found | `End` MUST NOT inactivate the `Span` in any `Context` it is active in. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
 | 89 | MUST | ✅ found | It MUST still be possible to use an ended span as parent via a Context it is contained in. | `src/Трассировка/Классы/ОтелСпан.os:80` |  |
 | 90 | MUST | ✅ found | Also, any mechanisms for putting the Span into a Context MUST still work after the Span was ended. | `src/Трассировка/Классы/ОтелСпан.os:410` |  |
 | 91 | MUST | ✅ found | If omitted, this MUST be treated equivalent to passing the current time. | `src/Трассировка/Классы/ОтелСпан.os:461` |  |
-| 92 | MUST NOT | ✅ found | This operation itself MUST NOT perform blocking I/O on the calling thread. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
+| 92 | MUST NOT | ✅ found | This operation itself MUST NOT perform blocking I/O on the calling thread. | `src/Трассировка/Классы/ОтелПакетныйПроцессорСпанов.os:37` |  |
 | 93 | SHOULD | ✅ found | Any locking used needs be minimized and SHOULD be removed entirely if possible. | `src/Трассировка/Классы/ОтелСпан.os:459` |  |
 
 #### Record Exception
@@ -867,8 +873,8 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 100 | MUST | ✅ found | The API MUST provide an operation for wrapping a `SpanContext` with an object implementing the `Span` interface. | `src/Трассировка/Классы/ОтелНоопСпан.os:272` |  |
-| 101 | SHOULD NOT | ⚠️ partial | If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type). | `src/Трассировка/Классы/ОтелНоопСпан.os:1` | ОтелНоопСпан is registered as a public class in lib.config (line 32) and is directly accessible by name; could have been hidden behind a factory function |
-| 102 | SHOULD | ⚠️ partial | If a new type is required to be publicly exposed, it SHOULD be named `NonRecordingSpan`. | `src/Трассировка/Классы/ОтелНоопСпан.os:1` | Class is named ОтелНоопСпан (NoopSpan) instead of ОтелНеЗаписывающийСпан (NonRecordingSpan) as spec recommends |
+| 101 | SHOULD NOT | ⚠️ partial | If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type). | `src/Трассировка/Классы/ОтелНоопСпан.os:1` | ОтелНоопСпан is a publicly exposed class registered in lib.config. A factory function could hide the type, but the class is directly accessible. OneScript does not support interfaces, limiting the ability to hide the concrete type. |
+| 102 | SHOULD | ⚠️ partial | If a new type is required to be publicly exposed, it SHOULD be named `NonRecordingSpan`. | `src/Трассировка/Классы/ОтелНоопСпан.os:1` | The class is named ОтелНоопСпан (NoopSpan) instead of ОтелНеЗаписывающийСпан (NonRecordingSpan) as recommended by the spec. |
 | 103 | MUST | ✅ found | `GetContext` MUST return the wrapped `SpanContext`. | `src/Трассировка/Классы/ОтелНоопСпан.os:29` |  |
 | 104 | MUST | ✅ found | `IsRecording` MUST return `false` to signal that events, attributes and other elements are not being recorded, i.e. they are being dropped. | `src/Трассировка/Классы/ОтелНоопСпан.os:155` |  |
 | 105 | MUST | ✅ found | The remaining functionality of `Span` MUST be defined as no-op operations. | `src/Трассировка/Классы/ОтелНоопСпан.os:167` |  |
@@ -891,10 +897,10 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 110 | MUST | ✅ found | A user MUST have the ability to record links to other `SpanContext`s. | `src/Трассировка/Классы/ОтелСпан.os:373` |  |
-| 111 | MUST | ✅ found | The API MUST provide: * An API to record a single `Link` where the `Link` properties are passed as arguments. | `src/Трассировка/Классы/ОтелСпан.os:373` |  |
+| 111 | MUST | ✅ found | The API MUST provide: An API to record a single `Link` where the `Link` properties are passed as arguments. | `src/Трассировка/Классы/ОтелСпан.os:373` |  |
 | 112 | SHOULD | ✅ found | Implementations SHOULD record links containing `SpanContext` with empty `TraceId` or `SpanId` (all zeros) as long as either the attribute set or `TraceState` is non-empty. | `src/Трассировка/Классы/ОтелСпан.os:373` |  |
-| 113 | SHOULD | ✅ found | Span SHOULD preserve the order in which `Link`s are set. | `src/Трассировка/Классы/ОтелСпан.os:389` |  |
-| 114 | MUST | ✅ found | The API documentation MUST state that adding links at span creation is preferred to calling `AddLink` later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:87` |  |
+| 113 | SHOULD | ✅ found | Span SHOULD preserve the order in which `Link`s are set. | `src/Трассировка/Классы/ОтелСпан.os:636` |  |
+| 114 | MUST | ✅ found | The API documentation MUST state that adding links at span creation is preferred to calling `AddLink` later, for contexts that are available during span creation, because head sampling decisions can only consider information present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:86` |  |
 
 #### Concurrency requirements
 
@@ -902,11 +908,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 115 | MUST | ✅ found | TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:7` |  |
+| 115 | MUST | ✅ found | TracerProvider - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:6` |  |
 | 116 | MUST | ✅ found | Tracer - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелТрассировщик.os:3` |  |
 | 117 | MUST | ✅ found | Span - all methods MUST be documented that implementations need to be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os:3` |  |
 | 118 | MUST | ✅ found | Event - Events are immutable and MUST be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСобытиеСпана.os:3` |  |
-| 119 | SHOULD | ⚠️ partial | Link - Links are immutable and SHOULD be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os:384` | Links are stored as mutable Соответствие objects without a dedicated immutable Link class; no thread-safety documentation or guarantees for links |
+| 119 | SHOULD | ⚠️ partial | Link - Links are immutable and SHOULD be safe for concurrent use by default. | `src/Трассировка/Классы/ОтелСпан.os:384` | Links are stored as mutable Соответствие (Map) objects without a dedicated immutable Link class. No documentation states they are immutable or thread-safe, unlike Event which has explicit immutability documentation. |
 
 #### Behavior of the API in the absence of an installed SDK
 
@@ -914,9 +920,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 120 | MUST | ✅ found | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` |  |
-| 121 | SHOULD | ❌ not_found | If the `Span` in the parent `Context` is already non-recording, it SHOULD be returned directly without instantiating a new `Span`. | - | No optimization to return the parent non-recording span directly; always creates a new ОтелНоопСпан regardless of whether parent is already non-recording |
-| 122 | MUST | ✅ found | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:78` |  |
+| 120 | MUST | ✅ found | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:82` |  |
+| 121 | SHOULD | ❌ not_found | If the `Span` in the parent `Context` is already non-recording, it SHOULD be returned directly without instantiating a new `Span`. | - | ОтелТрассировщик.НачатьСпан() always creates a new ОтелНоопСпан(КонтекстРодителяСпана) when sampling fails, even if the parent Span is already non-recording. There is no check to return the existing parent Span directly. |
+| 122 | MUST | ✅ found | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:84` |  |
 
 ### Trace Sdk
 
@@ -960,7 +966,7 @@
 |---|---|---|---|---|---|
 | 12 | MUST | ✅ found | A function receiving this as argument MUST be able to access all information that was added to the span, as listed in the API spec for Span. | `src/Трассировка/Классы/ОтелСпан.os:71` |  |
 | 13 | MUST | ✅ found | A function receiving this as argument MUST be able to access the `InstrumentationScope` [since 1.10.0] and `Resource` information (implicitly) associated with the span. | `src/Трассировка/Классы/ОтелСпан.os:173` |  |
-| 14 | MUST | ✅ found | For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`. | `src/Ядро/Классы/ОтелОбластьИнструментирования.os:57` | ОтелОбластьИнструментирования предоставляет deprecated-метод БиблиотекаИнструментирования(), возвращающий ЭтотОбъект - обратная совместимость обеспечена. |
+| 14 | MUST | ⚠️ partial | For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`. | `src/Трассировка/Классы/ОтелСпан.os:182` | There is no separate InstrumentationLibrary class or accessor. Only InstrumentationScope (ОтелОбластьИнструментирования) is available, which contains the same name and version data but under a different type name. |
 | 15 | MUST | ✅ found | A function receiving this as argument MUST be able to reliably determine whether the Span has ended (some languages might implement this by having an end timestamp of `null`, others might have an explicit `hasEnded` boolean). | `src/Трассировка/Классы/ОтелСпан.os:209` |  |
 | 16 | MUST | ✅ found | Counts for attributes, events and links dropped due to collection limits MUST be available for exporters to report as described in the exporters specification. | `src/Трассировка/Классы/ОтелСпан.os:218` |  |
 | 17 | MUST | ✅ found | As an exception to the authoritative set of span properties defined in the API spec, implementations MAY choose not to expose (and store) the full parent Context of the Span but they MUST expose at least the full parent SpanContext. | `src/Трассировка/Классы/ОтелСпан.os:101` |  |
@@ -1027,7 +1033,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 32 | SHOULD | ⚠️ partial | For root span contexts, the SDK SHOULD implement the TraceID randomness requirements of the W3C Trace Context Level 2 Candidate Recommendation when generating TraceID values. | `src/Ядро/Модули/ОтелУтилиты.os:85` | TraceIDs are generated using УникальныйИдентификатор (UUID v4), which provides pseudo-random values with ~122 bits of randomness. While UUID v4 likely satisfies the 56-bit randomness requirement in the rightmost 7 bytes, the implementation does not explicitly follow W3C Trace Context Level 2 requirements and does not validate or document compliance with the specific randomness format. |
+| 32 | SHOULD | ✅ found | For root span contexts, the SDK SHOULD implement the TraceID randomness requirements of the W3C Trace Context Level 2 Candidate Recommendation when generating TraceID values. | `src/Ядро/Модули/ОтелУтилиты.os:78` |  |
 
 #### Random trace flag
 
@@ -1035,7 +1041,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 33 | SHOULD | ❌ not_found | For root span contexts, the SDK SHOULD set the `Random` flag in the trace flags when it generates TraceIDs that meet the W3C Trace Context Level 2 randomness requirements. | - | The SDK does not set the Random trace flag. ВычислитьФлагиТрассировки() in ОтелТрассировщик.os only sets the Sampled flag (bit 0, value 0 or 1). The W3C Level 2 Random flag is not implemented. |
+| 33 | SHOULD | ❌ not_found | For root span contexts, the SDK SHOULD set the `Random` flag in the trace flags when it generates TraceIDs that meet the W3C Trace Context Level 2 randomness requirements. | - | ВычислитьФлагиТрассировки() устанавливает только флаг Sampled (бит 0), но не устанавливает флаг Random (бит 1) для корневых спанов |
 
 #### Explicit randomness
 
@@ -1051,7 +1057,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 35 | SHOULD | ⚠️ partial | For all span contexts, OpenTelemetry samplers SHOULD presume that TraceIDs meet the W3C Trace Context Level 2 randomness requirements, unless an explicit randomness value is present in the `rv` sub-key of the OpenTelemetry TraceState. | `src/Трассировка/Модули/ОтелСэмплер.os:277` | Sampler presumes randomness from TraceID (uses first 8 hex chars in СэмплироватьПоДоле), but does not check for the `rv` sub-key in OpenTelemetry TraceState as an alternative randomness source. |
+| 35 | SHOULD | ⚠️ partial | For all span contexts, OpenTelemetry samplers SHOULD presume that TraceIDs meet the W3C Trace Context Level 2 randomness requirements, unless an explicit randomness value is present in the `rv` sub-key of the OpenTelemetry TraceState. | `src/Трассировка/Модули/ОтелСэмплер.os:290` | The TraceIdRatioBased sampler presumes TraceID randomness by using the first 8 hex characters of the TraceId as a hash for ratio-based sampling. However, there is no check for the `rv` sub-key in the OpenTelemetry TraceState as an alternative source of randomness when TraceIDs are non-random. |
 
 #### IdGenerator randomness
 
@@ -1059,7 +1065,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 36 | SHOULD | ❌ not_found | If the SDK uses an `IdGenerator` extension point, the SDK SHOULD allow the extension to determine whether the Random flag is set when new IDs are generated. | - | The SDK has an IdGenerator extension point (УстановитьГенераторИд in builder/provider) but provides no mechanism for the extension to signal whether it produces random IDs, and the SDK does not set the W3C Random flag based on the generator. |
+| 36 | SHOULD | ❌ not_found | If the SDK uses an `IdGenerator` extension point, the SDK SHOULD allow the extension to determine whether the Random flag is set when new IDs are generated. | - | The SDK has an IdGenerator extension point (ОтелПостроительПровайдераТрассировки.УстановитьГенераторИд), but there is no mechanism for the custom IdGenerator to signal whether its generated IDs meet randomness requirements. The Random flag in trace context is not influenced by the IdGenerator. |
 
 #### Span Limits
 
@@ -1067,9 +1073,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 37 | MUST | ✅ found | Span attributes MUST adhere to the common rules of attribute limits. | `src/Трассировка/Классы/ОтелСпан.os:278` |  |
+| 37 | MUST | ✅ found | Span attributes MUST adhere to the common rules of attribute limits. | `src/Трассировка/Классы/ОтелСпан.os:276` |  |
 | 38 | MUST | ✅ found | If the SDK implements the limits above it MUST provide a way to change these limits, via a configuration to the TracerProvider, by allowing users to configure individual limits like in the Java example bellow. | `src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os:76` |  |
-| 39 | SHOULD | ⚠️ partial | The name of the configuration options SHOULD be `EventCountLimit` and `LinkCountLimit`. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:34` | The limits exist as МаксСобытий/МаксЛинков (УстановитьМаксСобытий/УстановитьМаксЛинков) rather than EventCountLimit/LinkCountLimit. Semantically equivalent but names do not match the spec recommendation. |
+| 39 | SHOULD | ✅ found | The name of the configuration options SHOULD be `EventCountLimit` and `LinkCountLimit`. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:34` |  |
 | 40 | SHOULD | ✅ found | The options MAY be bundled in a class, which then SHOULD be called `SpanLimits`. | `src/Трассировка/Классы/ОтелЛимитыСпана.os:1` |  |
 | 41 | SHOULD | ✅ found | There SHOULD be a message printed in the SDK's log to indicate to the user that an attribute, event, or link was discarded due to such a limit. | `src/Трассировка/Классы/ОтелСпан.os:480` |  |
 | 42 | MUST | ✅ found | To prevent excessive logging, the message MUST be printed at most once per span (i.e., not per discarded attribute, event, or link). | `src/Трассировка/Классы/ОтелСпан.os:481` |  |
@@ -1082,7 +1088,7 @@
 |---|---|---|---|---|---|
 | 43 | MUST | ✅ found | The SDK MUST by default randomly generate both the `TraceId` and the `SpanId`. | `src/Ядро/Модули/ОтелУтилиты.os:78` |  |
 | 44 | MUST | ✅ found | The SDK MUST provide a mechanism for customizing the way IDs are generated for both the `TraceId` and the `SpanId`. | `src/Трассировка/Классы/ОтелПостроительПровайдераТрассировки.os:93` |  |
-| 45 | MUST | ✅ found | name of the methods MUST be consistent with SpanContext | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:203` |  |
+| 45 | MUST | ✅ found | name of the methods MUST be consistent with SpanContext | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:214` |  |
 | 46 | MUST NOT | ✅ found | Additional `IdGenerator` implementing vendor-specific protocols such as AWS X-Ray trace id generator MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | - |  |
 
 #### Span processor
@@ -1091,8 +1097,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 47 | MUST | ✅ found | SDK MUST allow to end each pipeline with individual exporter. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:91` |  |
-| 48 | MUST | ✅ found | SDK MUST allow users to implement and configure custom processors. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:1` |  |
+| 47 | MUST | ✅ found | SDK MUST allow to end each pipeline with individual exporter. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:104` |  |
+| 48 | MUST | ✅ found | SDK MUST allow users to implement and configure custom processors. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:52` |  |
 
 #### Interface definition
 
@@ -1100,8 +1106,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 49 | MUST | ✅ found | The `SpanProcessor` interface MUST declare the following methods: * OnStart* OnEnd* Shutdown* ForceFlush | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:11` |  |
-| 50 | SHOULD | ✅ found | The `SpanProcessor` interface SHOULD declare the following methods: * OnEnding method. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:21` |  |
+| 49 | MUST | ✅ found | The `SpanProcessor` interface MUST declare the following methods: OnStart, OnEnd, Shutdown, ForceFlush | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:11` |  |
+| 50 | SHOULD | ✅ found | The `SpanProcessor` interface SHOULD declare the following methods: OnEnding method. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:21` |  |
 
 #### OnStart
 
@@ -1126,11 +1132,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 54 | SHOULD | ✅ found | `Shutdown` SHOULD be called only once for each `SpanProcessor` instance. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:81` |  |
-| 55 | SHOULD | ✅ found | SDKs SHOULD ignore these calls gracefully, if possible. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:43` |  |
-| 56 | SHOULD | ❌ not_found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Метод Закрыть объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения, исключения при таймауте или иного механизма оповещения вызывающего кода о результате. |
-| 57 | MUST | ✅ found | `Shutdown` MUST include the effects of `ForceFlush`. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83` |  |
-| 58 | SHOULD | ✅ found | `Shutdown` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:80` |  |
+| 54 | SHOULD | ✅ found | `Shutdown` SHOULD be called only once for each `SpanProcessor` instance. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:78` |  |
+| 55 | SHOULD | ✅ found | SDKs SHOULD ignore these calls gracefully, if possible. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:78` |  |
+| 56 | SHOULD | ❌ not_found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Методы Закрыть являются процедурами (void) без возвращаемого значения - нет способа сообщить вызывающему коду об успехе, неудаче или таймауте |
+| 57 | MUST | ⚠️ partial | `Shutdown` MUST include the effects of `ForceFlush`. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83` | ОтелПакетныйПроцессорСпанов включает эффект ForceFlush (вызывает ЭкспортироватьВсеПакеты в Закрыть), но ОтелПростойПроцессорСпанов не вызывает Экспортер.СброситьБуфер() перед Экспортер.Закрыть() |
+| 58 | SHOULD | ⚠️ partial | `Shutdown` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:83` | ОтелПакетныйПроцессорСпанов учитывает таймаут через ЭкспортироватьВсеПакеты, но ОтелПростойПроцессорСпанов игнорирует параметр ТаймаутМс (помечен BSLLS:UnusedParameters-off) |
 
 #### ForceFlush()
 
@@ -1140,11 +1146,11 @@
 |---|---|---|---|---|---|
 | 59 | SHOULD | ✅ found | This is a hint to ensure that any tasks associated with `Spans` for which the `SpanProcessor` had already received events prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:72` |  |
 | 60 | SHOULD | ✅ found | In particular, if any `SpanProcessor` has any associated exporter, it SHOULD try to call the exporter's `Export` with all spans for which this was not already done and then invoke `ForceFlush` on it. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:157` |  |
-| 61 | MUST | ✅ found | The built-in SpanProcessors MUST do so. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:67` |  |
-| 62 | MUST | ✅ found | If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129` |  |
-| 63 | SHOULD | ❌ not_found | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Метод СброситьБуфер объявлен как Процедура (void) во всех процессорах. Нет возвращаемого значения или иного механизма оповещения вызывающего кода о результате операции. |
+| 61 | MUST | ✅ found | The built-in SpanProcessors MUST do so. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:72` |  |
+| 62 | MUST | ⚠️ partial | If a timeout is specified (see below), the SpanProcessor MUST prioritize honoring the timeout over finishing all calls. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129` | ОтелПакетныйПроцессорСпанов проверяет таймаут в цикле экспорта (ЭкспортироватьВсеПакеты), но ОтелПростойПроцессорСпанов полностью игнорирует параметр ТаймаутМс в СброситьБуфер |
+| 63 | SHOULD | ❌ not_found | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | - | Методы СброситьБуфер являются процедурами (void) без возвращаемого значения - нет способа сообщить вызывающему коду об успехе, неудаче или таймауте |
 | 64 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the `SpanProcessor` exports the completed spans. | `src/Трассировка/Классы/ИнтерфейсПроцессорСпанов.os:37` |  |
-| 65 | SHOULD | ✅ found | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:71` |  |
+| 65 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:129` | ОтелПакетныйПроцессорСпанов проверяет таймаут в цикле, но ОтелПростойПроцессорСпанов игнорирует параметр ТаймаутМс в СброситьБуфер |
 
 #### Built-in span processors
 
@@ -1152,7 +1158,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 66 | MUST | ✅ found | The standard OpenTelemetry SDK MUST implement both simple and batch processors, as described below. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:1` |  |
+| 66 | MUST | ✅ found | The standard OpenTelemetry SDK MUST implement both simple and batch processors, as described below. | `lib.config:38` |  |
 
 #### Simple processor
 
@@ -1160,7 +1166,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 67 | MUST | ✅ found | The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:41` |  |
+| 67 | MUST | ✅ found | The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:49` |  |
 
 #### Batching processor
 
@@ -1169,7 +1175,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 68 | MUST | ✅ found | The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:155` |  |
-| 69 | SHOULD | ✅ found | The processor SHOULD export a batch when any of the following happens AND the previous export call has returned: | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:42` |  |
+| 69 | SHOULD | ✅ found | The processor SHOULD export a batch when any of the following happens AND the previous export call has returned: | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:112` |  |
 
 #### Span Exporter
 
@@ -1185,7 +1191,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 71 | MUST | ✅ found | The exporter MUST support three functions: Export, Shutdown, and ForceFlush. | `src/Экспорт/Классы/ИнтерфейсЭкспортерСпанов.os:13` |  |
+| 71 | MUST | ✅ found | The exporter MUST support three functions: Export, Shutdown, and ForceFlush. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:28` |  |
 
 #### `Export(batch)`
 
@@ -1195,7 +1201,7 @@
 |---|---|---|---|---|---|
 | 72 | MUST NOT | ✅ found | Export() MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (`Failure`). | `src/Экспорт/Классы/ОтелHttpТранспорт.os:69` |  |
 | 73 | MUST | ✅ found | Export() MUST NOT block indefinitely, there MUST be a reasonable upper limit after which the call must time out with an error result (`Failure`). | `src/Экспорт/Классы/ОтелHttpТранспорт.os:149` |  |
-| 74 | SHOULD NOT | ✅ found | The default SDK's Span Processors SHOULD NOT implement retry logic, as the required logic is likely to depend heavily on the specific protocol and backend the spans are being sent to. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:37` |  |
+| 74 | SHOULD NOT | ✅ found | The default SDK's Span Processors SHOULD NOT implement retry logic, as the required logic is likely to depend heavily on the specific protocol and backend the spans are being sent to. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:42` |  |
 
 #### `ForceFlush()`
 
@@ -1204,9 +1210,9 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 75 | SHOULD | ✅ found | This is a hint to ensure that the export of any `Spans` the exporter has received prior to the call to `ForceFlush` SHOULD be completed as soon as possible, preferably before returning from this method. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` |  |
-| 76 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` | СброситьБуфер() объявлена как Процедура (void), не возвращает статус успеха/ошибки/таймаута. Вызывающий код не может узнать результат операции. |
-| 77 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the exporter exports the completed spans. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` | Метод СброситьБуфер() существует, но в SDK отсутствует документация, рекомендующая вызывать ForceFlush только в необходимых случаях (FaaS и т.п.). |
-| 78 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD complete or abort within some timeout. `ForceFlush` can be implemented as a blocking API or an asynchronous API which notifies the caller via a callback or an event. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` | СброситьБуфер() экспортера не принимает параметр таймаута. Для синхронного экспортера метод - no-op и завершается мгновенно, но API не предоставляет механизма контроля таймаута для будущих реализаций. |
+| 76 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` | СброситьБуфер() is a Процедура (void), not a Функция - it does not return a success/failure/timeout status to the caller. |
+| 77 | SHOULD | ✅ found | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the exporter exports the completed spans. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` |  |
+| 78 | SHOULD | ✅ found | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:44` |  |
 
 #### Concurrency requirements
 
@@ -1214,10 +1220,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 79 | MUST | ✅ found | Tracer Provider - Tracer creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:307` |  |
+| 79 | MUST | ✅ found | Tracer Provider - Tracer creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:325` |  |
 | 80 | MUST | ✅ found | Sampler - `ShouldSample` and `GetDescription` MUST be safe to be called concurrently. | `src/Трассировка/Модули/ОтелСэмплер.os:141` |  |
-| 81 | MUST | ✅ found | Span processor - all methods MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:93` |  |
-| 82 | MUST | ✅ found | Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:80` |  |
+| 81 | MUST | ✅ found | Span processor - all methods MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:9` |  |
+| 82 | MUST | ✅ found | Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:12` |  |
 
 ### Logs Api
 
@@ -1912,7 +1918,7 @@
 | 44 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | ОтелПредставление defines ИсключенныеКлючиАтрибутов but ОтелМетр.ПрименитьПредставлениеКИнструменту and ОтелБазовыйСинхронныйИнструмент never apply the exclude-list. The field exists but exclusion is not implemented. |
 | 45 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | Same as above - the exclude-list is defined in ОтелПредставление but never applied, so the 'keep all other attributes' behavior in exclude-list context is not implemented. |
 | 46 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `aggregation`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
-| 47 | MUST | ✅ found | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85` | ОтелПериодическийЧитательМетрик содержит СелекторАгрегации - настраиваемую карту агрегаций по виду инструмента. |
+| 47 | MUST | ⚠️ partial | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелМетр.os:48` | Default aggregation per instrument type exists (Counter→Sum, Histogram→ExplicitBucketHistogram, Gauge→LastValue), but it is hardcoded in ОтелМетр, not configurable per MetricReader instance. MetricReader has no aggregation property. |
 | 48 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `exemplar_reservoir`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
 | 49 | MUST | ✅ found | If the user does not provide an `exemplar_reservoir` value, the `MeterProvider` MUST apply a default exemplar reservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:265` |  |
 | 50 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `aggregation_cardinality_limit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
@@ -2188,7 +2194,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 141 | MUST | ✅ found | The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:199` |  |
+| 141 | MUST | ⚠️ partial | The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:166` | Периодический экспорт выполняется последовательно в фоновом задании, но вызов СброситьБуфер() из основного потока может привести к конкурентному вызову Экспортировать(), так как блокировка защищает только доступ к массиву Метры, а не сам вызов Export. |
 
 #### ForceFlush
 
@@ -2267,8 +2273,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 164 | MUST | ➖ n_a | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity, отрицательный ноль невозможны. Переполнение Decimal вызывает исключение - graceful handling обеспечен платформой. |
-| 165 | MUST | ➖ n_a | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity и другие специальные значения IEEE 754 структурно невозможны. Все значения Decimal являются нормальными числами. |
+| 164 | MUST | ❌ not_found | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | В коде SDK метрик нет явной обработки числовых пределов (переполнение, граничные значения). Агрегаторы (ОтелАгрегаторСуммы, ОтелАгрегаторГистограммы и др.) используют АтомарноеЧисло без проверок на переполнение или обработки ошибок числовых операций. |
+| 165 | MUST | ❌ not_found | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | Нет явной обработки NaN, Infinity и других специальных значений IEEE 754 при записи измерений. Агрегаторы и инструменты не проверяют входные значения на NaN/Infinity - такие значения молча пропагируются и могут повредить агрегацию. |
 
 #### Compatibility requirements
 
@@ -2393,7 +2399,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 6 | MUST | ✅ found | In order to increase compatibility, the key/value pairs MUST only consist of US-ASCII characters that make up valid HTTP header fields as per RFC 9110. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:62` |  |
+| 6 | MUST | ✅ found | In order to increase compatibility, the key/value pairs MUST only consist of US-ASCII characters that make up valid HTTP header fields as per RFC 9110. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:63` |  |
 | 7 | MUST | ✅ found | `Getter` and `Setter` MUST be stateless and allowed to be saved as constants, in order to effectively avoid runtime allocations. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:72` |  |
 
 #### Setter argument
@@ -2415,9 +2421,9 @@
 | 11 | MUST | ✅ found | The Get function MUST return the first value of the given propagation key or return null if the key doesn't exist. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:20` |  |
 | 12 | MUST | ✅ found | If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:21` |  |
 | 13 | MUST | ✅ found | If explicitly implemented, the `GetAll` function MUST return all values of the given propagation key. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:40` |  |
-| 14 | SHOULD | ✅ found | It SHOULD return them in the same order as they appear in the carrier. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:43` |  |
+| 14 | SHOULD | ✅ found | It SHOULD return them in the same order as they appear in the carrier. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:40` |  |
 | 15 | SHOULD | ✅ found | If the key doesn't exist, it SHOULD return an empty collection. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:41` |  |
-| 16 | MUST | ✅ found | If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:43` |  |
+| 16 | MUST | ✅ found | The `GetAll` function is responsible for handling case sensitivity. If the getter is intended to work with an HTTP request object, the getter MUST be case insensitive. | `src/Пропагация/Классы/ОтелГеттерТекстовойКарты.os:44` |  |
 
 #### Composite Propagator
 
@@ -2437,7 +2443,7 @@
 | 19 | MUST | ✅ found | The OpenTelemetry API MUST provide a way to obtain a propagator for each supported `Propagator` type. | `src/Ядро/Модули/ОтелГлобальный.os:121` |  |
 | 20 | SHOULD | ✅ found | Instrumentation libraries SHOULD call propagators to extract and inject the context on all remote calls. | `src/Ядро/Модули/ОтелГлобальный.os:121` |  |
 | 21 | MUST | ✅ found | The OpenTelemetry API MUST use no-op propagators unless explicitly configured otherwise. | `src/Ядро/Модули/ОтелГлобальный.os:132` |  |
-| 22 | SHOULD | ✅ found | If pre-configured, `Propagator`s SHOULD default to a composite `Propagator` containing the W3C Trace Context Propagator and the Baggage `Propagator` specified in the Baggage API. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:443` |  |
+| 22 | SHOULD | ❌ not_found | If pre-configured, `Propagator`s SHOULD default to a composite `Propagator` containing the W3C Trace Context Propagator and the Baggage `Propagator` specified in the Baggage API. | - | SDK не предоставляет предварительно сконфигурированных пропагаторов. ОтелГлобальный.ПолучитьПропагаторы() возвращает ОтелНоопПропагатор по умолчанию, а не композитный пропагатор с W3C TraceContext и Baggage. |
 | 23 | MUST | ✅ found | These platforms MUST also allow pre-configured propagators to be disabled or overridden. | `src/Ядро/Модули/ОтелГлобальный.os:110` |  |
 
 #### Get Global Propagator
@@ -2462,10 +2468,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 26 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелB3Пропагатор.os:1` | W3C TraceContext, W3C Baggage, and B3 propagators are all implemented |
-| 27 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелB3Пропагатор.os:1` | All propagators distributed as part of core package (allowed by MAY clause) |
-| 28 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | - |  |
-| 29 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | - |  |
+| 26 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `lib.config:116` |  |
+| 27 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `lib.config:115` | W3C TraceContext, W3C Baggage и B3 все находятся в основном пакете, а не в отдельных extension-пакетах. W3C MAY быть частью API, но B3 по спеке должен быть отдельным extension-пакетом. |
+| 28 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | `lib.config:115` |  |
+| 29 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | `lib.config:115` |  |
 
 #### W3C Trace Context Requirements
 
@@ -2477,13 +2483,34 @@
 | 31 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `traceparent` value using the same header. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:62` |  |
 | 32 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `tracestate` unless the value is empty, in which case the `tracestate` header may be omitted. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:65` |  |
 
+#### B3 Extract
+
+[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-extract)
+
+| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
+|---|---|---|---|---|---|
+| 33 | MUST | ✅ found | MUST attempt to extract B3 encoded using single and multi-header formats. The single-header variant takes precedence over the multi-header version. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:63` |  |
+| 34 | MUST | ⚠️ partial | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:139` | Debug-флаг извлекается (X-B3-Flags=1 и 'd' в single-header) и конвертируется в sampled=true, но не сохраняется как отдельный debug-флаг. При inject X-B3-Flags не устанавливается - только X-B3-Sampled. Debug-флаг теряется при пропагации. |
+| 35 | MUST | ✅ found | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:140` |  |
+| 36 | MUST NOT | ✅ found | MUST NOT reuse `X-B3-SpanId` as the id for the server-side span. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:167` |  |
+
+#### B3 Inject
+
+[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-inject)
+
+| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
+|---|---|---|---|---|---|
+| 37 | MUST | ⚠️ partial | MUST default to injecting B3 using the single-header format | `src/Пропагация/Классы/ОтелB3Пропагатор.os:27` | Метод Внедрить() использует multi-header формат по умолчанию (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled), а спецификация требует single-header формат (b3: {traceId}-{spanId}-{sampling}). |
+| 38 | MUST | ❌ not_found | MUST provide configuration to change the default injection format to B3 multi-header | - | Класс ОтелB3Пропагатор не предоставляет конфигурации для переключения между single-header и multi-header форматами. Формат жёстко задан как multi-header. |
+| 39 | MUST NOT | ✅ found | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same id for both sides of a request. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:27` |  |
+
 #### Fields
 
 [Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#fields)
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 33 | MUST | ✅ found | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:137` |  |
+| 40 | MUST | ⚠️ partial | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | `src/Пропагация/Классы/ОтелB3Пропагатор.os:83` | Метод Поля() возвращает 5 заголовков (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled, X-B3-ParentSpanId, X-B3-Flags), но inject использует только 3 (X-B3-TraceId, X-B3-SpanId, X-B3-Sampled). Также нет адаптации к сконфигурированному формату, т.к. конфигурация формата отсутствует. |
 
 ### Env Vars
 
@@ -2593,12 +2620,12 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ➖ n_a | Resource detectors SHOULD have a unique name for reference in configuration. | - | Resource Detector Naming is a conditional feature that is not implemented. Detectors have no name property or naming infrastructure. |
-| 2 | SHOULD | ➖ n_a | Names SHOULD be snake case and consist of lowercase alphanumeric and `_` characters, which ensures they conform to declarative configuration property name requirements. | - | Resource Detector Naming is a conditional feature that is not implemented. |
-| 3 | SHOULD | ➖ n_a | Resource detector names SHOULD reflect the root namespace of attributes they populate. | - | Resource Detector Naming is a conditional feature that is not implemented. |
-| 4 | SHOULD | ➖ n_a | Resource detectors which populate attributes from multiple root namespaces SHOULD choose a name which appropriately conveys their purpose. | - | Resource Detector Naming is a conditional feature that is not implemented. |
-| 5 | SHOULD | ➖ n_a | An SDK which identifies multiple resource detectors with the same name SHOULD report an error. | - | Resource Detector Naming is a conditional feature that is not implemented. |
-| 6 | SHOULD | ➖ n_a | In order to limit collisions, resource detectors SHOULD document their name in a manner which is easily discoverable. | - | Resource Detector Naming is a conditional feature that is not implemented. |
+| 1 | SHOULD | ❌ not_found | Resource detectors SHOULD have a unique name for reference in configuration. | - | Resource detectors exist (host, process, processor) but do not implement any naming mechanism. |
+| 2 | SHOULD | ❌ not_found | Names SHOULD be snake case and consist of lowercase alphanumeric and `_` characters, which ensures they conform to declarative configuration property name requirements. | - | No detector naming feature implemented; detectors have no name property. |
+| 3 | SHOULD | ❌ not_found | Resource detector names SHOULD reflect the root namespace of attributes they populate. | - | No detector naming feature implemented. |
+| 4 | SHOULD | ❌ not_found | Resource detectors which populate attributes from multiple root namespaces SHOULD choose a name which appropriately conveys their purpose. | - | No detector naming feature implemented. |
+| 5 | SHOULD | ❌ not_found | An SDK which identifies multiple resource detectors with the same name SHOULD report an error. | - | No detector naming feature implemented; no duplicate name detection. |
+| 6 | SHOULD | ❌ not_found | resource detectors SHOULD document their name in a manner which is easily discoverable. | - | No detector naming feature implemented. |
 
 ### Trace Api
 
@@ -2611,7 +2638,7 @@
 | 1 | SHOULD | ✅ found | To help users avoid performing computationally expensive operations when creating `Span`s, a `Tracer` SHOULD provide this `Enabled` API. | `src/Трассировка/Классы/ОтелТрассировщик.os:38` |  |
 | 2 | MUST | ✅ found | There are currently no required parameters for this API. Parameters can be added in the future, therefore, the API MUST be structured in a way for parameters to be added. | `src/Трассировка/Классы/ОтелТрассировщик.os:38` |  |
 | 3 | MUST | ✅ found | This API MUST return a language idiomatic boolean type. | `src/Трассировка/Классы/ОтелТрассировщик.os:38` |  |
-| 4 | SHOULD | ⚠️ partial | The API SHOULD be documented that instrumentation authors needs to call this API each time they create a new `Span` to ensure they have the most up-to-date response. | `src/Трассировка/Классы/ОтелТрассировщик.os:31` | Комментарий к методу Включен() описывает назначение ('Позволяет пропустить создание спана'), но не указывает явно, что его нужно вызывать каждый раз перед созданием спана и что результат может меняться со временем. |
+| 4 | SHOULD | ❌ not_found | The API SHOULD be documented that instrumentation authors needs to call this API each time they create a new `Span` to ensure they have the most up-to-date response. | - | Документация метода Включен() не содержит указания о том, что авторы инструментирования должны вызывать этот API каждый раз при создании нового спана для получения актуального ответа |
 
 ### Trace Sdk
 
@@ -2674,10 +2701,10 @@
 | 2 | MUST | ✅ found | Description MUST return a string of the form `"TraceIdRatioBased{RATIO}"` with `RATIO` replaced with the Sampler instance's trace sampling ratio represented as a decimal number. | `src/Трассировка/Модули/ОтелСэмплер.os:113` |  |
 | 3 | SHOULD | ✅ found | The precision of the number SHOULD follow implementation language standards | `src/Трассировка/Модули/ОтелСэмплер.os:113` |  |
 | 4 | SHOULD | ✅ found | and SHOULD be high enough to identify when Samplers have different ratios. | `src/Трассировка/Модули/ОтелСэмплер.os:113` |  |
-| 5 | MUST | ✅ found | The sampling algorithm MUST be deterministic. | `src/Трассировка/Модули/ОтелСэмплер.os:277-298` |  |
-| 6 | MUST | ✅ found | To achieve this, implementations MUST use a deterministic hash of the `TraceId` when computing the sampling decision. | `src/Трассировка/Модули/ОтелСэмплер.os:290-292` |  |
-| 7 | MUST | ✅ found | A `TraceIdRatioBased` sampler with a given sampling probability MUST also sample all traces that any `TraceIdRatioBased` sampler with a lower sampling probability would sample. | `src/Трассировка/Модули/ОтелСэмплер.os:277-298` |  |
-| 8 | SHOULD | ❌ not_found | When this sampler observes a non-empty parent span context, meaning when it is used not as a root sampler, the SDK SHOULD emit a warning such as: | - | No warning is emitted when TraceIdRatioBased is used as a non-root sampler with a non-empty parent span context. The sampler silently operates without any deprecation or compatibility warning. |
+| 5 | MUST | ✅ found | The sampling algorithm MUST be deterministic. | `src/Трассировка/Модули/ОтелСэмплер.os:290` |  |
+| 6 | MUST | ✅ found | implementations MUST use a deterministic hash of the `TraceId` when computing the sampling decision. | `src/Трассировка/Модули/ОтелСэмплер.os:290` |  |
+| 7 | MUST | ✅ found | A `TraceIdRatioBased` sampler with a given sampling probability MUST also sample all traces that any `TraceIdRatioBased` sampler with a lower sampling probability would sample. | `src/Трассировка/Модули/ОтелСэмплер.os:292` |  |
+| 8 | SHOULD | ❌ not_found | When this sampler observes a non-empty parent span context, meaning when it is used not as a root sampler, the SDK SHOULD emit a warning | - | СэмплироватьПоДоле не получает информацию о наличии родительского контекста и не выдает предупреждение при использовании как дочерний сэмплер |
 
 #### ProbabilitySampler
 
@@ -2685,9 +2712,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | The `ProbabilitySampler` sampler MUST ignore the parent `SampledFlag`. | - | ProbabilitySampler is not implemented. The codebase only has TraceIdRatioBased (ПоДолеТрассировок), AlwaysOn, AlwaysOff, and ParentBased samplers. There is no separate ProbabilitySampler that uses W3C Trace Context Level 2 randomness with 56-bit thresholds. |
-| 2 | SHOULD | ❌ not_found | When (R >= T), the OpenTelemetry TraceState SHOULD be modified to include the key-value `th:T` for rejection threshold value (T), as specified for the OpenTelemetry TraceState `th` sub-key. | - | ProbabilitySampler is not implemented. No TraceState modification with `th:T` threshold key-value is performed by any sampler. |
-| 3 | SHOULD | ❌ not_found | When a ProbabilitySampler Sampler makes a decision for a non-root Span using TraceID randomness when the Trace random flag was not set, the SDK SHOULD issue a warning statement in its log with a compatibility warning. | - | ProbabilitySampler is not implemented. No compatibility warning is emitted for non-root spans missing the Trace random flag. |
+| 1 | MUST | ❌ not_found | The `ProbabilitySampler` sampler MUST ignore the parent `SampledFlag`. | - | ProbabilitySampler не реализован - существует только TraceIdRatioBased сэмплер |
+| 2 | SHOULD | ❌ not_found | When (R >= T), the OpenTelemetry TraceState SHOULD be modified to include the key-value `th:T` for rejection threshold value (T), as specified for the OpenTelemetry TraceState `th` sub-key. | - | ProbabilitySampler не реализован, нет логики работы с threshold в TraceState |
+| 3 | SHOULD | ❌ not_found | When a ProbabilitySampler Sampler makes a decision for a non-root Span using TraceID randomness when the Trace random flag was not set, the SDK SHOULD issue a warning statement in its log with a compatibility warning. | - | ProbabilitySampler не реализован, нет логики предупреждений о совместимости |
 
 #### AlwaysRecord
 
@@ -2695,7 +2722,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST | ❌ not_found | Based on the decision from the wrapped root sampler, `AlwaysRecord` MUST behave as follows: | - | AlwaysRecord sampler decorator is not implemented. The codebase defines four sampler strategies (AlwaysOn, AlwaysOff, TraceIdRatioBased, ParentBased) but no AlwaysRecord that converts DROP decisions into RECORD_ONLY. |
+| 1 | MUST | ❌ not_found | Based on the decision from the wrapped root sampler, `AlwaysRecord` MUST behave as follows: DROP -> RECORD_ONLY, RECORD_ONLY -> RECORD_ONLY, RECORD_AND_SAMPLE -> RECORD_AND_SAMPLE | - | AlwaysRecord сэмплер-декоратор не реализован - нет класса или стратегии, преобразующей DROP в RECORD_ONLY |
 
 #### CompositeSampler
 
@@ -2703,11 +2730,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | MUST NOT | ❌ not_found | ComposableSamplers MUST NOT modify the parameters passed to delegate GetSamplingIntent methods, as they are considered read-only state. | - | CompositeSampler and ComposableSampler interfaces are not implemented. There is no GetSamplingIntent method or SamplingIntent structure in the codebase. |
-| 2 | MUST NOT | ❌ not_found | ComposableSamplers MUST NOT modify the OpenTelemetry TraceState (i.e., the `ot` sub-key of TraceState). | - | ComposableSampler interface is not implemented. No composable sampling architecture exists in the codebase. |
-| 3 | SHOULD | ❌ not_found | The calling CompositeSampler SHOULD update the threshold of the outgoing TraceState (unless `!threshold_reliable`) | - | CompositeSampler is not implemented. No threshold-based TraceState updates are performed by any sampler. |
-| 4 | MUST | ❌ not_found | and that the explicit randomness values MUST not be modified. | - | CompositeSampler is not implemented. No randomness value management exists in the sampler architecture. |
-| 5 | SHOULD | ❌ not_found | For the zero case a `ComposableAlwaysOff` instance SHOULD be returned instead. | - | ComposableAlwaysOff and ComposableProbability samplers are not implemented. No composable sampler infrastructure exists. |
+| 1 | MUST NOT | ❌ not_found | ComposableSamplers MUST NOT modify the parameters passed to delegate GetSamplingIntent methods, as they are considered read-only state. | - | CompositeSampler и ComposableSampler интерфейсы не реализованы, нет метода GetSamplingIntent |
+| 2 | MUST NOT | ❌ not_found | ComposableSamplers MUST NOT modify the OpenTelemetry TraceState (i.e., the `ot` sub-key of TraceState). | - | CompositeSampler и ComposableSampler интерфейсы не реализованы |
+| 3 | SHOULD | ❌ not_found | The calling CompositeSampler SHOULD update the threshold of the outgoing TraceState (unless `!threshold_reliable`) | - | CompositeSampler не реализован, нет логики обновления threshold в TraceState |
+| 4 | MUST | ❌ not_found | the explicit randomness values MUST not be modified. | - | CompositeSampler не реализован, нет логики защиты randomness values от модификации |
+| 5 | SHOULD | ❌ not_found | A ratio value of 0 is considered non-probabilistic. For the zero case a `ComposableAlwaysOff` instance SHOULD be returned instead. | - | ComposableAlwaysOff и ComposableProbability не реализованы |
 
 #### IdGenerator randomness
 
@@ -2715,7 +2742,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 1 | SHOULD | ❌ not_found | Custom implementations of the `IdGenerator` SHOULD identify themselves appropriately when all generated TraceID values meet the W3C Trace Context Level 2 randomness requirements, so that the Trace `random` flag will be set in the associated Trace contexts. | - | No mechanism exists for custom IdGenerator implementations to identify themselves as producing random TraceIDs. The IdGenerator interface only defines СгенерироватьИдТрассировки/СгенерироватьИдСпана methods with no marker interface or randomness flag. |
+| 1 | SHOULD | ❌ not_found | Custom implementations of the `IdGenerator` SHOULD identify themselves appropriately when all generated TraceID values meet the W3C Trace Context Level 2 randomness requirements, so that the Trace `random` flag will be set in the associated Trace contexts. | - | There is no mechanism for custom IdGenerator implementations to identify themselves as producing random TraceIDs. No marker interface, property, or method exists that would allow the SDK to know whether a custom IdGenerator produces random IDs and thus set the Trace random flag. |
 
 #### OnEnding
 
@@ -2726,7 +2753,7 @@
 | 1 | MUST | ✅ found | The end timestamp MUST have been computed (the `OnEnding` method duration is not included in the span duration). | `src/Трассировка/Классы/ОтелСпан.os:462` |  |
 | 2 | MUST | ✅ found | The Span object MUST still be mutable (i.e., `SetAttribute`, `AddLink`, `AddEvent` can be called) while `OnEnding` is called. | `src/Трассировка/Классы/ОтелСпан.os:467` |  |
 | 3 | MUST | ✅ found | This method MUST be called synchronously within the `Span.End()` API, therefore it should not block or throw an exception. | `src/Трассировка/Классы/ОтелСпан.os:467` |  |
-| 4 | MUST | ➖ n_a | The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking `OnEnding` of the first `SpanProcessor`. | - | Ограничение платформы OneScript: нет механизма thread-local storage или goroutine-подобных гарантий изоляции. OneScript использует ФоновыеЗадания, которые не поддерживают гарантию исключения доступа к объекту из другого потока на уровне SDK. |
+| 4 | MUST | ➖ n_a | The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking `OnEnding` of the first `SpanProcessor`. | - | OneScript не поддерживает thread-local/goroutine-level изоляцию потоков; спаны не используют блокировки для мутаций, многопоточная безопасность контекста на уровне thread-local является ограничением платформы |
 
 ### Logs Api
 
@@ -2929,36 +2956,11 @@
 
 Требования из условных секций. Применяются только при реализации соответствующей опциональной фичи.
 
-### Propagators
-
-#### B3 Extract
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-extract) | Scope: conditional:B3 Propagator (extension)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 1 | MUST | ➖ n_a | MUST attempt to extract B3 encoded using single and multi-header formats. | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-| 2 | MUST | ➖ n_a | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-| 3 | MUST | ➖ n_a | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-| 4 | MUST NOT | ➖ n_a | MUST NOT reuse `X-B3-SpanId` as the id for the server-side span. | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-
-#### B3 Inject
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-inject) | Scope: conditional:B3 Propagator (extension)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 1 | MUST | ➖ n_a | MUST default to injecting B3 using the single-header format | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-| 2 | MUST | ➖ n_a | MUST provide configuration to change the default injection format to B3 multi-header | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-| 3 | MUST NOT | ➖ n_a | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same id for both sides of a request. | - | B3 Propagator is not implemented in this codebase; scope is conditional |
-
 ### Сводка условных секций
 
 | Раздел | Секция | Scope | Stability | Keywords | Ссылка |
 |---|---|---|---|---|---|
 | Resource Sdk | Resource detector name | conditional:Resource Detector Naming (conditional) | Development | 6 | [spec](https://opentelemetry.io/docs/specs/otel/resource/sdk/#resource-detector-name) |
-| Propagators | B3 Extract | conditional:B3 Propagator (extension) | Stable | 4 | [spec](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-extract) |
-| Propagators | B3 Inject | conditional:B3 Propagator (extension) | Stable | 3 | [spec](https://opentelemetry.io/docs/specs/otel/context/api-propagators/#b3-inject) |
 
 ## Ограничения платформы OneScript
 
@@ -2996,7 +2998,7 @@
 | Всего секций | 242 |
 | Stable секций | 213 |
 | Development секций | 29 |
-| Conditional секций | 3 |
+| Conditional секций | 1 |
 | Всего keywords | 824 |
-| Stable universal keywords | 694 |
+| Stable universal keywords | 701 |
 
