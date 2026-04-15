@@ -69,6 +69,15 @@ def fetch_page(url, output_dir, name):
     raw = re.sub(r"<header[^>]*>.*?</header>", "", raw, flags=re.DOTALL)
     raw = re.sub(r"<footer[^>]*>.*?</footer>", "", raw, flags=re.DOTALL)
 
+    # Конвертируем <pre> блоки в fenced code blocks (до обработки <code>)
+    # Это предотвращает ложное распознавание комментариев (# ...) как заголовков
+    # НЕ вызываем html.unescape внутри - &lt; станет < и сломает очистку тегов
+    def _pre_to_fenced(m):
+        inner = re.sub(r"<[^>]+>", "", m.group(1))
+        return "\n```\n" + inner + "\n```\n"
+
+    raw = re.sub(r"<pre[^>]*>(.*?)</pre>", _pre_to_fenced, raw, flags=re.DOTALL)
+
     # Конвертируем HTML элементы в текст
     raw = re.sub(
         r"<h([1-6])[^>]*>(.*?)</h\1>",
@@ -188,10 +197,17 @@ def extract_sections(text, page_name, page_url):
                 page_default = "Development"
             break
 
-    # Находим все заголовки ## и ###
+    # Находим все заголовки ## и ### (пропуская строки внутри fenced code blocks)
     headings = []
+    in_code_block = False
     for i, line in enumerate(lines):
-        m = re.match(r"^(#{1,4})\s+(.+)", line.strip())
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if in_code_block:
+            continue
+        m = re.match(r"^(#{1,4})\s+(.+)", stripped)
         if m:
             level = len(m.group(1))
             title = m.group(2).strip()
