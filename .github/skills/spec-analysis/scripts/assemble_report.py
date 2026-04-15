@@ -563,6 +563,10 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
         "| Нет thread-local | ФоновыеЗадания вместо goroutines "
         "| Передача контекста через параметры |"
     )
+    lines.append(
+        "| Число = System.Decimal (не IEEE 754) | NaN, Infinity, отрицательный ноль невозможны "
+        "| Операции, порождающие NaN/Inf, выбрасывают исключение - требования к обработке NaN/Inf неприменимы |"
+    )
     lines.append("")
 
     # Предупреждения валидации

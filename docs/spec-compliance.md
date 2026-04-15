@@ -15,11 +15,11 @@
 | Conditional keywords | 13 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 693 |
-| ✅ Реализовано (found) | 580 (83.7%) |
-| ⚠️ Частично (partial) | 71 (10.2%) |
-| ❌ Не реализовано (not_found) | 42 (6.1%) |
-| ➖ Неприменимо (n_a) | 1 |
-| **MUST/MUST NOT found** | 398/418 (95.2%) |
+| ✅ Реализовано (found) | 582 (84.0%) |
+| ⚠️ Частично (partial) | 69 (10.0%) |
+| ❌ Не реализовано (not_found) | 40 (5.8%) |
+| ➖ Неприменимо (n_a) | 3 |
+| **MUST/MUST NOT found** | 400/416 (96.2%) |
 | **SHOULD/SHOULD NOT found** | 182/275 (66.2%) |
 
 ## Соответствие по разделам (Stable)
@@ -30,11 +30,11 @@
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
 | Resource Sdk | 17 | 1 | 2 | 0 | 20 | 85.0% |
 | Trace Api | 112 | 8 | 2 | 0 | 122 | 91.8% |
-| Trace Sdk | 62 | 14 | 6 | 0 | 82 | 75.6% |
+| Trace Sdk | 63 | 13 | 6 | 0 | 82 | 76.8% |
 | Logs Api | 20 | 1 | 0 | 0 | 21 | 95.2% |
 | Logs Sdk | 53 | 8 | 3 | 0 | 64 | 82.8% |
 | Metrics Api | 90 | 7 | 2 | 1 | 99 | 90.9% |
-| Metrics Sdk | 126 | 24 | 21 | 0 | 171 | 73.7% |
+| Metrics Sdk | 127 | 23 | 19 | 2 | 171 | 74.3% |
 | Otlp Exporter | 18 | 3 | 4 | 0 | 25 | 72.0% |
 | Propagators | 33 | 0 | 0 | 0 | 33 | 100.0% |
 | Env Vars | 22 | 0 | 2 | 0 | 24 | 91.7% |
@@ -55,8 +55,8 @@
 - ✅ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
   При отсутствии родителя возвращается ОтелНоопСпан с all-zero SpanContext (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
 
-- ⚠️ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`.  
-  There is no separate InstrumentationLibrary class or accessor. Only InstrumentationScope (ОтелОбластьИнструментирования) is available, which contains the same name and version data but under a different type name. (`src/Трассировка/Классы/ОтелСпан.os:182`)
+- ✅ **[Trace Sdk]** [MUST] For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`.  
+  ОтелОбластьИнструментирования предоставляет deprecated-метод БиблиотекаИнструментирования(), возвращающий ЭтотОбъект - обратная совместимость обеспечена. (`src/Ядро/Классы/ОтелОбластьИнструментирования.os:57`)
 
 - ✅ **[Trace Sdk]** [MUST] The built-in SpanProcessors MUST do so.  
   Оба процессора (простой и пакетный) вызывают Экспортер.СброситьБуфер() при ForceFlush (`src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:67`)
@@ -67,8 +67,8 @@
 - ⚠️ **[Metrics Sdk]** [MUST] The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept.  
   Same as above - the exclude-list is defined in ОтелПредставление but never applied, so the 'keep all other attributes' behavior in exclude-list context is not implemented. (`src/Метрики/Классы/ОтелПредставление.os:56`)
 
-- ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance.  
-  Default aggregation per instrument type exists (Counter→Sum, Histogram→ExplicitBucketHistogram, Gauge→LastValue), but it is hardcoded in ОтелМетр, not configurable per MetricReader instance. MetricReader has no aggregation property. (`src/Метрики/Классы/ОтелМетр.os:48`)
+- ✅ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance.  
+  ОтелПериодическийЧитательМетрик содержит СелекторАгрегации - настраиваемую карту агрегаций по виду инструмента. Методы АгрегацияПоУмолчанию()/УстановитьАгрегациюПоУмолчанию() позволяют конфигурировать. (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85`)
 
 - ⚠️ **[Metrics Sdk]** [MUST] If the user does not provide an `aggregation_cardinality_limit` value, the `MeterProvider` MUST apply the default aggregation cardinality limit the `MetricReader` is configured with.  
   Default cardinality limit of 2000 is hardcoded in ОтелБазовыйСинхронныйИнструмент and ОтелМетр. The spec requires the default to come from MetricReader configuration, but ОтелПериодическийЧитательМетрик has no cardinality limit property. (`src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253`)
@@ -88,11 +88,11 @@
 - ✅ **[Metrics Sdk]** [MUST] The reader MUST synchronize calls to `MetricExporter`'s `Export` to make sure that they are not invoked concurrently.  
   Вызов Экспортировать() защищён блокировкой в СобратьИЭкспортировать() (`src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:199`)
 
-- ❌ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
-  В коде SDK метрик нет явной обработки числовых пределов (переполнение, граничные значения). Агрегаторы (ОтелАгрегаторСуммы, ОтелАгрегаторГистограммы и др.) используют АтомарноеЧисло без проверок на переполнение или обработки ошибок числовых операций. (-)
+- ➖ **[Metrics Sdk]** [MUST] The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.  
+  OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity, отрицательный ноль невозможны. Операции, порождающие такие значения, выбрасывают исключение. Переполнение Decimal также вызывает исключение - graceful handling обеспечен платформой. (-)
 
-- ❌ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
-  Нет явной обработки NaN, Infinity и других специальных значений IEEE 754 при записи измерений. Агрегаторы и инструменты не проверяют входные значения на NaN/Infinity - такие значения молча пропагируются и могут повредить агрегацию. (-)
+- ➖ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
+  OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity и другие специальные значения IEEE 754 структурно невозможны. Все значения Decimal являются нормальными числами. Требование неприменимо к платформе. (-)
 
 - ✅ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
   W3C TraceContext, W3C Baggage, and B3 propagators are all implemented and distributed as part of the core package. (`src/Пропагация/Классы/ОтелB3Пропагатор.os:1`)
@@ -960,7 +960,7 @@
 |---|---|---|---|---|---|
 | 12 | MUST | ✅ found | A function receiving this as argument MUST be able to access all information that was added to the span, as listed in the API spec for Span. | `src/Трассировка/Классы/ОтелСпан.os:71` |  |
 | 13 | MUST | ✅ found | A function receiving this as argument MUST be able to access the `InstrumentationScope` [since 1.10.0] and `Resource` information (implicitly) associated with the span. | `src/Трассировка/Классы/ОтелСпан.os:173` |  |
-| 14 | MUST | ⚠️ partial | For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`. | `src/Трассировка/Классы/ОтелСпан.os:182` | There is no separate InstrumentationLibrary class or accessor. Only InstrumentationScope (ОтелОбластьИнструментирования) is available, which contains the same name and version data but under a different type name. |
+| 14 | MUST | ✅ found | For backwards compatibility it MUST also be able to access the `InstrumentationLibrary` [deprecated since 1.10.0] having the same name and version values as the `InstrumentationScope`. | `src/Ядро/Классы/ОтелОбластьИнструментирования.os:57` | ОтелОбластьИнструментирования предоставляет deprecated-метод БиблиотекаИнструментирования(), возвращающий ЭтотОбъект - обратная совместимость обеспечена. |
 | 15 | MUST | ✅ found | A function receiving this as argument MUST be able to reliably determine whether the Span has ended (some languages might implement this by having an end timestamp of `null`, others might have an explicit `hasEnded` boolean). | `src/Трассировка/Классы/ОтелСпан.os:209` |  |
 | 16 | MUST | ✅ found | Counts for attributes, events and links dropped due to collection limits MUST be available for exporters to report as described in the exporters specification. | `src/Трассировка/Классы/ОтелСпан.os:218` |  |
 | 17 | MUST | ✅ found | As an exception to the authoritative set of span properties defined in the API spec, implementations MAY choose not to expose (and store) the full parent Context of the Span but they MUST expose at least the full parent SpanContext. | `src/Трассировка/Классы/ОтелСпан.os:101` |  |
@@ -1912,7 +1912,7 @@
 | 44 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | ОтелПредставление defines ИсключенныеКлючиАтрибутов but ОтелМетр.ПрименитьПредставлениеКИнструменту and ОтелБазовыйСинхронныйИнструмент never apply the exclude-list. The field exists but exclusion is not implemented. |
 | 45 | MUST | ⚠️ partial | The exclude-list contains attribute keys that identify the attributes that MUST be excluded, all other attributes MUST be kept. | `src/Метрики/Классы/ОтелПредставление.os:56` | Same as above - the exclude-list is defined in ОтелПредставление but never applied, so the 'keep all other attributes' behavior in exclude-list context is not implemented. |
 | 46 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `aggregation`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
-| 47 | MUST | ⚠️ partial | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелМетр.os:48` | Default aggregation per instrument type exists (Counter→Sum, Histogram→ExplicitBucketHistogram, Gauge→LastValue), but it is hardcoded in ОтелМетр, not configurable per MetricReader instance. MetricReader has no aggregation property. |
+| 47 | MUST | ✅ found | If the user does not provide an `aggregation` value, the `MeterProvider` MUST apply a default aggregation configurable on the basis of instrument type according to the MetricReader instance. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:85` | ОтелПериодическийЧитательМетрик содержит СелекторАгрегации - настраиваемую карту агрегаций по виду инструмента. |
 | 48 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `exemplar_reservoir`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
 | 49 | MUST | ✅ found | If the user does not provide an `exemplar_reservoir` value, the `MeterProvider` MUST apply a default exemplar reservoir. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:265` |  |
 | 50 | MUST NOT | ✅ found | Therefore, the stream configuration parameter needs to be structured to accept an `aggregation_cardinality_limit`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелПредставление.os:164` |  |
@@ -2267,8 +2267,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 164 | MUST | ❌ not_found | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | В коде SDK метрик нет явной обработки числовых пределов (переполнение, граничные значения). Агрегаторы (ОтелАгрегаторСуммы, ОтелАгрегаторГистограммы и др.) используют АтомарноеЧисло без проверок на переполнение или обработки ошибок числовых операций. |
-| 165 | MUST | ❌ not_found | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | Нет явной обработки NaN, Infinity и других специальных значений IEEE 754 при записи измерений. Агрегаторы и инструменты не проверяют входные значения на NaN/Infinity - такие значения молча пропагируются и могут повредить агрегацию. |
+| 164 | MUST | ➖ n_a | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity, отрицательный ноль невозможны. Переполнение Decimal вызывает исключение - graceful handling обеспечен платформой. |
+| 165 | MUST | ➖ n_a | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | OneScript использует System.Decimal (не IEEE 754) - NaN, Infinity и другие специальные значения IEEE 754 структурно невозможны. Все значения Decimal являются нормальными числами. |
 
 #### Compatibility requirements
 
@@ -2968,6 +2968,7 @@
 | Нет TLS/mTLS из SDK | Сертификаты конфигурируются вне SDK | Делегировано системе/прокси |
 | Нет opaque-объектов | Ключи контекста - строки | Строковые константы как ключи |
 | Нет thread-local | ФоновыеЗадания вместо goroutines | Передача контекста через параметры |
+| Число = System.Decimal (не IEEE 754) | NaN, Infinity, отрицательный ноль невозможны | Операции, порождающие NaN/Inf, выбрасывают исключение - требования к обработке NaN/Inf неприменимы |
 
 ## Методология
 
