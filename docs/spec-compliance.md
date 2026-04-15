@@ -28,26 +28,26 @@
 |---|---|---|---|---|---|---|
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
-| Resource Sdk | 16 | 2 | 2 | 0 | 20 | 80.0% |
-| Trace Api | 111 | 9 | 2 | 0 | 122 | 91.0% |
+| Resource Sdk | 17 | 1 | 2 | 0 | 20 | 85.0% |
+| Trace Api | 112 | 8 | 2 | 0 | 122 | 91.8% |
 | Trace Sdk | 62 | 14 | 6 | 0 | 82 | 75.6% |
 | Logs Api | 20 | 1 | 0 | 0 | 21 | 95.2% |
 | Logs Sdk | 53 | 8 | 3 | 0 | 64 | 82.8% |
 | Metrics Api | 90 | 7 | 2 | 1 | 99 | 90.9% |
 | Metrics Sdk | 126 | 24 | 21 | 0 | 171 | 73.7% |
 | Otlp Exporter | 18 | 3 | 4 | 0 | 25 | 72.0% |
-| Propagators | 31 | 2 | 0 | 0 | 33 | 93.9% |
+| Propagators | 33 | 0 | 0 | 0 | 33 | 100.0% |
 | Env Vars | 22 | 0 | 2 | 0 | 24 | 91.7% |
 
 ## Ключевые несоответствия (Stable)
 
 ### MUST/MUST NOT нарушения
 
-- ⚠️ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
-  Resource detectors (host, process, processor) exist as separate classes but are bundled within the same SDK package (registered in lib.config), not as separate packages. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
+- ✅ **[Resource Sdk]** [MUST] Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK.  
+  Resource detectors (host, process, processor) are basic OS-level detectors, NOT platform-specific (Docker/K8s) or vendor-specific (EKS/AKS/GKE). This requirement does not apply to them. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1`)
 
-- ⚠️ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
-  УстановитьРодителя() accepts ОтелСпан and ОтелКонтекстСпана directly in addition to Context (Соответствие/ФиксированноеСоответствие), violating the requirement to only accept full Context as parent. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
+- ✅ **[Trace Api]** [MUST NOT] This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`.  
+  УстановитьРодителя() now validates that only Context (Соответствие/ФиксированноеСоответствие) is accepted and throws an exception for Span/SpanContext. (`src/Трассировка/Классы/ОтелПостроительСпана.os:33`)
 
 - ✅ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
   Non-recording span теперь возвращает SpanContext родителя без создания нового spanId (`src/Трассировка/Классы/ОтелТрассировщик.os:78`)
@@ -94,11 +94,11 @@
 - ❌ **[Metrics Sdk]** [MUST] If the SDK receives float/double values from Instruments, it MUST handle all the possible values.  
   Нет явной обработки NaN, Infinity и других специальных значений IEEE 754 при записи измерений. Агрегаторы и инструменты не проверяют входные значения на NaN/Infinity - такие значения молча пропагируются и могут повредить агрегацию. (-)
 
-- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  W3C TraceContext and W3C Baggage propagators are maintained, but B3 propagator is not implemented in this codebase (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
+- ✅ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
+  W3C TraceContext, W3C Baggage, and B3 propagators are all implemented and distributed as part of the core package. (`src/Пропагация/Классы/ОтелB3Пропагатор.os:1`)
 
-- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  W3C TraceContext and W3C Baggage are distributed as part of core package (allowed by MAY clause), but B3 propagator is not distributed at all (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
+- ✅ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
+  W3C TraceContext, W3C Baggage, and B3 propagators are distributed as part of core package (allowed by MAY clause). (`src/Пропагация/Классы/ОтелB3Пропагатор.os:1`)
 
 - ❌ **[Env Vars]** [MUST] When `OTEL_CONFIG_FILE` is set, all other environment variables besides those referenced in the configuration file for environment variable substitution MUST be ignored.  
   OTEL_CONFIG_FILE is not supported at all. The autoconfig module has no code to read or handle this environment variable, so the requirement to ignore other env vars when it is set is not implemented. (-)
@@ -585,7 +585,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 9 | MUST | ⚠️ partial | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1` | Resource detectors (host, process, processor) exist as separate classes but are bundled within the same SDK package (registered in lib.config), not as separate packages. |
+| 9 | MUST | ✅ found | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1` | Resource detectors (host, process, processor) are basic OS-level detectors, not platform-specific. This requirement does not apply to them. |
 | 10 | MUST | ✅ found | Resource detector packages MUST provide a method that returns a resource. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17` |  |
 | 11 | MUST NOT | ✅ found | Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:24` |  |
 | 12 | SHOULD | ⚠️ partial | Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:25` | Errors during detection are logged at Debug level (Лог.Отладка) rather than Error level; the spec says detection errors SHOULD be considered an error. |
@@ -737,7 +737,7 @@
 | 45 | MUST NOT | ✅ found | There MUST NOT be any API for creating a `Span` other than with a `Tracer`. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
 | 46 | MUST NOT | ✅ found | In languages with implicit `Context` propagation, `Span` creation MUST NOT set the newly created `Span` as the active `Span` in the current `Context` by default, but this functionality MAY be offered additionally as a separate operation. | `src/Трассировка/Классы/ОтелТрассировщик.os:56` |  |
 | 47 | MUST | ✅ found | The API MUST accept the following parameters: | `src/Трассировка/Классы/ОтелПостроительСпана.os:192` |  |
-| 48 | MUST NOT | ⚠️ partial | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | УстановитьРодителя() accepts ОтелСпан and ОтелКонтекстСпана directly in addition to Context (Соответствие/ФиксированноеСоответствие), violating the requirement to only accept full Context as parent. |
+| 48 | MUST NOT | ✅ found | This API MUST NOT accept a `Span` or `SpanContext` as parent, only a full `Context`. | `src/Трассировка/Классы/ОтелПостроительСпана.os:33` | УстановитьРодителя() now validates that only Context is accepted and throws exception for Span/SpanContext. |
 | 49 | MUST | ✅ found | The semantic parent of the Span MUST be determined according to the rules described in Determining the Parent Span from a Context. | `src/Трассировка/Классы/ОтелТрассировщик.os:57` |  |
 | 50 | MUST | ✅ found | The API documentation MUST state that adding attributes at span creation is preferred to calling `SetAttribute` later, as samplers can only consider information already present during span creation. | `src/Трассировка/Классы/ОтелПостроительСпана.os:71` |  |
 | 51 | SHOULD | ✅ found | `Start timestamp`, default to current time. This argument SHOULD only be set when span creation time has already passed. | `src/Трассировка/Классы/ОтелПостроительСпана.os:114` |  |
@@ -2462,8 +2462,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 26 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | W3C TraceContext and W3C Baggage propagators are maintained, but B3 propagator is not implemented in this codebase |
-| 27 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | W3C TraceContext and W3C Baggage are distributed as part of core package (allowed by MAY clause), but B3 propagator is not distributed at all |
+| 26 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелB3Пропагатор.os:1` | W3C TraceContext, W3C Baggage, and B3 propagators are all implemented |
+| 27 | MUST | ✅ found | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелB3Пропагатор.os:1` | All propagators distributed as part of core package (allowed by MAY clause) |
 | 28 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | - |  |
 | 29 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | - |  |
 
