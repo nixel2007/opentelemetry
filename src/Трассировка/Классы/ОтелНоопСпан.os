@@ -260,7 +260,7 @@
 // NoOp-реализация спана (Span) по спецификации OpenTelemetry.
 //
 // Все методы - заглушки, ничего не записывают и не экспортируют.
-// Используется при DROP-решении семплера и при otel.enabled=false.
+// Используется при DROP-решении семплера и при otel.sdk.disabled=true.
 //
 // non-recording span preserves parent's traceId and tracestate with sampled=false.
 // Если передан КонтекстСпана - создает NoOp-спан с этим контекстом (для сохранения цепочки трассировки).
