@@ -48,6 +48,20 @@
 //   OTEL_ATTRIBUTE_COUNT_LIMIT -> otel.attribute.count.limit (число, по умолчанию 128)
 //   OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT -> otel.span.attribute.value.length.limit (переопределение для спанов)
 //   OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT -> otel.span.attribute.count.limit (переопределение для спанов)
+//   TLS-параметры OTLP экспортера (общие и per-signal):
+//   OTEL_EXPORTER_OTLP_CERTIFICATE -> otel.exporter.otlp.certificate
+//   OTEL_EXPORTER_OTLP_CLIENT_KEY -> otel.exporter.otlp.client.key
+//   OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE -> otel.exporter.otlp.client.certificate
+//   OTEL_EXPORTER_OTLP_INSECURE -> otel.exporter.otlp.insecure
+//   OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE -> otel.exporter.otlp.traces.certificate
+//   OTEL_EXPORTER_OTLP_TRACES_CLIENT_KEY -> otel.exporter.otlp.traces.client.key
+//   OTEL_EXPORTER_OTLP_TRACES_CLIENT_CERTIFICATE -> otel.exporter.otlp.traces.client.certificate
+//   OTEL_EXPORTER_OTLP_LOGS_CERTIFICATE -> otel.exporter.otlp.logs.certificate
+//   OTEL_EXPORTER_OTLP_LOGS_CLIENT_KEY -> otel.exporter.otlp.logs.client.key
+//   OTEL_EXPORTER_OTLP_LOGS_CLIENT_CERTIFICATE -> otel.exporter.otlp.logs.client.certificate
+//   OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE -> otel.exporter.otlp.metrics.certificate
+//   OTEL_EXPORTER_OTLP_METRICS_CLIENT_KEY -> otel.exporter.otlp.metrics.client.key
+//   OTEL_EXPORTER_OTLP_METRICS_CLIENT_CERTIFICATE -> otel.exporter.otlp.metrics.client.certificate
 
 #Использовать logos
 
@@ -667,10 +681,10 @@
     ТаймаутМс = ТаймаутСек * МиллисекундВСекунде;
 
     Если НормализованныйПротокол = ПротоколGrpc Тогда
-        Транспорт = Новый ОтелGrpcТранспорт(Адрес, , Заголовки);
+        Транспорт = Новый ОтелGrpcТранспорт(Адрес, СоздатьНастройкиTlsДляСигнала(Менеджер, Сигнал), Заголовки);
     Иначе
         Транспорт = Новый ОтелHttpТранспорт(
-            Адрес, Заголовки, ТаймаутСек, , Компрессия);
+            Адрес, Заголовки, ТаймаутСек, , Компрессия, СоздатьНастройкиTlsДляСигнала(Менеджер, Сигнал));
     КонецЕсли;
 
     Возврат Новый Структура("Транспорт, ПутьСигнала, ТаймаутМс",
@@ -931,6 +945,34 @@
     КэшМенеджер = Неопределено;
     КэшРесурс = Неопределено;
 КонецПроцедуры
+
+// Создаёт настройки TLS для конкретного сигнала из менеджера параметров.
+// Per-signal env перекрывает общий.
+//
+// Параметры:
+//   Менеджер - МенеджерПараметров - менеджер параметров конфигурации
+//   Сигнал - Строка - имя сигнала (traces, logs, metrics)
+//
+// Возвращаемое значение:
+//   ОтелНастройкиTls, Неопределено - настройки TLS или Неопределено если ни одна не задана
+//
+Функция СоздатьНастройкиTlsДляСигнала(Менеджер, Сигнал)
+    НастройкиTls = Новый ОтелНастройкиTls();
+
+    НастройкиTls.ФайлСертификата = ПараметрСигналаИлиОбщий(Менеджер, Сигнал, "certificate", "");
+    НастройкиTls.ФайлКлиентскогоКлюча = ПараметрСигналаИлиОбщий(Менеджер, Сигнал, "client.key", "");
+    НастройкиTls.ФайлКлиентскогоСертификата = ПараметрСигналаИлиОбщий(
+        Менеджер, Сигнал, "client.certificate", "");
+
+    ЗначениеInsecure = ПараметрСигналаИлиОбщий(Менеджер, Сигнал, "insecure", "");
+    НастройкиTls.Insecure = НРег(ЗначениеInsecure) = "true";
+
+    Если НастройкиTls.Применён() Тогда
+        Возврат НастройкиTls;
+    КонецЕсли;
+
+    Возврат Неопределено;
+КонецФункции
 
 Функция ИнициализироватьНоопСдк()
     Ресурс = Новый ОтелРесурс();
