@@ -552,10 +552,6 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
         "| Используется миллисекундная точность |"
     )
     lines.append(
-        "| Нет TLS/mTLS из SDK | Сертификаты конфигурируются вне SDK "
-        "| Делегировано системе/прокси |"
-    )
-    lines.append(
         "| Нет opaque-объектов | Ключи контекста - строки "
         "| Строковые константы как ключи |"
     )
@@ -566,6 +562,20 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append(
         "| Число = System.Decimal (не IEEE 754) | NaN, Infinity, отрицательный ноль невозможны "
         "| Операции, порождающие NaN/Inf, выбрасывают исключение - требования к обработке NaN/Inf неприменимы |"
+    )
+    lines.append(
+        "| Нет varargs (переменного числа параметров) | Спека требует "
+        "\"variable number of attributes\" (metrics) и \"zero or more callbacks\" "
+        "| Используется контейнерный объект: `ОтелАтрибуты` для атрибутов, "
+        "один полиморфный параметр `Callback = Неопределено \\| Действие \\| Массив` "
+        "для callback-ов. Семантически эквивалентно. |"
+    )
+    lines.append(
+        "| Модель распространения opm-пакета | Спека OTel описывает пропагаторы "
+        "как отдельные extension-packages (Java/JS) "
+        "| Пропагаторы (W3C TraceContext, W3C Baggage, B3, Jaeger и др.) "
+        "поставляются в составе основного opm-пакета `opentelemetry`. "
+        "Функциональность полностью соответствует спеке; отличие только в модели распространения. |"
     )
     lines.append("")
 
