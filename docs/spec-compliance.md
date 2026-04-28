@@ -15,11 +15,11 @@
 | Conditional keywords | 6 |
 | Development keywords | 123 |
 | Найдено требований (Stable universal) | 697 |
-| ✅ Реализовано (found) | 595 (85.4%) |
-| ⚠️ Частично (partial) | 77 (11.0%) |
+| ✅ Реализовано (found) | 597 (85.7%) |
+| ⚠️ Частично (partial) | 75 (10.8%) |
 | ❌ Не реализовано (not_found) | 25 (3.6%) |
 | ➖ Неприменимо (n_a) | 4 |
-| **MUST/MUST NOT found** | 407/423 (96.2%) |
+| **MUST/MUST NOT found** | 409/423 (96.7%) |
 | **SHOULD/SHOULD NOT found** | 188/274 (68.6%) |
 
 ## Соответствие по разделам (Stable)
@@ -29,7 +29,7 @@
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 16 | 1 | 0 | 0 | 17 | 94.1% |
 | Resource Sdk | 17 | 2 | 1 | 0 | 20 | 85.0% |
-| Trace Api | 109 | 11 | 2 | 0 | 122 | 89.3% |
+| Trace Api | 111 | 9 | 2 | 0 | 122 | 91.0% |
 | Trace Sdk | 68 | 12 | 2 | 0 | 82 | 82.9% |
 | Logs Api | 19 | 2 | 0 | 0 | 21 | 90.5% |
 | Logs Sdk | 55 | 8 | 1 | 0 | 64 | 85.9% |
@@ -55,11 +55,11 @@
 - ⚠️ **[Trace Api]** [MUST] The API MUST provide an operation for wrapping a `SpanContext` with an object implementing the `Span` interface.  
   Операция реализована через конструктор Новый ОтелНоопСпан(КонтекстСпана), но отдельного метода API (например, Tracer.WrapSpanContext) не существует. Используется в пропагаторах (W3C/B3), но публично оформленного wrap-метода нет. (`src/Трассировка/Классы/ОтелНоопСпан.os:279`)
 
-- ⚠️ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
-  При отсутствии SDK ПолучитьАктивныйСдк() возвращает кэшированный SDK с сэмплером ВсегдаВыключен, НачатьСпан возвращает ОтелНоопСпан с контекстом, унаследованным от родителя, но с НОВЫМ SpanId (СоздатьНоопСпанДляОтброшенного в ОтелТрассировщик.os:213). Спека требует вернуть non-recording span с тем же SpanContext, что в parent Context, а не генерировать новый SpanId. (`src/Ядро/Модули/ОтелГлобальный.os:143-160`)
+- ✅ **[Trace Api]** [MUST] The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current).  
+  В API-режиме (нет SDK или Tracer.Включен()=Ложь) Tracer.НачатьСпан/НачатьДочернийСпан перехватывают вызов ДО IdGenerator/сэмплера и возвращают ОтелНоопСпан, обёртывающий SpanContext родителя as-is через СоздатьНоопСпанВAPIРежиме. (`src/Трассировка/Классы/ОтелТрассировщик.os:210-228`)
 
-- ⚠️ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
-  В noop-режиме (AlwaysOff) без родителя генерируются НЕ нулевые TraceId/SpanId, а полноценные идентификаторы (Провайдер.СгенерироватьИдТрассировки/СгенерироватьИдСпана), затем возвращается NoopSpan. Спека требует all-zero IDs. (`src/Трассировка/Классы/ОтелТрассировщик.os:56-68`)
+- ✅ **[Trace Api]** [MUST] If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags).  
+  В API-режиме без родителя СоздатьНоопСпанВAPIРежиме возвращает Новый ОтелНоопСпан() — all-zero TraceId/SpanId, пустой TraceState, TraceFlags=0; IdGenerator не вызывается. (`src/Трассировка/Классы/ОтелТрассировщик.os:210-228`)
 
 - ⚠️ **[Logs Api]** [MUST] When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then MUST use current Context.  
   Контекст = Неопределено разрешается в текущий контекст только внутри ТрассировкаНеСэмплирована (ветка trace-based фильтрации), но в процессор Включен передаётся исходное Неопределено без явного вызова ОтелКонтекст.Текущий(); разрешение контекста не универсально для всех веток API. (`src/Логирование/Классы/ОтелЛоггер.os:68`)
@@ -881,9 +881,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 120 | MUST | ⚠️ partial | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Ядро/Модули/ОтелГлобальный.os:143-160` | При отсутствии SDK ПолучитьАктивныйСдк() возвращает кэшированный SDK с сэмплером ВсегдаВыключен, НачатьСпан возвращает ОтелНоопСпан с контекстом, унаследованным от родителя, но с НОВЫМ SpanId (СоздатьНоопСпанДляОтброшенного в ОтелТрассировщик.os:213). Спека требует вернуть non-recording span с тем же SpanContext, что в parent Context, а не генерировать новый SpanId. |
+| 120 | MUST | ✅ found | The API MUST return a non-recording `Span` with the `SpanContext` in the parent `Context` (whether explicitly given or implicit current). | `src/Трассировка/Классы/ОтелТрассировщик.os:210-228` | В API-режиме (нет SDK или Tracer.Включен()=Ложь) Tracer.НачатьСпан/НачатьДочернийСпан перехватывают вызов ДО IdGenerator/сэмплера и возвращают ОтелНоопСпан, обёртывающий SpanContext родителя as-is через СоздатьНоопСпанВAPIРежиме. |
 | 121 | SHOULD | ❌ not_found | If the `Span` in the parent `Context` is already non-recording, it SHOULD be returned directly without instantiating a new `Span`. | - | Нет проверки ЗаписьАктивна()/IsRecording у родительского спана в ОтелТрассировщик.НачатьСпан - всегда создаётся новый экземпляр (ОтелСпан или ОтелНоопСпан), даже если родитель уже non-recording. |
-| 122 | MUST | ⚠️ partial | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:56-68` | В noop-режиме (AlwaysOff) без родителя генерируются НЕ нулевые TraceId/SpanId, а полноценные идентификаторы (Провайдер.СгенерироватьИдТрассировки/СгенерироватьИдСпана), затем возвращается NoopSpan. Спека требует all-zero IDs. |
+| 122 | MUST | ✅ found | If the parent `Context` contains no `Span`, an empty non-recording Span MUST be returned instead (i.e., having a `SpanContext` with all-zero Span and Trace IDs, empty Tracestate, and unsampled TraceFlags). | `src/Трассировка/Классы/ОтелТрассировщик.os:210-228` | В API-режиме без родителя СоздатьНоопСпанВAPIРежиме возвращает Новый ОтелНоопСпан() — all-zero TraceId/SpanId, пустой TraceState, TraceFlags=0; IdGenerator не вызывается. |
 
 ### Trace Sdk
 
