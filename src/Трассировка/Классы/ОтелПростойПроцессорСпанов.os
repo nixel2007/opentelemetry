@@ -39,6 +39,16 @@
 // с установленным sampled-битом (RECORD_AND_SAMPLE). Спаны с decision=RECORD_ONLY
 // (флаги без sampled-бита) обрабатываются процессором, но не экспортируются.
 //
+// Примечание о синхронности (см. spec: trace/sdk.md#OnEnd):
+//   "OnEnd MUST be called synchronously...therefore [it] should not block".
+//   Это рекомендация (should), а не запрет (MUST NOT). SimpleSpanProcessor
+//   намеренно реализован синхронным — спаны экспортируются «as soon as they are
+//   finished» (см. trace/sdk.md#Simple processor). Ограничение блокировки —
+//   только обязательный таймаут на Export() (MUST NOT block indefinitely),
+//   который обеспечивается транспортами экспортёра. Все эталонные SDK
+//   (Java/Go/Python/JS) реализуют SimpleSpanProcessor синхронно. Для асинхронной
+//   обработки используйте ОтелПакетныйПроцессорСпанов (BatchSpanProcessor).
+//
 // Параметры:
 //   Спан - ОтелСпан - завершенный спан
 //
