@@ -1,10 +1,17 @@
 // Пропагатор W3C Trace Context.
 //
 // Реализует внедрение и извлечение контекста трассировки
-// через HTTP-заголовки traceparent и tracestate (W3C Trace Context Level 1).
+// через HTTP-заголовки traceparent и tracestate (W3C Trace Context Level 2).
 //
 // Формат traceparent: {version}-{trace-id}-{parent-id}-{trace-flags}
 // Пример: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+//
+// trace-flags - 1 байт, биты:
+//   - бит 0 (маска 0x01) - sampled
+//   - бит 1 (маска 0x02) - random (W3C Level 2): TraceId сгенерирован случайно
+// Все биты сохраняются при round-trip через числовое поле ФлагиТрассировки
+// в ОтелКонтекстСпана. Парсинг tracestate выполняется через
+// ОтелСостояниеТрассировки с RFC-валидацией ключей и значений.
 
 #Область ОписаниеПеременных
 
