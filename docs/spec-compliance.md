@@ -15,12 +15,12 @@
 | Conditional keywords | 6 |
 | Development keywords | 133 |
 | Найдено требований (Stable universal) | 698 |
-| ✅ Реализовано (found) | 655 (93.8%) |
-| ⚠️ Частично (partial) | 37 (5.3%) |
+| ✅ Реализовано (found) | 657 (94.1%) |
+| ⚠️ Частично (partial) | 35 (5.0%) |
 | ❌ Не реализовано (not_found) | 6 (0.9%) |
 | ➖ Неприменимо (n_a) | 9 |
 | **MUST/MUST NOT found** | 418/424 (98.6%) |
-| **SHOULD/SHOULD NOT found** | 237/274 (86.5%) |
+| **SHOULD/SHOULD NOT found** | 239/274 (87.2%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -35,7 +35,7 @@
 | Logs Sdk | 63 | 1 | 1 | 0 | 65 | 96.9% |
 | Metrics Api | 94 | 5 | 0 | 1 | 99 | 94.9% |
 | Metrics Sdk | 154 | 12 | 3 | 2 | 169 | 91.1% |
-| Otlp Exporter | 21 | 2 | 0 | 2 | 23 | 91.3% |
+| Otlp Exporter | 23 | 0 | 0 | 2 | 23 | 100.0% |
 | Propagators | 38 | 2 | 0 | 0 | 40 | 95.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
 
@@ -165,11 +165,11 @@
 - ⚠️ **[Metrics Sdk]** [SHOULD] `MetricProducer` implementations SHOULD accept configuration for the `AggregationTemporality` of produced metrics.  
   Интерфейс Произвести(ФильтрМетрик) может пробрасывать предпочтительную темпоральность через ФильтрМетрик (документировано в комментариях), но отдельного параметра/конфигурации AggregationTemporality нет — реализациям нужно извлекать его из фильтра. (`src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:23`)
 
-- ⚠️ **[Otlp Exporter]** [SHOULD] The option SHOULD accept any form allowed by the underlying gRPC client implementation.  
-  РазобратьСхемуURL принимает только http/https и (без схемы → http://). Произвольные формы, разрешённые gRPC-клиентом (например, dns:///, unix://), не поддерживаются. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:691`)
+- ✅ **[Otlp Exporter]** [SHOULD] The option SHOULD accept any form allowed by the underlying gRPC client implementation.  
+  Используемый OPI_GRPC (tonic-based) принимает только URL со схемами http/https; РазобратьСхемуURL принимает ровно тот же набор схем, что и underlying-клиент, поэтому фактически опция уже принимает любые формы, поддерживаемые underlying gRPC-клиентом. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:810`)
 
-- ⚠️ **[Otlp Exporter]** [SHOULD] If the gRPC client implementation does not support an endpoint with a scheme of `http` or `https` then the endpoint SHOULD be transformed to the most sensible format for that implementation.  
-  URL с http(s):// передаётся в OPI_GRPC.ПолучитьПараметрыСоединения как есть, без явной трансформации в host:port-форму, ожидаемую gRPC-клиентами. (`src/Экспорт/Классы/ОтелGrpcТранспорт.os:209`)
+- ✅ **[Otlp Exporter]** [SHOULD] If the gRPC client implementation does not support an endpoint with a scheme of `http` or `https` then the endpoint SHOULD be transformed to the most sensible format for that implementation.  
+  Underlying gRPC-клиент (OPI_GRPC, tonic-based) поддерживает endpoints со схемами http/https нативно (и наоборот, требует их наличия), поэтому трансформация не нужна — endpoint передаётся как есть. (`src/Экспорт/Классы/ОтелGrpcТранспорт.os:207`)
 
 - ⚠️ **[Propagators]** [SHOULD] If pre-configured, Propagators SHOULD default to a composite Propagator containing the W3C Trace Context Propagator and the Baggage Propagator specified in the Baggage API.  
   OneScript SDK не выполняет pre-configure пропагаторов (платформа не относится к ASP.NET-подобным). По умолчанию ПолучитьПропагаторы() возвращает ОтелНоопПропагатор; композитный пропагатор W3C+Baggage пользователь должен собрать сам через построитель. (`src/Ядро/Модули/ОтелГлобальный.os:132`)
@@ -2105,9 +2105,9 @@
 | 2 | MUST | ✅ found | Each configuration option MUST be overridable by a signal specific option. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:964` |  |
 | 3 | MUST | ✅ found | The implementation MUST honor the following URL components: scheme (`http` or `https`), host, port, path. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:802` |  |
 | 4 | MUST | ✅ found | When using `OTEL_EXPORTER_OTLP_ENDPOINT`, exporters MUST construct per-signal URLs as described below. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:687` |  |
-| 5 | SHOULD | ⚠️ partial | The option SHOULD accept any form allowed by the underlying gRPC client implementation. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:691` | РазобратьСхемуURL принимает только http/https и (без схемы → http://). Произвольные формы, разрешённые gRPC-клиентом (например, dns:///, unix://), не поддерживаются. |
+| 5 | SHOULD | ✅ found | The option SHOULD accept any form allowed by the underlying gRPC client implementation. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:810` | Используемый OPI_GRPC (tonic-based) принимает только URL со схемами http/https; РазобратьСхемуURL принимает ровно тот же набор схем, что и underlying-клиент. |
 | 6 | MUST | ✅ found | Additionally, the option MUST accept a URL with a scheme of either `http` or `https`. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:811` |  |
-| 7 | SHOULD | ⚠️ partial | If the gRPC client implementation does not support an endpoint with a scheme of `http` or `https` then the endpoint SHOULD be transformed to the most sensible format for that implementation. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:209` | URL с http(s):// передаётся в OPI_GRPC.ПолучитьПараметрыСоединения как есть, без явной трансформации в host:port-форму, ожидаемую gRPC-клиентами. |
+| 7 | SHOULD | ✅ found | If the gRPC client implementation does not support an endpoint with a scheme of `http` or `https` then the endpoint SHOULD be transformed to the most sensible format for that implementation. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:207` | Underlying gRPC-клиент (OPI_GRPC, tonic-based) поддерживает endpoints со схемами http/https нативно (и наоборот, требует их наличия), поэтому трансформация не нужна. |
 | 8 | MUST | ✅ found | Protocol: The transport protocol. Options MUST be one of: `grpc`, `http/protobuf`, `http/json`. | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:638` |  |
 | 9 | SHOULD | ✅ found | SDKs SHOULD default endpoint variables to use `http` scheme unless they have good reasons to choose `https` scheme for the default (e.g., for backward compatibility reasons in a stable SDK release). | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:680` |  |
 | 10 | SHOULD | ➖ n_a | However, if they are already implemented, they SHOULD continue to be supported as they were part of a stable release of the specification. | - | Условное требование к obsolete env-переменным OTEL_EXPORTER_OTLP_SPAN_INSECURE / OTEL_EXPORTER_OTLP_METRIC_INSECURE: SDK для OneScript новый и никогда не реализовывал эти переменные в стабильном релизе, поэтому условие 'if they are already implemented' не выполнено. |
