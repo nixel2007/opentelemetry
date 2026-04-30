@@ -14,12 +14,12 @@
 | Stable + universal keywords | 707 |
 | Conditional keywords | 6 |
 | Development keywords | 133 |
-| Найдено требований (Stable universal) | 694 |
-| ✅ Реализовано (found) | 657 (94.7%) |
-| ⚠️ Частично (partial) | 32 (4.6%) |
+| Найдено требований (Stable universal) | 700 |
+| ✅ Реализовано (found) | 662 (94.6%) |
+| ⚠️ Частично (partial) | 33 (4.7%) |
 | ❌ Не реализовано (not_found) | 5 (0.7%) |
-| ➖ Неприменимо (n_a) | 13 |
-| **MUST/MUST NOT found** | 411/417 (98.6%) |
+| ➖ Неприменимо (n_a) | 7 |
+| **MUST/MUST NOT found** | 416/423 (98.3%) |
 | **SHOULD/SHOULD NOT found** | 246/277 (88.8%) |
 
 ## Соответствие по разделам (Stable)
@@ -34,7 +34,7 @@
 | Logs Api | 19 | 1 | 0 | 1 | 20 | 95.0% |
 | Logs Sdk | 63 | 1 | 1 | 0 | 65 | 96.9% |
 | Metrics Api | 97 | 1 | 0 | 2 | 98 | 99.0% |
-| Metrics Sdk | 149 | 12 | 3 | 7 | 164 | 90.9% |
+| Metrics Sdk | 154 | 13 | 3 | 1 | 170 | 90.6% |
 | Otlp Exporter | 23 | 1 | 1 | 0 | 25 | 92.0% |
 | Propagators | 40 | 0 | 0 | 0 | 40 | 100.0% |
 | Env Vars | 17 | 6 | 0 | 1 | 23 | 73.9% |
@@ -42,6 +42,9 @@
 ## Ключевые несоответствия (Stable)
 
 ### MUST/MUST NOT нарушения
+
+- ⚠️ **[Metrics Sdk]** [MUST] MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.  
+  ОтелЭкспортерМетрик использует АтомарноеБулево только для флага Закрыт (идемпотентный shutdown через атомарную запись); отдельной БлокировкиРесурса для синхронизации одновременных вызовов Экспортировать/ForceFlush с Shutdown нет — конкурентные вызовы могут попасть в ВыполнитьОтправку уже после установки флага. (`src/Экспорт/Классы/ОтелЭкспортерМетрик.os:184`)
 
 - ⚠️ **[Env Vars]** [MUST] Any value not explicitly defined here as a true value, including unset and empty values, MUST be interpreted as false.  
   БезопасноеБулево возвращает значение по умолчанию (Умолчание), а не жёстко false, при невалидном значении. На практике вызовы (Отключён) передают Ложь в качестве умолчания, но сама функция парсинга булева не гарантирует false для произвольного невалидного значения - это решается на уровне вызова, а не в общем парсере. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:952`)
@@ -2036,7 +2039,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 162 | MUST | ✅ found | A `MetricFilter` MUST support the following functions: | `src/Метрики/Классы/ОтелФильтрМетрик.os:29` |  |
+| 162 | MUST | ✅ found | A `MetricFilter` MUST support the following functions: | `src/Метрики/Классы/ОтелФильтрМетрик.os:27` |  |
 
 #### Defaults and configuration
 
@@ -2052,8 +2055,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 164 | MUST | ➖ n_a | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | - | OneScript использует System.Decimal (28 значащих цифр), а не IEEE 754. NaN, Infinity и отрицательный ноль невозможны - арифметические операции выбрасывают исключение, что соответствует требованию graceful обработки ошибок согласно платформенным гарантиям. Требование неприменимо в части IEEE 754-специфичных значений. |
-| 165 | MUST | ➖ n_a | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | - | OneScript не имеет типов float/double - все числа представлены System.Decimal. NaN/Infinity невозможны на платформе. Платформенное ограничение: SDK работает с Decimal, требование IEEE 754-специфично. |
+| 164 | MUST | ✅ found | The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:130` |  |
+| 165 | MUST | ✅ found | If the SDK receives float/double values from Instruments, it MUST handle all the possible values. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:98` |  |
 
 #### Compatibility requirements
 
@@ -2062,7 +2065,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 166 | SHOULD | ✅ found | All the metrics components SHOULD allow new methods to be added to existing components without introducing breaking changes. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:1` |  |
-| 167 | SHOULD | ✅ found | All the metrics SDK methods SHOULD allow optional parameter(s) to be added to existing methods without introducing breaking changes, if possible. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:74` |  |
+| 167 | SHOULD | ✅ found | All the metrics SDK methods SHOULD allow optional parameter(s) to be added to existing methods without introducing breaking changes, if possible. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:1` |  |
 
 #### Concurrency requirements
 
@@ -2070,10 +2073,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 168 | MUST | ➖ n_a | MeterProvider - Meter creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | - | OneScript использует ФоновыеЗадания (background jobs), а не goroutine/thread-local concurrency. Платформа не поддерживает разделяемую память между потоками; concurrency-safety на уровне shared-memory неприменим. Ограничение документировано в docs/spec-compliance.md. |
-| 169 | MUST | ➖ n_a | ExemplarReservoir - all methods MUST be safe to be called concurrently. | - | OneScript использует ФоновыеЗадания (background jobs), без разделяемой памяти между потоками. Concurrency-safety неприменим на уровне платформы. |
-| 170 | MUST | ➖ n_a | MetricReader - `Collect`, `ForceFlush` (for periodic exporting MetricReader) and `Shutdown` MUST be safe to be called concurrently. | - | OneScript использует ФоновыеЗадания, а не shared-memory многопоточность. Платформенное ограничение - concurrency-safety на уровне goroutine/thread неприменим. |
-| 171 | MUST | ➖ n_a | MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | - | OneScript использует ФоновыеЗадания, без разделяемой памяти. Concurrency-safety неприменим на уровне платформы. |
+| 168 | MUST | ✅ found | MeterProvider - Meter creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:399` |  |
+| 169 | MUST | ✅ found | ExemplarReservoir - all methods MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:187` |  |
+| 170 | MUST | ✅ found | MetricReader - `Collect`, `ForceFlush` (for periodic exporting MetricReader) and `Shutdown` MUST be safe to be called concurrently. | `src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:595` |  |
+| 171 | MUST | ⚠️ partial | MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерМетрик.os:184` | ОтелЭкспортерМетрик использует АтомарноеБулево только для флага Закрыт (идемпотентный shutdown через атомарную запись); отдельной БлокировкиРесурса для синхронизации одновременных вызовов Экспортировать/ForceFlush с Shutdown нет — конкурентные вызовы могут попасть в ВыполнитьОтправку уже после установки флага. |
 
 ### Otlp Exporter
 
