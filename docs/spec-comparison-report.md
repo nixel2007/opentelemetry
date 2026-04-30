@@ -8,522 +8,466 @@
 
   Статус           Было  Стало      Δ
   --------------------------------------
-  found             717    748 +   31 ✅
-  partial            65     44   -21
-  not_found          43     30   -13
-  n_a                15     18 +    3
+  found             750    750     0
+  partial            42     42     0
+  not_found          30     28    -2
+  n_a                18     20 +    2
   Всего             840    840 +    0
 
-  🔴 ПОНИЖЕНИЕ СТАТУСА (19) - требует перепроверки:
+  🔴 ПОНИЖЕНИЕ СТАТУСА (28) - требует перепроверки:
 
-     [Context / Detach Context]
+     [Env Vars / Boolean]
        found → partial
-       Текст: The API MUST accept the following parameters: * A `Token` that was returned by a previous call to at
-       Расположение: src/Ядро/Классы/ОтелОбласть.os:23 → src/Ядро/Модули/ОтелКонтекст.os:271
-       Пояснение: ВосстановитьПредыдущийКонтекст() реализует detach (снимает верхний элемент стека контекстов), но НЕ принимает Token-параметр. Восстановление выполняет
+       Текст: Any value not explicitly defined here as a true value, including unset and empty values, MUST be int
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:938 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:952
+       Пояснение: БезопасноеБулево возвращает значение по умолчанию (Умолчание), а не жёстко false, при невалидном значении. На практике вызовы (Отключён) передают Ложь
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Logs Api / Emit a LogRecord]
+     [Env Vars / Declarative configuration]
+       found → partial
+       Текст: When `OTEL_CONFIG_FILE` is set, all other environment variables besides those referenced in the conf
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:95 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:97
+       Пояснение: Когда OTEL_CONFIG_FILE задана, выполняется ОтелФайловаяКонфигурация.Разобрать + ОтелКонфигурационнаяФабрика.Создать без обращения к остальным OTEL_* п
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Env Vars / Enum]
+       found → partial
+       Текст: For sources accepting an enum value, if the user provides a value the implementation does not recogn
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:318 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:320
+       Пояснение: Предупреждение для нераспознанных значений выводится для otel.traces.sampler (стр. 320) и otel.propagators (стр. 562), но в СоздатьПровайдерТрассировк
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Env Vars / General SDK Configuration]
+       found → partial
+       Текст: Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation 
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:919 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:298
+       Пояснение: БезопасноеЧисло логирует и применяет значение по умолчанию (1.0) при невалидном otel.traces.sampler.arg, что эквивалентно поведению как если бы переме
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Env Vars / General SDK Configuration]
+       found → partial
+       Текст: Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation 
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:919 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:298
+       Пояснение: Невалидный otel.traces.sampler.arg для traceidratio/parentbased_traceidratio логируется и заменяется на 1.0 (через БезопасноеЧисло). Но для прочих тип
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Env Vars / General SDK Configuration]
+       found → partial
+       Текст: Invalid or unrecognized input MUST be logged and MUST be otherwise ignored, i.e. the implementation 
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:921 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:300
+       Пояснение: БезопасноеЧисло возвращает значение по умолчанию (1.0) при невалидном arg, что соответствует «as if not set». Но это применяется только к ratio-сэмпле
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Env Vars / Numeric]
        found → n_a
-       Текст: When only explicit Context is supported, this parameter SHOULD be required.
-       Расположение: src/Логирование/Классы/ОтелЛоггер.os:94 → -
-       Пояснение: Условное требование: применимо только к SDK, поддерживающим ИСКЛЮЧИТЕЛЬНО explicit Context. Данная реализация поддерживает implicit Context (ОтелКонте
+       Текст: The following paragraph was added after stabilization and the requirements are thus qualified as "SH
+       Расположение: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:915 → -
+       Пояснение: Мета-требование о статусе требований в спецификации (квалификация SHOULD vs MUST), а не функциональное требование к коду.
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Logs Sdk / ReadWriteLogRecord]
+     [Logs Api / Enabled]
        found → partial
-       Текст: A function receiving this as an argument MUST additionally be able to modify the following informati
-       Пояснение: Сеттеры есть для Timestamp/ObservedTimestamp/SeverityText/SeverityNumber/Body/TraceId/SpanId/TraceFlags/EventName и для добавления/изменения атрибутов
+       Текст: The API SHOULD be documented that instrumentation authors needs to call this API each time they emit
+       Пояснение: Документирующий комментарий описывает назначение Включен() как hot-path оптимизацию и упоминает, что значение может меняться со временем ("По умолчани
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Metrics Sdk / Histogram Aggregations]
+     [Logs Sdk / Built-in processors]
        found → partial
-       Текст: SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good
-       Расположение: src/Метрики/Классы/ОтелАгрегаторГистограммы.os:154 → src/Метрики/Классы/ОтелАгрегаторГистограммы.os:128
-       Пояснение: Дефолтные границы в СтандартныеГраницы() содержат 14 значений (отсутствует 7500), тогда как спецификация требует 15: [0, 5, 10, 25, 50, 75, 100, 250, 
+       Текст: Additional processors defined in this document SHOULD be provided by SDK packages.
+       Расположение: src/Логирование/Классы/ОтелКомпозитныйПроцессорЛогов.os:1 → src/Логирование/Классы/
+       Пояснение: Реализованы Simple и Batch процессоры, но дополнительный процессор Event-to-span event bridge (определённый в этом же документе спецификации) не реали
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Metrics Sdk / Instrument unit]
+     [Metrics Api / Counter creation]
+       found → n_a
+       Текст: There MUST NOT be any API for creating a `Counter` other than with a `Meter`.
+       Расположение: src/Метрики/Классы/ОтелМетр.os:59 → -
+       Пояснение: OneScript не поддерживает приватные конструкторы (ПриСозданииОбъекта всегда публичен), поэтому невозможно структурно запретить создание ОтелСчетчик на
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Api / Enabled]
        found → partial
-       Текст: When a Meter creates an instrument, it SHOULD NOT validate the instrument unit.
-       Расположение: src/Метрики/Классы/ОтелМетр.os:53 → src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:282
-       Пояснение: УстановитьЕдиницаИзмерения проверяет ASCII-печатность через ОтелУтилиты.СтрокаПечатнаяASCII и заменяет невалидное значение на пустую строку с предупре
+       Текст: The API SHOULD be documented that instrumentation authors needs to call this API each time they reco
+       Пояснение: Метод Включен() имеет документирующий комментарий, но в нём не указано явно, что нужно вызывать этот API перед каждым измерением для получения самого 
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Concurrency requirements]
+       found → n_a
+       Текст: MeterProvider - Meter creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.
+       Расположение: src/Метрики/Классы/ОтелПровайдерМетрик.os:100 → -
+       Пояснение: OneScript использует ФоновыеЗадания (background jobs), а не goroutine/thread-local concurrency. Платформа не поддерживает разделяемую память между пот
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Concurrency requirements]
+       found → n_a
+       Текст: ExemplarReservoir - all methods MUST be safe to be called concurrently.
+       Расположение: src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:98 → -
+       Пояснение: OneScript использует ФоновыеЗадания (background jobs), без разделяемой памяти между потоками. Concurrency-safety неприменим на уровне платформы.
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Concurrency requirements]
+       found → n_a
+       Текст: MetricReader - `Collect`, `ForceFlush` (for periodic exporting MetricReader) and `Shutdown` MUST be 
+       Расположение: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:50 → -
+       Пояснение: OneScript использует ФоновыеЗадания, а не shared-memory многопоточность. Платформенное ограничение - concurrency-safety на уровне goroutine/thread неп
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Concurrency requirements]
+       found → n_a
+       Текст: MetricExporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently.
+       Расположение: src/Экспорт/Классы/ОтелЭкспортерМетрик.os:14 → -
+       Пояснение: OneScript использует ФоновыеЗадания, без разделяемой памяти. Concurrency-safety неприменим на уровне платформы.
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Exemplar defaults]
+       found → partial
+       Текст: All other aggregations SHOULD use `SimpleFixedSizeExemplarReservoir`.
+       Расположение: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:335 → src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:331
+       Пояснение: По умолчанию у синхронного инструмента ставится ОтелФабрикаПростыхРезервуаров(1), но не для всех видов агрегации существует автоматическое назначение 
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / ForceFlush]
+       found → partial
+       Текст: `ForceFlush` MAY skip `Export(batch)` calls if the timeout is already expired, but SHOULD still call
+       Расположение: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:201 → src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:194
+       Пояснение: При неудаче СброситьБуфер (включая таймаут) функция возвращается раньше (строки 194-199) и не вызывает Экспортер.ПринудительноВыгрузитьСРезультатом, ч
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Interface Definition]
+       found → partial
+       Текст: `ForceFlush` SHOULD complete or abort within some timeout.
+       Пояснение: ПринудительноВыгрузитьСРезультатом принимает ТаймаутМс, но в синхронном экспортёре параметр помечен UnusedParameters-off и фактически не применяется (
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Measurement processing]
+       found → partial
+       Текст: If applying the View results in conflicting metric identities the implementation SHOULD apply the Vi
+       Расположение: src/Метрики/Классы/ОтелМетр.os:1044 → src/Метрики/Классы/ОтелМетр.os:1069
+       Пояснение: ПроверитьКонфликтИменView эмитит предупреждение и применяет View только для случая 'wide selector + НовоеИмя'. Прочие сценарии конфликта identities (о
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Measurement processing]
+       partial → not_found
+       Текст: If it is not possible to apply the View without producing semantic errors (e.g. the View sets an asy
+       Расположение: src/Метрики/Модули/ОтелАгрегация.os:144 → -
+       Пояснение: Нет проверки совместимости агрегации с типом инструмента: ОпределитьАгрегаторИзПредставления возвращает агрегатор как есть (например, ОтелАгрегаторГис
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / MetricReader]
+       found → partial
+       Текст: If not configured, the Cumulative temporality SHOULD be used.
+       Расположение: src/Метрики/Модули/ОтелСелекторВременнойАгрегации.os:24 → src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:362-366
+       Пояснение: Reader не имеет собственного хранения temporality селектора с дефолтом Cumulative; всегда обращается к экспортёру.ПолучитьВременнуюАгрегацию(). Дефолт
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
      [Metrics Sdk / Numerical limits handling]
        found → n_a
-       Текст: If the SDK receives float/double values from Instruments, it MUST handle all the possible values.
-       Расположение: src/Метрики/Классы/ОтелСчетчик.os:1 → -
-       Пояснение: OneScript Число = System.Decimal (не IEEE 754). NaN, Infinity и денормализованные значения на платформе невозможны - такие литералы не существуют, опе
+       Текст: The SDK MUST handle numerical limits in a graceful way according to Error handling in OpenTelemetry.
+       Расположение: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:1 → -
+       Пояснение: OneScript использует System.Decimal (28 значащих цифр), а не IEEE 754. NaN, Infinity и отрицательный ноль невозможны - арифметические операции выбрасы
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
      [Metrics Sdk / Observations inside asynchronous callbacks]
-       found → partial
-       Текст: The implementation SHOULD disregard the use of asynchronous instrument APIs outside of registered ca
-       Расположение: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:196 → src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:226
-       Пояснение: ВызватьCallbackИСобрать вызывает только зарегистрированные через ДобавитьCallback функции, но ВнешниеНаблюдения позволяют записывать наблюдения вне ca
+       partial → not_found
+       Текст: The implementation SHOULD use a timeout to prevent indefinite callback execution.
+       Расположение: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:230 → -
+       Пояснение: Вызов Callback.Выполнить() в ВызватьМультиОбратныеВызовы и ВызватьCallbackИСобрать выполняется синхронно без таймаута; механизма прерывания зависшего 
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
      [Metrics Sdk / Produce batch]
-       partial → not_found
-       Текст: `Produce` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Расположение: src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:13 → -
-       Пояснение: Функция Произвести возвращает только Массив данных метрик, без статуса успех/ошибка/таймаут; механизм оповещения о неуспехе/таймауте отсутствует.
+       found → partial
+       Текст: `Produce` SHOULD include a single InstrumentationScope which identifies the `MetricProducer`.
+       Расположение: src/Метрики/Классы/ОтелДанныеМетрики.os:1 → src/Метрики/Классы/ОтелДанныеМетрики.os:42
+       Пояснение: Каждый ОтелДанныеМетрики содержит ОбластьИнструментирования, но интерфейс Произвести возвращает Массив метрик (потенциально с разными scope) и не треб
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Metrics Sdk / Stream configuration]
+     [Metrics Sdk / Shutdown]
        found → partial
-       Текст: In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector tha
-       Расположение: src/Метрики/Классы/ОтелМетр.os:892 → src/Метрики/Классы/ОтелМетр.os:1020
-       Пояснение: ПроверитьКонфликтИменView только логирует предупреждение при множественных совпадениях, но не валидирует селектор на этапе регистрации View.
+       Текст: `Shutdown` SHOULD complete or abort within some timeout.
+       Пояснение: ЗакрытьСРезультатом принимает параметр ТаймаутМс, но фактически использует ИнтервалЭкспортаМс*МножительТаймаутаОжидания вместо переданного значения; п
+       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+
+     [Metrics Sdk / Start timestamps]
+       found → partial
+       Текст: Cumulative timeseries MUST use a consistent start timestamp for all collection intervals.
+       Расположение: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:175 → src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:329
+       Пояснение: Для синхронных инструментов ВремяСтарта инициализируется в ПриСозданииОбъекта и при cumulative не сбрасывается — start стабилен. Для асинхронных же От
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
      [Otlp Exporter / Configuration Options]
        found → partial
-       Текст: The option SHOULD accept any form allowed by the underlying gRPC client implementation.
-       Расположение: src/Экспорт/Классы/ОтелGrpcТранспорт.os:48 → src/Конфигурация/Модули/ОтелАвтоконфигурация.os:691
-       Пояснение: РазобратьСхемуURL принимает только http/https и (без схемы → http://). Произвольные формы, разрешённые gRPC-клиентом (например, dns:///, unix://), не 
+       Текст: If the gRPC client implementation does not support an endpoint with a scheme of `http` or `https` th
+       Расположение: src/Экспорт/Классы/ОтелGrpcТранспорт.os:207 → src/Экспорт/Классы/ОтелGrpcТранспорт.os:1-317
+       Пояснение: Endpoint передаётся в OPI_GRPC как есть. Базовая нормализация (добавление http://, если схема отсутствует) есть в ОтелАвтоконфигурация.os:819-826, но 
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Otlp Exporter / Configuration Options]
+     [Trace Api / Concurrency requirements]
        found → partial
-       Текст: If the gRPC client implementation does not support an endpoint with a scheme of http or https then t
-       Расположение: src/Экспорт/Классы/ОтелGrpcТранспорт.os:48 → src/Экспорт/Классы/ОтелGrpcТранспорт.os:209
-       Пояснение: URL с http(s):// передаётся в OPI_GRPC.ПолучитьПараметрыСоединения как есть, без явной трансформации в host:port-форму, ожидаемую gRPC-клиентами.
+       Текст: Link - Links are immutable and SHOULD be safe for concurrent use by default.
+       Расположение: src/Трассировка/Классы/ОтелСпан.os:166 → src/Трассировка/Классы/ОтелСпан.os:423
+       Пояснение: Линк хранится как Соответствие внутри массива Линки спана, иммутабельность гарантируется только тем, что после Завершить() коллекция не изменяется. От
        ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
 
-     [Otlp Exporter / User Agent]
-       not_found → n_a
-       Текст: The resulting User-Agent SHOULD include the exporter's default User-Agent string.
-       Пояснение: Условное требование: применимо только если экспортер реализует MAY-опцию для добавления пользовательского product identifier. SDK не предоставляет так
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+  🟢 ПОВЫШЕНИЕ СТАТУСА (33) - требует перепроверки:
 
-     [Propagators / Global Propagators]
-       found → partial
-       Текст: If pre-configured, `Propagator`s SHOULD default to a composite `Propagator` containing the W3C Trace
-       Пояснение: OneScript SDK не выполняет pre-configure пропагаторов (платформа не относится к ASP.NET-подобным). По умолчанию ПолучитьПропагаторы() возвращает ОтелН
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-     [Propagators / Propagators Distribution]
-       found → partial
-       Текст: The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST 
-       Расположение: src/Пропагация/Классы/ОтелB3Пропагатор.os:1 → src/Пропагация/
-       Пояснение: Пропагаторы (W3C TraceContext, W3C Baggage, B3) реализованы и поддерживаются, но распространяются как часть единого SDK-пакета (lib.config), а не как 
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-     [Resource Sdk / Detecting resource information from the environment]
-       found → partial
-       Текст: Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions
-       Расположение: src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:18 → src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:20
-       Пояснение: Host-детектор устанавливает host.name и os.type (атрибуты семантических соглашений), но Schema URL пустой; должен быть https://opentelemetry.io/schema
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-     [Trace Api / Context Interaction]
-       found → partial
+     [Baggage Api / Context Interaction]
+       partial → found
        Текст: The functionality listed above is necessary because API users SHOULD NOT have access to the Context 
-       Расположение: src/Ядро/Модули/ОтелКонтекст.os:141 → src/Ядро/Модули/ОтелКонтекст.os:51
-       Пояснение: Ключи КлючСпан/КлючBaggage инкапсулированы как переменные модуля, но также экспортируются через функции КлючСпана()/КлючBaggage(), что даёт пользовате
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
+       Код: src/Ядро/Модули/ОтелКонтекст.os:20
+       Было: Функция КлючBaggage() экспортирована и доступна публично, поскольку OneScript не поддерживает приват
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Trace Api / End]
-       found → partial
-       Текст: This operation itself MUST NOT perform blocking I/O on the calling thread.
-       Расположение: src/Трассировка/Классы/ОтелСпан.os:484 → src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:45
-       Пояснение: Завершить() синхронно вызывает Процессор.ПриЗавершении(). У ОтелПакетныйПроцессорСпанов это неблокирующая постановка в очередь (соответствует требован
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-     [Trace Api / Wrapping a SpanContext in a Span]
-       found → n_a
-       Текст: This functionality MUST be fully implemented in the API, and SHOULD NOT be overridable.
-       Расположение: src/Трассировка/Классы/ОтелНоопСпан.os:1 → -
-       Пояснение: OneScript не поддерживает sealed-классы / final-методы; механизм запрета переопределения отсутствует на уровне платформы. Класс расположен в API-слое 
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-     [Trace Sdk / OnEnding]
-       found → n_a
-       Текст: The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking `
-       Расположение: src/Трассировка/Классы/ОтелСпан.os:484 → -
-       Пояснение: OneScript использует ФоновыеЗадания вместо потоков; межпоточная безопасность спана на уровне goroutine/thread-local не применима к платформе. Спан-объ
-       ⚠️  Возможные причины: 1) регрессия в коде; 2) агент строже оценил; 3) ложное срабатывание
-
-  🟢 ПОВЫШЕНИЕ СТАТУСА (51) - требует перепроверки:
-
-     [Env Vars / Boolean]
-       not_found → found
-       Текст: If any value other than a true value, case-insensitive string "false", empty, or unset is used, a wa
-       Код: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:947
-       Было: Boolean-парсинг (НРег(Значение) = "true") молча трактует любое не-"true" значение как false без логи
+     [Context / Detach Context]
+       partial → found
+       Текст: The API MUST accept the following parameters: * A `Token` that was returned by a previous call to at
+       Код: src/Ядро/Модули/ОтелКонтекст.os:263
+       Было: ВосстановитьПредыдущийКонтекст() реализует detach (снимает верхний элемент стека контекстов), но НЕ 
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Logs Api / Enabled]
        partial → found
-       Текст: The API SHOULD be documented that instrumentation authors needs to call this API each time they emit
-       Код: src/Логирование/Классы/ОтелЛоггер.os:28
-       Было: Документирующий комментарий есть и поясняет назначение API (пропустить создание LogRecord), но не ук
+       Текст: When implicit Context is supported, then this parameter SHOULD be optional and if unspecified then M
+       Код: src/Логирование/Классы/ОтелЛоггер.os:68
+       Было: Контекст резолвится в текущий через ОтелКонтекст.Текущий() только в проверке сэмплирования (Трассиро
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Logs Sdk / OnEmit]
+     [Logs Sdk / ReadWriteLogRecord]
        partial → found
-       Текст: This method is called synchronously on the thread that emitted the `LogRecord`, therefore it SHOULD 
-       Код: src/Логирование/Классы/ОтелПростойПроцессорЛогов.os:32
-       Было: ПриПоявлении выполняется синхронно. ОтелКомпозитныйПроцессорЛогов.ПриПоявлении ловит исключения проц
+       Текст: A function receiving this as an argument MUST additionally be able to modify the following informati
+       Код: src/Логирование/Классы/ОтелЗаписьЛога.os:179
+       Было: Сеттеры есть для Timestamp/ObservedTimestamp/SeverityText/SeverityNumber/Body/TraceId/SpanId/TraceFl
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Logs Sdk / ShutDown]
+     [Metrics Api / Counter operations]
        partial → found
-       Текст: `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Код: src/Логирование/Классы/ОтелПростойПроцессорЛогов.os:103
-       Было: Закрыть реализован как Процедура (void) и не возвращает статус успеха/ошибки/таймаута. Асинхронный в
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Logs Sdk / Shutdown]
-       partial → found
-       Текст: `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Код: src/Логирование/Классы/ОтелПровайдерЛогирования.os:158
-       Было: Закрыть() - процедура без возвращаемого значения; ЗакрытьАсинхронно() возвращает Обещание, но статус
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Logs Sdk / Shutdown]
-       partial → found
-       Текст: `Shutdown` SHOULD complete or abort within some timeout.
-       Код: src/Логирование/Классы/ОтелПровайдерЛогирования.os:166
-       Было: ОтелПровайдерЛогирования.Закрыть() не принимает параметр таймаута и вызывает Процессор.Закрыть() без
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Api / Asynchronous Counter creation]
-       partial → found
-       Текст: The API SHOULD provide some way to pass `state` to the callback.
-       Код: src/Метрики/Классы/ОтелМетр.os:313
-       Было: Явного параметра state у callback нет; передача состояния возможна только через захват замыкания лям
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Api / Enabled]
-       partial → found
-       Текст: The API SHOULD be documented that instrumentation authors needs to call this API each time they reco
-       Код: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:253
-       Было: Doc-комментарий описывает семантику Включен(), но не содержит явного указания вызывать API перед каж
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Api / Histogram operations]
-       partial → found
-       Текст: This API SHOULD be documented in a way to communicate to users that this value is expected to be non
-       Код: src/Метрики/Классы/ОтелГистограмма.os:14
-       Было: Документирующий комментарий процедуры Записать описывает параметр Значение как «измеренное значение»
+       Текст: This API SHOULD NOT validate this value, that is left to implementations of the API.
+       Код: src/Метрики/Классы/ОтелСчетчик.os:32
+       Было: ОтелСчетчик.Добавить проверяет Значение < 0 и игнорирует с логированием. Хотя в данном коде API и SD
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Api / Synchronous and Asynchronous instruments]
        partial → found
-       Текст: The API SHOULD be documented in a way to communicate to users that the `name` parameter needs to con
-       Код: src/Метрики/Классы/ОтелМетр.os:42
-       Было: Doc-комментарий метода СоздатьСчетчик описывает имя как 'имя счетчика', но не упоминает требования к
+       Текст: The API SHOULD NOT validate the `unit`.
+       Код: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:282
+       Было: УстановитьЕдиницаИзмерения проверяет ASCII через ОтелУтилиты.СтрокаПечатнаяASCII и подменяет non-ASC
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Api / Synchronous and Asynchronous instruments]
        partial → found
-       Текст: The API SHOULD be documented in a way to communicate to users that the `name` parameter needs to con
-       Код: src/Метрики/Классы/ОтелМетр.os:285
-       Было: Doc-комментарий метода СоздатьНаблюдаемыйСчетчик описывает имя как 'имя инструмента', но не упоминае
+       Текст: The API SHOULD NOT validate `advisory` parameters.
+       Код: src/Метрики/Классы/ОтелМетр.os:1026
+       Было: ПроверитьСовет проверяет тип Структуры и типы вложенных полей (Границы должны быть Массив, КлючиАтри
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / Asynchronous instrument cardinality limits]
-       not_found → found
-       Текст: Aggregators of asynchronous instruments SHOULD prefer the first-observed attributes in the callback 
-       Код: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:255
-       Было: В ОтелБазовыйНаблюдаемыйИнструмент.ВызватьCallbackИСобрать() лимит мощности для асинхронных инструме
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Configuration]
+     [Metrics Api / Synchronous and Asynchronous instruments]
        partial → found
-       Текст: If there is no matching view, but the `MetricReader` defines a default cardinality limit value based
-       Код: src/Метрики/Классы/ОтелПровайдерМетрик.os:343
-       Было: MetricReader.ЛимитМощности() применяется ко всем инструментам Meter единым числом; нет дифференциаци
+       Текст: The API SHOULD NOT validate the `unit`.
+       Код: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:193
+       Было: УстановитьЕдиницаИзмерения проверяет ASCII через ОтелУтилиты.СтрокаПечатнаяASCII и подменяет non-ASC
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Metrics Api / Synchronous and Asynchronous instruments]
+       partial → found
+       Текст: The API SHOULD NOT validate `advisory` parameters.
+       Код: src/Метрики/Классы/ОтелМетр.os:1026
+       Было: ПроверитьСовет проверяет структуру и типы advisory полей с логированием предупреждений - это валидац
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Sdk / Duplicate instrument registration]
        not_found → partial
-       Текст: Otherwise (e.g., use of multiple units), the SDK SHOULD pass through the data by reporting both `Met
-       Код: src/Метрики/Классы/ОтелМетр.os:886
-       Было: При повторной регистрации возвращается ранее зарегистрированный инструмент (Возврат Существующий), в
+       Текст: If the potential conflict involves multiple `description` properties, setting the `description` thro
+       Код: src/Метрики/Классы/ОтелМетр.os:935
+       Было: ПроверитьКонфликтДескриптора сравнивает Описание независимо от View; нет логики, подавляющей предупр
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / ExemplarReservoir]
-       partial → found
-       Текст: This MUST be clearly documented in the API and the reservoir MUST be given the `Attributes` associat
-       Код: src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:36
-       Было: Документирующий комментарий метода Предложить упоминает АтрибутыИзмерения и АтрибутыСерии, но не опи
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / ExemplarReservoir]
-       partial → found
-       Текст: This MUST be clearly documented in the API and the reservoir MUST be given the `Attributes` associat
-       Код: src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:42
-       Было: АтрибутыСерии передаются в каждый вызов Предложить(), а не сохраняются в резервуаре при конструирова
+     [Metrics Sdk / Duplicate instrument registration]
+       not_found → partial
+       Текст: If the potential conflict involves instruments that can be distinguished by a supported View selecto
+       Код: src/Метрики/Классы/ОтелМетр.os:955
+       Было: Текст предупреждения (ОтелМетр.os:906-912) не содержит рецепт переименовывающего View — приводятся т
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Sdk / ForceFlush]
        partial → found
-       Текст: `ForceFlush` MAY skip `Export(batch)` calls if the timeout is already expired, but SHOULD still call
-       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:201
-       Было: Не реализована логика таймаута и отдельного вызова ForceFlush() на экспортёре по истечении таймаута.
+       Текст: `ForceFlush` SHOULD collect metrics, split into batches if necessary, call `Export(batch)` on each b
+       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:185
+       Было: ПринудительноВыгрузитьСРезультатом вызывает СброситьБуфер (collect+Export) и затем Экспортер.Принуди
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Sdk / Histogram Aggregations]
        partial → found
-       Текст: Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with in
-       Код: src/Метрики/Классы/ОтелАгрегаторГистограммы.os:59
-       Было: Sum собирается безусловно. Нет проверки типа инструмента и пропуска sum при UpDownCounter/Observable
+       Текст: SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good
+       Код: src/Метрики/Классы/ОтелАгрегаторГистограммы.os:165
+       Было: Дефолтные границы в СтандартныеГраницы() содержат 14 значений (отсутствует 7500), тогда как специфик
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / Histogram Aggregations]
+     [Metrics Sdk / Instrument unit]
        partial → found
-       Текст: The implementation MUST maintain reasonable minimum and maximum scale parameters that the automatic 
-       Код: src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:218
-       Было: Минимальная шкала захардкожена (-10), максимальная ограничена параметром НачальнаяШкала (default 20)
+       Текст: When a Meter creates an instrument, it SHOULD NOT validate the instrument unit.
+       Код: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:285
+       Было: УстановитьЕдиницаИзмерения проверяет ASCII-печатность через ОтелУтилиты.СтрокаПечатнаяASCII и заменя
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / Instrument name]
-       not_found → found
-       Текст: When a Meter creates an instrument, it SHOULD validate the instrument name conforms to the instrumen
-       Код: src/Метрики/Классы/ОтелМетр.os:726
-       Было: ОтелМетр.СоздатьСчетчик/СоздатьГистограмму/etc. не выполняют валидацию имени инструмента (нет провер
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Instrument name]
-       not_found → found
-       Текст: If the instrument name does not conform to this syntax, the Meter SHOULD emit an error notifying the
-       Код: src/Метрики/Классы/ОтелМетр.os:730
-       Было: Поскольку валидация имени отсутствует, ошибка о невалидном имени не эмитируется.
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Interface Definition]
-       partial → found
-       Текст: `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Код: src/Экспорт/Классы/ОтелЭкспортерМетрик.os:106
-       Было: СброситьБуфер() возвращает ОтелРезультатыЭкспорта.Успех() безусловно (no-op), статус таймаута/ошибки
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Interface Definition]
-       partial → found
-       Текст: `ForceFlush` SHOULD complete or abort within some timeout.
-       Код: src/Экспорт/Классы/ОтелЭкспортерМетрик.os:106
-       Было: Параметр ТаймаутМс есть, но помечен UnusedParameters — таймаут не учитывается; реализация — синхронн
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / MeterConfig]
-       partial → found
-       Текст: If a `Meter` is disabled, it MUST behave equivalently to No-op Meter.
-       Код: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:93
-       Было: Синхронные инструменты при МетрВключен=Ложь возвращают управление без записи; но ВызватьCallbackИСоб
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / MeterConfig]
-       partial → found
-       Текст: The value of `enabled` MUST be used to resolve whether an instrument is Enabled.
-       Код: src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:265
-       Было: Включен(Атрибуты) = МетрВключен.Получить() И Включен.Получить() реализован для синхронных инструмент
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / MetricProducer]
-       not_found → partial
-       Текст: `MetricProducer` implementations SHOULD accept configuration for the `AggregationTemporality` of pro
-       Код: src/Метрики/Классы/ИнтерфейсПродюсерМетрик.os:23
-       Было: Интерфейс ИнтерфейсПродюсерМетрик.Произвести(ФильтрМетрик) не принимает и нет конфигурации Aggregati
+     [Metrics Sdk / Meter Creation]
+       n_a → found
+       Текст: It SHOULD only be possible to create `Meter` instances through a `MeterProvider` (see API).
+       Код: src/Метрики/Классы/ОтелПровайдерМетрик.os:74
+       Было: OneScript не поддерживает приватные конструкторы (ПриСозданииОбъекта всегда публичен). Основной путь
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Sdk / MetricReader]
        partial → found
-       Текст: To construct a `MetricReader` when setting up an SDK, at least the following SHOULD be provided: * T
-       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:570
-       Было: Конструктор принимает Экспортер, ИнтервалЭкспортаМс, ЛимитМощности, агрегацию гистограмм. MetricFilt
+       Текст: The SDK MUST support multiple `MetricReader` instances to be registered on the same `MeterProvider`,
+       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:33-38, 430-462
+       Было: При множественных читателях `СброситьБуфер` корректно вызывает `СброситьБуферБезОчистки` у всех кром
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Metrics Sdk / Observations inside asynchronous callbacks]
        partial → found
-       Текст: Callback functions MUST be invoked for the specific `MetricReader` performing collection, such that 
-       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:382
-       Было: Перед вызовом мульти-callback инструменты очищаются, но изоляция per-MetricReader не строгая: если н
+       Текст: The implementation SHOULD disregard the use of asynchronous instrument APIs outside of registered ca
+       Код: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:121
+       Было: ВызватьCallbackИСобрать вызывает только зарегистрированные через ДобавитьCallback функции, но Внешни
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / Observations inside asynchronous callbacks]
-       not_found → partial
-       Текст: The implementation SHOULD use a timeout to prevent indefinite callback execution.
-       Код: src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:230
-       Было: Callback'и async-инструментов выполняются синхронно без таймаута: ВызватьМультиОбратныеВызовы и Вызв
+     [Metrics Sdk / Produce batch]
+       not_found → found
+       Текст: `Produce` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
+       Код: src/Метрики/Классы/ОтелРезультатПроизводстваМетрик.os:1
+       Было: Функция Произвести возвращает только Массив данных метрик, без статуса успех/ошибка/таймаут; механиз
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Metrics Sdk / Shutdown]
+     [Metrics Sdk / Stream configuration]
        partial → found
-       Текст: `Shutdown` SHOULD complete or abort within some timeout.
-       Код: src/Метрики/Классы/ОтелПровайдерМетрик.os:205
-       Было: Метод Закрыть() не принимает параметр таймаута. Есть асинхронная обертка ЗакрытьАсинхронно(), но без
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Shutdown]
-       partial → found
-       Текст: SDKs SHOULD return some failure for these calls, if possible.
-       Код: src/Метрики/Классы/ОтелПровайдерМетрик.os:84
-       Было: После Закрыть() флаг Закрыт=Истина, но СброситьБуфер()/СобратьИЭкспортировать() не проверяют этот фл
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Metrics Sdk / Shutdown]
-       partial → found
-       Текст: `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Код: src/Метрики/Классы/ОтелПериодическийЧитательМетрик.os:149
-       Было: Закрыть() — Процедура (void), не возвращает статус успеха/ошибки/таймаута.
+       Текст: In order to avoid conflicts, if a `name` is provided the View SHOULD have an instrument selector tha
+       Код: src/Метрики/Классы/ОтелМетр.os:522
+       Было: ПроверитьКонфликтИменView только логирует предупреждение при множественных совпадениях, но не валиди
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Otlp Exporter / Configuration Options]
-       not_found → found
-       Текст: The default protocol SHOULD be http/protobuf, unless there are strong reasons for SDKs to select grp
-       Код: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:222
-       Было: Дефолт протокола в коде - 'http/json' (см. ПротоколHttpJson = "http/json" и default параметра 'proto
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Otlp Exporter / Specify Protocol]
-       not_found → found
-       Текст: If no configuration is provided the default transport SHOULD be http/protobuf unless SDKs have good 
-       Код: src/Конфигурация/Модули/ОтелАвтоконфигурация.os:636
-       Было: Default protocol установлен в 'http/json' (ПараметрСигналаИлиОбщий(... 'protocol', ПротоколHttpJson)
+       n_a → found
+       Текст: However, if they are already implemented, they SHOULD continue to be supported as they were part of 
+       Было: Условное требование к obsolete env-переменным OTEL_EXPORTER_OTLP_SPAN_INSECURE / OTEL_EXPORTER_OTLP_
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Otlp Exporter / User Agent]
-       not_found → found
-       Текст: OpenTelemetry protocol exporters SHOULD emit a User-Agent header to at a minimum identify the export
-       Код: src/Экспорт/Классы/ОтелHttpТранспорт.os:200
-       Было: В коде HTTP/gRPC транспортов (ОтелHttpТранспорт, ОтелGrpcТранспорт) не задаётся заголовок User-Agent
+       n_a → not_found
+       Текст: The resulting User-Agent SHOULD include the exporter's default User-Agent string.
+       Было: Условное требование: применимо только если экспортер реализует MAY-опцию для добавления пользователь
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Otlp Exporter / User Agent]
-       not_found → found
-       Текст: The format of the header SHOULD follow RFC 7231.
-       Код: src/Экспорт/Классы/ОтелHttpТранспорт.os:200
-       Было: User-Agent заголовок не формируется, формат RFC 7231 не применяется.
+     [Propagators / Global Propagators]
+       partial → found
+       Текст: If pre-configured, Propagators SHOULD default to a composite Propagator containing the W3C Trace Con
+       Код: src/Ядро/Модули/ОтелГлобальный.os:180
+       Было: OneScript SDK не выполняет pre-configure пропагаторов (платформа не относится к ASP.NET-подобным). П
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Propagators / Propagators Distribution]
+       partial → found
+       Текст: The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST 
+       Код: src/Пропагация/Классы/ОтелW3CBaggageПропагатор.os:1
+       Было: Пропагаторы (W3C TraceContext, W3C Baggage, B3) реализованы и поддерживаются, но распространяются ка
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Resource Sdk / Detecting resource information from the environment]
        partial → found
-       Текст: Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attrib
-       Код: src/Ядро/Классы/ОтелРесурс.os:138
-       Было: Все встроенные детекторы (host, process, processor) безусловно устанавливают непустой Schema URL '1.
+       Текст: Note the failure to detect any resource information MUST NOT be considered an error, whereas an erro
+       Код: src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:29
+       Было: Host-детектор логирует ошибку как Warning, но Process- и CPU-детекторы логируют исключения уровнем D
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Resource Sdk / Detecting resource information from the environment]
+       partial → found
+       Текст: Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions
+       Код: src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:20
+       Было: Host-детектор устанавливает host.name и os.type (атрибуты семантических соглашений), но Schema URL п
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Resource Sdk / Specifying resource information via an environment variable]
-       partial → found
-       Текст: The SDK MUST extract information from the `OTEL_RESOURCE_ATTRIBUTES` environment variable and merge 
+       not_found → partial
+       Текст: In case of any error, e.g. failure during the decoding process, the entire environment variable valu
        Код: src/Ядро/Классы/ОтелРесурс.os:137
-       Было: OTEL_RESOURCE_ATTRIBUTES читается и применяется только в составе дефолтной инициализации ресурса (За
+       Было: ПрименитьАтрибутыИзОкружения не оборачивает декодирование пар в Попытка/Исключение: нет логики 'отбр
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Trace Api / Concurrency requirements]
+     [Resource Sdk / Specifying resource information via an environment variable]
+       not_found → partial
+       Текст: In case of any error, e.g. failure during the decoding process, the entire environment variable valu
+       Код: src/Ядро/Классы/ОтелРесурс.os:137
+       Было: Нет диагностики ошибки парсинга OTEL_RESOURCE_ATTRIBUTES (нет вызова Лог.Ошибка/Предупреждение в При
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Trace Api / Context Interaction]
        partial → found
-       Текст: Link - Links are immutable and SHOULD be safe for concurrent use by default.
-       Код: src/Трассировка/Классы/ОтелСпан.os:166
-       Было: Link реализован inline как `Новый Соответствие()` (не отдельный класс), нет документирующего коммент
+       Текст: The functionality listed above is necessary because API users SHOULD NOT have access to the Context 
+       Код: src/Ядро/Модули/ОтелКонтекст.os:43
+       Было: Ключи КлючСпан/КлючBaggage инкапсулированы как переменные модуля, но также экспортируются через функ
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Trace Api / End]
+       partial → found
+       Текст: This operation itself MUST NOT perform blocking I/O on the calling thread.
+       Код: src/Трассировка/Классы/ОтелСпан.os:501
+       Было: Завершить() синхронно вызывает Процессор.ПриЗавершении(). У ОтелПакетныйПроцессорСпанов это неблокир
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Trace Api / Set Status]
+       partial → found
+       Текст: An attempt to set value Unset SHOULD be ignored.
+       Код: src/Трассировка/Классы/ОтелСпан.os:478
+       Было: Попытка перейти в Unset из Ok или Error блокируется (Ok финален; Error→Unset запрещён явно), но при 
+       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
+
+     [Trace Api / Wrapping a SpanContext in a Span]
        n_a → found
-       Текст: Analysis tools SHOULD respond to an Ok status by suppressing any errors they would otherwise generat
-       Код: src/Трассировка/Классы/ОтелСпан.os:466
-       Было: Требование адресовано инструментам анализа/визуализации (downstream-системы), а не SDK/API. Вне обла
+       Текст: This functionality MUST be fully implemented in the API, and SHOULD NOT be overridable.
+       Код: src/Трассировка/Классы/ОтелНоопСпан.os:1
+       Было: OneScript не поддерживает sealed-классы / final-методы; механизм запрета переопределения отсутствует
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
      [Trace Sdk / IdGenerator randomness]
        not_found → partial
-       Текст: If the SDK uses an `IdGenerator` extension point, the SDK SHOULD allow the extension to determine wh
-       Код: src/Трассировка/Классы/ОтелТрассировщик.os:335
-       Было: Интерфейс IdGenerator (УстановитьГенераторИд) поддерживает только генерацию ID, но не предоставляет 
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Presumption of TraceID randomness]
-       partial → found
-       Текст: For all span contexts, OpenTelemetry samplers SHOULD presume that TraceIDs meet the W3C Trace Contex
-       Код: src/Трассировка/Модули/ОтелСэмплер.os:356
-       Было: Сэмплер TraceIdRatioBased презюмирует случайность, используя TraceId для решения. Однако нет логики 
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Random trace flag]
-       not_found → found
-       Текст: For root span contexts, the SDK SHOULD set the `Random` flag in the trace flags when it generates Tr
+       Текст: Custom implementations of the `IdGenerator` SHOULD identify themselves appropriately when all genera
        Код: src/Трассировка/Классы/ОтелТрассировщик.os:344
-       Было: ВычислитьФлагиТрассировки в ОтелТрассировщик.os:303 устанавливает только бит 0 (sampled=1) для корне
+       Было: В SDK нет маркер-интерфейса или иного механизма, через который пользовательский IdGenerator мог бы д
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-     [Trace Sdk / Sampling]
-       partial → found
-       Текст: However, Span Exporter SHOULD NOT receive them unless the Sampled flag was also set.
-       Код: src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:49
-       Было: ОтелПростойПроцессорСпанов и ОтелПакетныйПроцессорСпанов передают экспортеру все завершённые спаны (
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Sampling]
-       partial → found
-       Текст: Span Exporters MUST receive those spans which have Sampled flag set to true and they SHOULD NOT rece
-       Код: src/Трассировка/Классы/ОтелПакетныйПроцессорСпанов.os:41
-       Было: Процессоры спанов передают экспортёру и спаны с RECORD_ONLY (Sampled=false), нет отдельного шага фил
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Shutdown]
-       partial → found
-       Текст: `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.
-       Код: src/Трассировка/Классы/ОтелПровайдерТрассировки.os:159
-       Было: Закрыть — Процедура (void), не возвращает статус; ошибки внутренних процессоров проглатываются (Лог.
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Shutdown]
-       partial → found
-       Текст: `Shutdown` SHOULD complete or abort within some timeout.
-       Код: src/Трассировка/Классы/ОтелПровайдерТрассировки.os:159
-       Было: Метод Закрыть() на TracerProvider не принимает параметр таймаута; внутренний ОтелКомпозитныйПроцессо
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Span Limits]
-       partial → found
-       Текст: The name of the configuration options SHOULD be `EventCountLimit` and `LinkCountLimit`.
-       Код: src/Трассировка/Классы/ОтелЛимитыСпана.os:91
-       Было: Поля называются МаксСобытий (MaxEvents) и МаксЛинков (MaxLinks), что семантически близко, но не точн
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / TraceIdRatioBased]
-       partial → found
-       Текст: The precision of the number SHOULD follow implementation language standards and SHOULD be high enoug
-       Код: src/Трассировка/Модули/ОтелСэмплер.os:125
-       Было: Precision жёстко ограничена 6 знаками после запятой (Формат с ЧДЦ=6) вместо использования стандартно
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / TraceIdRatioBased]
-       partial → found
-       Текст: The precision of the number SHOULD follow implementation language standards and SHOULD be high enoug
-       Код: src/Трассировка/Модули/ОтелСэмплер.os:125
-       Было: При фиксированной precision=6 два сэмплера с долями, отличающимися менее чем на 1e-6, дадут одинаков
-       ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
-
-     [Trace Sdk / Tracer Creation]
+     [Trace Sdk / OnEnding]
        n_a → found
-       Текст: It SHOULD only be possible to create `Tracer` instances through a `TracerProvider` (see API).
-       Код: src/Трассировка/Классы/ОтелПровайдерТрассировки.os:69
-       Было: OneScript не поддерживает приватные конструкторы (ПриСозданииОбъекта всегда публичен). Конвенциональ
+       Текст: The SDK MUST guarantee that the span can no longer be modified by any other thread before invoking `
+       Код: src/Трассировка/Классы/ОтелСпан.os:501
+       Было: OneScript использует ФоновыеЗадания вместо потоков; межпоточная безопасность спана на уровне gorouti
        ⚠️  Возможные причины: 1) код добавлен/исправлен; 2) агент мягче оценил; 3) ложное повышение
 
-  ➕ НОВЫЕ ТРЕБОВАНИЯ (5) - агент нашёл дополнительные:
+  ➕ НОВЫЕ ТРЕБОВАНИЯ (10) - агент нашёл дополнительные:
 
-     [Metrics Sdk] MUST found: The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_
-     [Trace Api] SHOULD found: its `name` property SHOULD be set to an empty string, and a message reporting th
-     [Trace Sdk] MUST NOT found: If configuration is updated (e.g., adding a `SpanProcessor`), the updated config
-     [Trace Sdk] SHOULD found: SDKs SHOULD return a valid no-op Tracer for these calls, if possible.
-     [Trace Sdk] SHOULD found: SDKs SHOULD ignore these calls gracefully, if possible.
-
-  ➖ ПРОПУЩЕННЫЕ ТРЕБОВАНИЯ (5) - были раньше, теперь нет:
-
+     [Env Vars] SHOULD found: For new implementations, these should be treated as MUST requirements.
+     [Logs Api] MUST found: The API MUST accept the following parameters: Timestamp (optional), Observed Tim
+     [Metrics Api] SHOULD found: The API to register a new Callback SHOULD accept:
      [Metrics Sdk] MUST found: The SDK MUST accept the following criteria:
-     [Trace Api] SHOULD found: its `name` property SHOULD be set to an empty string.
-     [Trace Sdk] MUST NOT found: (i.e. it MUST NOT matter whether a `Tracer` was obtained from the `TracerProvide
-     [Trace Sdk] SHOULD partial: After the call to `Shutdown`, subsequent attempts to get a `Tracer` are not allo
-     [Trace Sdk] SHOULD found: After the call to `Shutdown`, subsequent calls to `OnStart`, `OnEnd`, or `ForceF
+     [Metrics Sdk] SHOULD partial: The default output `aggregation` (optional), a function of instrument kind. This
+     [Metrics Sdk] SHOULD found: SDKs SHOULD return some failure for these calls, if possible.
+     [Metrics Sdk] SHOULD not_found: For asynchronous instrument, the start timestamp SHOULD be:
+     [Trace Api] MUST found: This API MUST accept the following parameters:
+     [Trace Api] SHOULD found: In case an invalid name (null or empty string) is specified, a working Tracer im
+     [Trace Api] SHOULD found: In case an invalid name (null or empty string) is specified, a working Tracer im
 
-  Итого изменений: 80
-    Понижений: 19, Повышений: 51, Боковых: 0
-    Новых req: 5, Пропущенных req: 5
+  ➖ ПРОПУЩЕННЫЕ ТРЕБОВАНИЯ (10) - были раньше, теперь нет:
+
+     [Env Vars] MUST found: For new implementations, these should be treated as MUST requirements.
+     [Logs Api] MUST found: The API MUST accept the following parameters:
+     [Metrics Api] SHOULD found: The API to register a new Callback SHOULD accept: A `callback` function, A list 
+     [Metrics Sdk] MUST found: The SDK MUST accept the following criteria: name, type, unit, meter_name, meter_
+     [Metrics Sdk] SHOULD found: This function SHOULD be obtained from the `exporter`.
+     [Metrics Sdk] SHOULD found: After the call to `Shutdown`, subsequent invocations to `Collect` are not allowe
+     [Metrics Sdk] SHOULD partial: For asynchronous instrument, the start timestamp SHOULD be: - The creation time 
+     [Trace Api] MUST found: This API MUST accept the following parameters: name (required), version (optiona
+     [Trace Api] SHOULD found: its `name` property SHOULD be set to an empty string, and a message reporting th
+     [Trace Api] SHOULD found: its `name` property SHOULD be set to an empty string, and a message reporting th
+
+  Итого изменений: 81
+    Понижений: 28, Повышений: 33, Боковых: 0
+    Новых req: 10, Пропущенных req: 10
     Новых секций: 0, Исчезнувших секций: 0
 
   ⚠️  РЕКОМЕНДАЦИЯ: перепроверьте понижения и пропущенные требования вручную, чтобы отличить реальные регрессии от вариативности агентов.
