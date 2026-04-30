@@ -43,7 +43,9 @@
 //   OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION ->
 //       otel.exporter.otlp.metrics.default.histogram.aggregation
 //       (explicit_bucket_histogram, base2_exponential_bucket_histogram)
-//   OTEL_PROPAGATORS -> otel.propagators (tracecontext, baggage, none; по умолчанию tracecontext,baggage)
+//   OTEL_PROPAGATORS -> otel.propagators (tracecontext, baggage, b3, b3multi, none;
+//                                          по умолчанию tracecontext,baggage;
+//                                          b3/b3multi требуют установки пакета opentelemetry-propagator-b3)
 //   OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT -> otel.attribute.value.length.limit (число, по умолчанию без ограничения)
 //   OTEL_ATTRIBUTE_COUNT_LIMIT -> otel.attribute.count.limit (число, по умолчанию 128)
 //   OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT -> otel.span.attribute.value.length.limit (переопределение для спанов)
@@ -500,7 +502,8 @@
 
 // Создает пропагаторы контекста из конфигурации.
 // Читает otel.propagators (по умолчанию "tracecontext,baggage").
-// Поддерживаемые значения: tracecontext, baggage, none.
+// Поддерживаемые значения: tracecontext, baggage, b3, b3multi, none.
+// Для b3/b3multi требуется установка отдельного пакета opentelemetry-propagator-b3.
 // Если указано "none" вместе с другими - вызывает исключение (по спецификации Java SDK).
 //
 // Параметры:
@@ -550,6 +553,11 @@
             МассивПропагаторов.Добавить(Новый ОтелW3CПропагатор());
         ИначеЕсли ИмяОчищенное = "baggage" Тогда
             МассивПропагаторов.Добавить(Новый ОтелW3CBaggageПропагатор());
+        ИначеЕсли ИмяОчищенное = "b3" ИЛИ ИмяОчищенное = "b3multi" Тогда
+            ПропагаторB3 = СоздатьПропагаторB3(ИмяОчищенное);
+            Если ПропагаторB3 <> Неопределено Тогда
+                МассивПропагаторов.Добавить(ПропагаторB3);
+            КонецЕсли;
         Иначе
             Лог.Предупреждение("Неизвестный пропагатор ""%1"", пропущен", ИмяОчищенное);
         КонецЕсли;
@@ -1046,6 +1054,37 @@
         .УстановитьПровайдерЛогирования(ПровайдерЛогирования)
         .УстановитьПровайдерМетрик(ПровайдерМетрик)
         .ПостроитьИЗарегистрироватьГлобально();
+КонецФункции
+
+// Создаёт B3-пропагатор через рефлексию.
+// Класс ОтелB3Пропагатор поставляется отдельным пакетом opentelemetry-propagator-b3.
+//
+// Параметры:
+//   ИмяПропагатора - Строка - "b3" (single-header) или "b3multi" (multi-header)
+//
+// Возвращаемое значение:
+//   Произвольный, Неопределено - экземпляр ОтелB3Пропагатор или Неопределено,
+//                                если пакет не установлен
+//
+Функция СоздатьПропагаторB3(Знач ИмяПропагатора)
+    Попытка
+        ПараметрыКонструктора = Новый Массив();
+        Если ИмяПропагатора = "b3multi" Тогда
+            ПараметрыКонструктора.Добавить("multi");
+        Иначе
+            ПараметрыКонструктора.Добавить("single");
+        КонецЕсли;
+        Возврат Новый("ОтелB3Пропагатор", ПараметрыКонструктора);
+    Исключение
+        Лог.Предупреждение(
+            "Пропагатор ""%1"" пропущен: класс ОтелB3Пропагатор недоступен."
+                + " Установите пакет opentelemetry-propagator-b3 (opm install"
+                + " opentelemetry-propagator-b3) и подключите #Использовать"
+                + " opentelemetry-propagator-b3",
+            ИмяПропагатора
+        );
+        Возврат Неопределено;
+    КонецПопытки;
 КонецФункции
 
 #КонецОбласти

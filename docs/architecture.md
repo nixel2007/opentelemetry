@@ -14,6 +14,7 @@ src/
   Метрики/            - MeterProvider, Meter, инструменты, агрегация, PeriodicReader
   Экспорт/            - Транспорты (HTTP, gRPC, InMemory), экспортеры, конвертер protobuf
   Пропагация/         - W3C TraceContext, W3C Baggage, композитный пропагатор
+                        (B3 поставляется отдельным пакетом opentelemetry-propagator-b3)
   Конфигурация/       - Автоконфигурация из ENV/configor
   Интеграции/         - Аппендер для logos
 tests/

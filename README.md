@@ -305,7 +305,7 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/json  # или grpc
 
 | Переменная окружения | Ключ configor | По умолчанию | Описание |
 |---------------------|--------------|-------------|----------|
-| `OTEL_PROPAGATORS` | `otel.propagators` | `tracecontext,baggage` | Пропагаторы через запятую: `tracecontext`, `baggage`, `none` |
+| `OTEL_PROPAGATORS` | `otel.propagators` | `tracecontext,baggage` | Пропагаторы через запятую: `tracecontext`, `baggage`, `b3`, `b3multi`, `none`. Для `b3`/`b3multi` нужен пакет [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3) |
 
 ## Архитектура
 
@@ -398,6 +398,8 @@ SDK следует архитектуре [OpenTelemetry SDK Specification](http
 | **W3C TraceContext** | `ОтелW3CПропагатор` | Внедрение/извлечение `traceparent` и `tracestate` |
 | **W3C Baggage** | `ОтелW3CBaggageПропагатор` | Внедрение/извлечение заголовка `baggage` |
 | **Композитный пропагатор** | `ОтелКомпозитныйПропагатор` | Объединяет несколько пропагаторов |
+
+Согласно [спецификации Propagators Distribution](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#propagators-distribution), B3 и Jaeger пропагаторы поставляются отдельными пакетами. Для B3 установите [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3).
 
 ### Интеграция
 
