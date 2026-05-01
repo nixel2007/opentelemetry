@@ -256,7 +256,7 @@
     Если ТипТранспорта = "gRPC" Тогда
         Возврат Новый ОтелGrpcТранспорт("http://localhost:" + ПортOtlpGrpc);
     Иначе
-        Возврат Новый ОтелHttpТранспорт("http://localhost:" + ПортOtlpHttp);
+        Возврат Новый ОтелHttpТранспорт("http://localhost:" + ПортOtlpHttp, , , , , , "http/json");
     КонецЕсли;
 КонецФункции
 
