@@ -15,12 +15,12 @@
 | Conditional keywords | 6 |
 | Development keywords | 133 |
 | Найдено требований (Stable universal) | 697 |
-| ✅ Реализовано (found) | 683 (98.0%) |
-| ⚠️ Частично (partial) | 14 (2.0%) |
+| ✅ Реализовано (found) | 686 (98.6%) |
+| ⚠️ Частично (partial) | 10 (1.4%) |
 | ❌ Не реализовано (not_found) | 0 (0.0%) |
-| ➖ Неприменимо (n_a) | 10 |
+| ➖ Неприменимо (n_a) | 11 |
 | **MUST/MUST NOT found** | 424/424 (100.0%) |
-| **SHOULD/SHOULD NOT found** | 259/273 (94.9%) |
+| **SHOULD/SHOULD NOT found** | 262/272 (96.3%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -30,11 +30,11 @@
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
 | Resource Sdk | 20 | 0 | 0 | 0 | 20 | 100.0% |
 | Trace Api | 117 | 1 | 0 | 8 | 118 | 99.2% |
-| Trace Sdk | 81 | 2 | 0 | 0 | 83 | 97.6% |
+| Trace Sdk | 82 | 1 | 0 | 0 | 83 | 98.8% |
 | Logs Api | 21 | 0 | 0 | 0 | 21 | 100.0% |
 | Logs Sdk | 62 | 3 | 0 | 0 | 65 | 95.4% |
 | Metrics Api | 95 | 4 | 0 | 1 | 99 | 95.9% |
-| Metrics Sdk | 166 | 4 | 0 | 1 | 170 | 97.6% |
+| Metrics Sdk | 168 | 1 | 0 | 2 | 169 | 99.4% |
 | Otlp Exporter | 25 | 0 | 0 | 0 | 25 | 100.0% |
 | Propagators | 40 | 0 | 0 | 0 | 40 | 100.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
@@ -50,11 +50,8 @@
 - ⚠️ **[Trace Api]** [SHOULD] The status code SHOULD remain unset, except for the following circumstances:  
   Это требование к Instrumentation Libraries (политическое поведение пользовательского кода), а не к API. SDK обеспечивает дефолт Unset (НЕ устанавливает статус автоматически), но не проверяет/принуждает поведение библиотек инструментирования. (`src/Трассировка/Классы/ОтелСпан.os:474`)
 
-- ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
-  Метод Закрыть объявлен как Процедура (без возврата) для совместимости с интерфейсной сигнатурой; результат доступен через альтернативный метод ЗакрытьСРезультатом, но основной API Shutdown не возвращает статус. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:90`)
-
 - ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
-  Закрыть/ЗакрытьСРезультатом принимает ТаймаутМс и ЭкспортироватьВсеПакеты соблюдает его (soft-timeout); однако OneScript не поддерживает hard-cancel ФоновыеЗадания (issue 1672), поэтому фоновое задание может продолжать работу после возврата. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:103`)
+  Закрыть принимает ТаймаутМс и ЭкспортироватьВсеПакеты соблюдает его (soft-timeout); однако OneScript не поддерживает hard-cancel ФоновыеЗадания (issue 1672), поэтому фоновое задание может продолжать работу после возврата. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:103`)
 
 - ⚠️ **[Logs Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
   Soft-timeout: цикл по процессорам прерывается при превышении таймаута, но активный Процессор.Закрыть() не прерывается жёстко. OneScript ФоновоеЗадание не имеет hard-cancel (см. EvilBeaver/OneScript#1672). (`src/Логирование/Классы/ОтелПровайдерЛогирования.os:165`)
@@ -77,14 +74,8 @@
 - ⚠️ **[Metrics Api]** [SHOULD NOT] This API SHOULD NOT validate this value, that is left to implementations of the API.  
   Метод Добавить выполняет валидацию: при отрицательном значении логирует предупреждение и игнорирует измерение (`Если Значение < 0 Тогда ... Возврат`). Спека SHOULD NOT validate в API; в OneScript API и SDK совмещены, валидация выполняется на уровне счётчика. (`src/Метрики/Классы/ОтелСчетчик.os:32`)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD NOT] Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`).  
-  Sum накапливается всегда без условия пропуска при отрицательных измерениях. Гистограмма обычно не используется с UpDownCounter/ObservableGauge, но явной проверки нет. (`src/Метрики/Классы/ОтелАгрегаторГистограммы.os:42`)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD NOT] Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket.  
-  OneScript использует System.Decimal: NaN/+Inf/-Inf невозможно представить (операции бросают исключение), поэтому non-normal значений в коде нет; явной фильтрации не требуется, но и явной проверки нет. (-)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD] When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale.  
-  Шкала инициализируется НачальнаяШкала=20 (макс) и понижается при необходимости — для одиночного значения используется max scale. Однако нет явного перехода к max scale при сбросе или при первом значении после очистки — НачальнаяШкала фиксированная константа. (`src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:306`)
+- ➖ **[Metrics Sdk]** [SHOULD NOT] Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket.  
+  OneScript использует System.Decimal: NaN/+Inf/-Inf невозможно представить (операции бросают исключение), поэтому non-normal значений в коде нет и явная фильтрация не требуется. Требование неприменимо (ограничение платформы). (-)
 
 - ⚠️ **[Metrics Sdk]** [SHOULD] The implementation SHOULD use a timeout to prevent indefinite callback execution.  
   Soft-timeout через ФоновыеЗадания.ОжидатьЗавершения: SDK перестаёт ждать, но фоновое задание продолжает работать (OneScript не поддерживает hard cancel — issue #1672). Таймаут отключён по умолчанию (ТаймаутCallbackМс=0). (`src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:336`)
@@ -853,7 +844,7 @@
 |---|---|---|---|---|---|
 | 55 | SHOULD | ✅ found | `Shutdown` SHOULD be called only once for each `SpanProcessor` instance. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:98` |  |
 | 56 | SHOULD | ✅ found | After the call to `Shutdown`, subsequent calls to `OnStart`, `OnEnd`, or `ForceFlush` are not allowed. SDKs SHOULD ignore these calls gracefully, if possible. | `src/Трассировка/Классы/ОтелПростойПроцессорСпанов.os:56` |  |
-| 57 | SHOULD | ⚠️ partial | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:90` | Метод Закрыть объявлен как Процедура (без возврата) для совместимости с интерфейсной сигнатурой; результат доступен через альтернативный метод ЗакрытьСРезультатом, но основной API Shutdown не возвращает статус. |
+| 57 | SHOULD | ✅ found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:90` | Функция Закрыть возвращает ОтелРезультатЗакрытия. |
 | 58 | MUST | ✅ found | `Shutdown` MUST include the effects of `ForceFlush`. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:110` |  |
 | 59 | SHOULD | ⚠️ partial | `Shutdown` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:103` | Закрыть/ЗакрытьСРезультатом принимает ТаймаутМс и ЭкспортироватьВсеПакеты соблюдает его (soft-timeout); однако OneScript не поддерживает hard-cancel ФоновыеЗадания (issue 1672), поэтому фоновое задание может продолжать работу после возврата. |
 
@@ -1672,11 +1663,11 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 60 | SHOULD NOT | ⚠️ partial | Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`). | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:42` | Sum накапливается всегда без условия пропуска при отрицательных измерениях. Гистограмма обычно не используется с UpDownCounter/ObservableGauge, но явной проверки нет. |
+| 60 | SHOULD NOT | ✅ found | Arithmetic sum of `Measurement` values in population. This SHOULD NOT be collected when used with instruments that record negative measurements (e.g. `UpDownCounter` or `ObservableGauge`). | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:42` | Флаг СобиратьSum=Ложь устанавливается для инструментов с Монотонный=Ложь и ТипМетрики=sum; поле sum пропускается при формировании точки данных. |
 | 61 | SHOULD | ✅ found | SDKs SHOULD use the default value when boundaries are not explicitly provided, unless they have good reasons to use something different (e.g. for backward compatibility reasons in a stable SDK release). | `src/Метрики/Классы/ОтелАгрегаторГистограммы.os:128` |  |
-| 62 | SHOULD NOT | ⚠️ partial | Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket. | - | OneScript использует System.Decimal: NaN/+Inf/-Inf невозможно представить (операции бросают исключение), поэтому non-normal значений в коде нет; явной фильтрации не требуется, но и явной проверки нет. |
+| 62 | SHOULD NOT | ➖ n_a | Implementations SHOULD NOT incorporate non-normal values (i.e., +Inf, -Inf, and NaNs) into the `sum`, `min`, and `max` fields, because these values do not map into a valid bucket. | - | OneScript использует System.Decimal: NaN/+Inf/-Inf невозможно представить в платформе (операции бросают исключение). Явная фильтрация не требуется — платформа исключает появление таких значений. |
 | 63 | MUST | ✅ found | The implementation MUST maintain reasonable minimum and maximum scale parameters that the automatic scale parameter will not exceed. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:218` |  |
-| 64 | SHOULD | ⚠️ partial | When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:306` | Шкала инициализируется НачальнаяШкала=20 (макс) и понижается при необходимости — для одиночного значения используется max scale. Однако нет явного перехода к max scale при сбросе или при первом значении после очистки — НачальнаяШкала фиксированная константа. |
+| 64 | SHOULD | ✅ found | When the histogram contains not more than one value in either of the positive or negative ranges, the implementation SHOULD use the maximum scale. | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:92` | После формирования точки данных: если count ≤ 1, шкала сбрасывается к НачальнаяШкала (максимум=20), чтобы следующий период начинался с наилучшей точностью. |
 | 65 | SHOULD | ✅ found | Implementations SHOULD adjust the histogram scale as necessary to maintain the best resolution possible, within the constraint of maximum size (max number of buckets). | `src/Метрики/Классы/ОтелАгрегаторЭкспоненциальнойГистограммы.os:157` |  |
 
 #### Observations inside asynchronous callbacks
