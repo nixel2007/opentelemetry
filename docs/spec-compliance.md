@@ -15,12 +15,12 @@
 | Conditional keywords | 6 |
 | Development keywords | 133 |
 | Найдено требований (Stable universal) | 697 |
-| ✅ Реализовано (found) | 686 (98.6%) |
-| ⚠️ Частично (partial) | 10 (1.4%) |
+| ✅ Реализовано (found) | 687 (98.7%) |
+| ⚠️ Частично (partial) | 9 (1.3%) |
 | ❌ Не реализовано (not_found) | 0 (0.0%) |
-| ➖ Неприменимо (n_a) | 11 |
+| ➖ Неприменимо (n_a) | 12 |
 | **MUST/MUST NOT found** | 424/424 (100.0%) |
-| **SHOULD/SHOULD NOT found** | 262/272 (96.3%) |
+| **SHOULD/SHOULD NOT found** | 263/272 (96.7%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -29,7 +29,7 @@
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
 | Resource Sdk | 20 | 0 | 0 | 0 | 20 | 100.0% |
-| Trace Api | 117 | 1 | 0 | 8 | 118 | 99.2% |
+| Trace Api | 117 | 0 | 0 | 9 | 118 | 100.0% |
 | Trace Sdk | 82 | 1 | 0 | 0 | 83 | 98.8% |
 | Logs Api | 21 | 0 | 0 | 0 | 21 | 100.0% |
 | Logs Sdk | 62 | 3 | 0 | 0 | 65 | 95.4% |
@@ -46,9 +46,6 @@
 Нет нарушений MUST/MUST NOT.
 
 ### SHOULD/SHOULD NOT несоответствия
-
-- ⚠️ **[Trace Api]** [SHOULD] The status code SHOULD remain unset, except for the following circumstances:  
-  Это требование к Instrumentation Libraries (политическое поведение пользовательского кода), а не к API. SDK обеспечивает дефолт Unset (НЕ устанавливает статус автоматически), но не проверяет/принуждает поведение библиотек инструментирования. (`src/Трассировка/Классы/ОтелСпан.os:474`)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
   Закрыть принимает ТаймаутМс и ЭкспортироватьВсеПакеты соблюдает его (soft-timeout); однако OneScript не поддерживает hard-cancel ФоновыеЗадания (issue 1672), поэтому фоновое задание может продолжать работу после возврата. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:103`)
@@ -522,7 +519,7 @@
 | 77 | MUST | ✅ found | The Span interface MUST provide: An API to set the `Status`. | `src/Трассировка/Классы/ОтелСпан.os:474` |  |
 | 78 | SHOULD | ✅ found | This SHOULD be called `SetStatus`. | `src/Трассировка/Классы/ОтелСпан.os:474` |  |
 | 79 | MUST | ✅ found | `Description` MUST be IGNORED for `StatusCode` `Ok` & `Unset` values. | `src/Трассировка/Классы/ОтелСпан.os:490` |  |
-| 80 | SHOULD | ⚠️ partial | The status code SHOULD remain unset, except for the following circumstances: | `src/Трассировка/Классы/ОтелСпан.os:474` | Это требование к Instrumentation Libraries (политическое поведение пользовательского кода), а не к API. SDK обеспечивает дефолт Unset (НЕ устанавливает статус автоматически), но не проверяет/принуждает поведение библиотек инструментирования. |
+| 80 | SHOULD | ➖ n_a | The status code SHOULD remain unset, except for the following circumstances: | - | Требование адресовано Instrumentation Libraries (политика их поведения), а не API/SDK. Данный проект реализует только API+SDK, Instrumentation Libraries в составе отсутствуют — аналогично строкам 82–85 этой же таблицы. SDK корректно инициализирует статус как Unset по умолчанию. |
 | 81 | SHOULD | ✅ found | An attempt to set value `Unset` SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:477` |  |
 | 82 | SHOULD | ➖ n_a | When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable. | - | Это требование к авторам Instrumentation Libraries (документировать Description), а не к SDK. Проверяется в самих библиотеках инструментирования, а не в коде ядра OpenTelemetry. |
 | 83 | SHOULD | ➖ n_a | For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | - | Это требование к Instrumentation Libraries (политика публикации конвенций), а не к коду SDK. |
