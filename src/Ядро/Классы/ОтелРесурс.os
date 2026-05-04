@@ -108,7 +108,7 @@
 Процедура ЗаполнитьАтрибутыПоУмолчанию()
     Атрибуты.Установить("service.name", "unknown_service:oscript");
     Атрибуты.Установить("telemetry.sdk.name", "opentelemetry");
-    Атрибуты.Установить("telemetry.sdk.version", "0.1.0");
+    Атрибуты.Установить("telemetry.sdk.version", ОтелУтилиты.ВерсияSDK());
     Атрибуты.Установить("telemetry.sdk.language", "oscript");
 
     Детекторы = Новый Массив;
