@@ -3,6 +3,7 @@
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingVariablesDescription-off
+// BSLLS:ExportVariables-off
 
 Перем ТекущееЗначение Экспорт;
 Перем Шаг Экспорт;

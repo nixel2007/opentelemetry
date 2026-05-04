@@ -3,7 +3,7 @@
 // Аналог Java SDK: @FunctionalInterface AggregationTemporalitySelector
 // Определяет временную агрегацию (CUMULATIVE или DELTA) для каждого типа инструмента.
 //
-// Предопределённые селекторы:
+// Предопределенные селекторы:
 //   ВсегдаКумулятивная() - CUMULATIVE для всех типов (по умолчанию)
 //   ПредпочтительноДельта() - DELTA для Counter/Histogram, CUMULATIVE для UpDownCounter
 //   НизкоеПотреблениеПамяти() - DELTA для всех типов
