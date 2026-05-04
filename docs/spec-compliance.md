@@ -15,12 +15,12 @@
 | Conditional keywords | 6 |
 | Development keywords | 133 |
 | Найдено требований (Stable universal) | 697 |
-| ✅ Реализовано (found) | 674 (96.7%) |
-| ⚠️ Частично (partial) | 22 (3.2%) |
-| ❌ Не реализовано (not_found) | 1 (0.1%) |
+| ✅ Реализовано (found) | 683 (98.0%) |
+| ⚠️ Частично (partial) | 14 (2.0%) |
+| ❌ Не реализовано (not_found) | 0 (0.0%) |
 | ➖ Неприменимо (n_a) | 10 |
 | **MUST/MUST NOT found** | 424/424 (100.0%) |
-| **SHOULD/SHOULD NOT found** | 250/273 (91.6%) |
+| **SHOULD/SHOULD NOT found** | 259/273 (94.9%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -28,14 +28,14 @@
 |---|---|---|---|---|---|---|
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
-| Resource Sdk | 19 | 1 | 0 | 0 | 20 | 95.0% |
-| Trace Api | 115 | 2 | 1 | 8 | 118 | 97.5% |
+| Resource Sdk | 20 | 0 | 0 | 0 | 20 | 100.0% |
+| Trace Api | 117 | 1 | 0 | 8 | 118 | 99.2% |
 | Trace Sdk | 81 | 2 | 0 | 0 | 83 | 97.6% |
 | Logs Api | 21 | 0 | 0 | 0 | 21 | 100.0% |
 | Logs Sdk | 62 | 3 | 0 | 0 | 65 | 95.4% |
-| Metrics Api | 94 | 5 | 0 | 1 | 99 | 94.9% |
-| Metrics Sdk | 163 | 7 | 0 | 1 | 170 | 95.9% |
-| Otlp Exporter | 23 | 2 | 0 | 0 | 25 | 92.0% |
+| Metrics Api | 95 | 4 | 0 | 1 | 99 | 95.9% |
+| Metrics Sdk | 166 | 4 | 0 | 1 | 170 | 97.6% |
+| Otlp Exporter | 25 | 0 | 0 | 0 | 25 | 100.0% |
 | Propagators | 40 | 0 | 0 | 0 | 40 | 100.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
 
@@ -47,17 +47,8 @@
 
 ### SHOULD/SHOULD NOT несоответствия
 
-- ⚠️ **[Resource Sdk]** [SHOULD] whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error.  
-  Ошибки при детектировании логируются на уровне Предупреждение, а не Ошибка - спека требует считать это ошибкой. (`src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:29`)
-
-- ⚠️ **[Trace Api]** [SHOULD] The API SHOULD be documented that instrumentation authors needs to call this API each time they create a new `Span` to ensure they have the most up-to-date response.  
-  Метод Включен() имеет документирующий комментарий с описанием семантики двух режимов (SDK/API) и того, что значение может меняться, но явного указания «вызывать перед каждым созданием Span для получения up-to-date ответа» в комментарии нет. (`src/Трассировка/Классы/ОтелТрассировщик.os:31`)
-
 - ⚠️ **[Trace Api]** [SHOULD] The status code SHOULD remain unset, except for the following circumstances:  
   Это требование к Instrumentation Libraries (политическое поведение пользовательского кода), а не к API. SDK обеспечивает дефолт Unset (НЕ устанавливает статус автоматически), но не проверяет/принуждает поведение библиотек инструментирования. (`src/Трассировка/Классы/ОтелСпан.os:474`)
-
-- ❌ **[Trace Api]** [SHOULD] An attempt to set value `Unset` SHOULD be ignored.  
-  В УстановитьСтатус нет проверки на Unset: вызов с Значение=ОтелКодСтатуса.НеУстановлен() допускается и при текущем КодСтатуса=НеУстановлен фактически переустанавливает статус (а не игнорируется). Особый случай ERROR->UNSET блокируется, но UNSET->UNSET и OK->UNSET (последний косвенно через OK-final) не обрабатывают семантику 'ignore Unset attempt'. (-)
 
 - ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out.  
   Метод Закрыть объявлен как Процедура (без возврата) для совместимости с интерфейсной сигнатурой; результат доступен через альтернативный метод ЗакрытьСРезультатом, но основной API Shutdown не возвращает статус. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:90`)
@@ -83,9 +74,6 @@
 - ⚠️ **[Metrics Api]** [SHOULD NOT] Callback functions SHOULD NOT take an indefinite amount of time.  
   Документировано требование к callback (комментарий о времени выполнения) и реализован soft-timeout через ВыполнитьCallbackСУчётомТаймаута + ОжидатьЗавершения. Однако ФоновоеЗадание в OneScript нельзя прервать (issue #1672), поэтому при превышении таймаута измерения отбрасываются, но callback продолжит работу в фоне. Это ограничение платформы. (`src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:336`)
 
-- ⚠️ **[Metrics Api]** [SHOULD] The API SHOULD provide some way to pass `state` to the callback.  
-  Отдельный параметр state для callback не предусмотрен. Передача состояния возможна только через лексические замыкания (closure capture) Действий OneScript; явного механизма state в API регистрации callback нет. (-)
-
 - ⚠️ **[Metrics Api]** [SHOULD NOT] This API SHOULD NOT validate this value, that is left to implementations of the API.  
   Метод Добавить выполняет валидацию: при отрицательном значении логирует предупреждение и игнорирует измерение (`Если Значение < 0 Тогда ... Возврат`). Спека SHOULD NOT validate в API; в OneScript API и SDK совмещены, валидация выполняется на уровне счётчика. (`src/Метрики/Классы/ОтелСчетчик.os:32`)
 
@@ -101,20 +89,6 @@
 - ⚠️ **[Metrics Sdk]** [SHOULD] The implementation SHOULD use a timeout to prevent indefinite callback execution.  
   Soft-timeout через ФоновыеЗадания.ОжидатьЗавершения: SDK перестаёт ждать, но фоновое задание продолжает работать (OneScript не поддерживает hard cancel — issue #1672). Таймаут отключён по умолчанию (ТаймаутCallbackМс=0). (`src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:336`)
 
-- ⚠️ **[Metrics Sdk]** [SHOULD] Otherwise (e.g., use of multiple units), the SDK SHOULD pass through the data by reporting both `Metric` objects and emit a generic warning describing the duplicate instrument registration.  
-  При конфликте (включая разные единицы измерения) SDK логирует предупреждение и возвращает ранее зарегистрированный инструмент; второй (конфликтующий) Metric объект не создаётся и не экспортируется отдельно. Pass-through обоих Metric объектов не реализован — вместо этого реализована стратегия 'возврат существующего'. (`src/Метрики/Классы/ОтелМетр.os:997`)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD] If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided.  
-  ПроверитьСовет логирует предупреждение при невалидной структуре/типе, но не сбрасывает Совет в Неопределено - последующая логика всё равно может попытаться использовать невалидное значение (ПолучитьГраницыИзСовета не валидирует тип повторно). Спецификация требует proceed as if not provided, что подразумевает игнорирование невалидного параметра. (`src/Метрики/Классы/ОтелМетр.os:1078`)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD] The “offer” method SHOULD accept measurements, including: The `value` of the measurement, The complete set of `Attributes`, The Context of the measurement, A `timestamp` that best represents when the m...  
-  Предложить принимает Значение, АтрибутыИзмерения и КонтекстСпана, но отдельный параметр timestamp не принимается (генерируется внутри СоздатьЭкземпляр через ОтелУтилиты.ТекущееВремяВНаносекундах) и Context (с Baggage) сводится только к КонтекстСпана. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:46`)
-
-- ⚠️ **[Otlp Exporter]** [SHOULD] SDKs SHOULD support both `grpc` and `http/protobuf` transports and MUST support at least one of them.  
-  grpc-транспорт реализован полностью (ОтелGrpcТранспорт). HTTP-транспорт принимает значение протокола 'http/protobuf', но фактически отправляет данные с Content-Type: application/json (т.е. http/json по wire-формату), реальной protobuf-сериализации над HTTP нет. (`src/Экспорт/Классы/ОтелHttpТранспорт.os:199`)
-
-- ⚠️ **[Otlp Exporter]** [SHOULD] If no configuration is provided the default transport SHOULD be `http/protobuf` unless SDKs have good reasons to choose `grpc` as the default (e.g. for backward compatibility...  
-  Дефолтное значение протокола = 'http/protobuf' (строка), но HTTP-транспорт всегда отправляет JSON (Content-Type: application/json), т.е. фактический wire-формат по умолчанию — http/json, а не http/protobuf. (`src/Конфигурация/Модули/ОтелАвтоконфигурация.os:234`)
 
 ## Детальный анализ по разделам (Stable)
 
@@ -320,7 +294,7 @@
 | 9 | MUST | ✅ found | Custom resource detectors related to generic platforms (e.g. Docker, Kubernetes) or vendor specific environments (e.g. EKS, AKS, GKE) MUST be implemented as packages separate from the SDK. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:1` |  |
 | 10 | MUST | ✅ found | Resource detector packages MUST provide a method that returns a resource. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:17` |  |
 | 11 | MUST NOT | ✅ found | the failure to detect any resource information MUST NOT be considered an error | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:26` |  |
-| 12 | SHOULD | ⚠️ partial | whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:29` | Ошибки при детектировании логируются на уровне Предупреждение, а не Ошибка - спека требует считать это ошибкой. |
+| 12 | SHOULD | ✅ found | whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:29` |  |
 | 13 | MUST | ✅ found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:20` |  |
 | 14 | SHOULD | ✅ found | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it will populate (e.g. the detector... | `src/Ядро/Классы/ОтелРесурс.os:99` |  |
 | 15 | MUST | ✅ found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:43` |  |
@@ -398,7 +372,7 @@
 | 16 | SHOULD | ✅ found | To help users avoid performing computationally expensive operations when creating `Span`s, a `Tracer` SHOULD provide this `Enabled` API. | `src/Трассировка/Классы/ОтелТрассировщик.os:50` |  |
 | 17 | MUST | ✅ found | Parameters can be added in the future, therefore, the API MUST be structured in a way for parameters to be added. | `src/Трассировка/Классы/ОтелТрассировщик.os:50` |  |
 | 18 | MUST | ✅ found | This API MUST return a language idiomatic boolean type. | `src/Трассировка/Классы/ОтелТрассировщик.os:50` |  |
-| 19 | SHOULD | ⚠️ partial | The API SHOULD be documented that instrumentation authors needs to call this API each time they create a new `Span` to ensure they have the most up-to-date response. | `src/Трассировка/Классы/ОтелТрассировщик.os:31` | Метод Включен() имеет документирующий комментарий с описанием семантики двух режимов (SDK/API) и того, что значение может меняться, но явного указания «вызывать перед каждым созданием Span для получения up-to-date ответа» в комментарии нет. |
+| 19 | SHOULD | ✅ found | The API SHOULD be documented that instrumentation authors needs to call this API each time they create a new `Span` to ensure they have the most up-to-date response. | `src/Трассировка/Классы/ОтелТрассировщик.os:31` |  |
 
 #### SpanContext
 
@@ -558,7 +532,7 @@
 | 78 | SHOULD | ✅ found | This SHOULD be called `SetStatus`. | `src/Трассировка/Классы/ОтелСпан.os:474` |  |
 | 79 | MUST | ✅ found | `Description` MUST be IGNORED for `StatusCode` `Ok` & `Unset` values. | `src/Трассировка/Классы/ОтелСпан.os:490` |  |
 | 80 | SHOULD | ⚠️ partial | The status code SHOULD remain unset, except for the following circumstances: | `src/Трассировка/Классы/ОтелСпан.os:474` | Это требование к Instrumentation Libraries (политическое поведение пользовательского кода), а не к API. SDK обеспечивает дефолт Unset (НЕ устанавливает статус автоматически), но не проверяет/принуждает поведение библиотек инструментирования. |
-| 81 | SHOULD | ❌ not_found | An attempt to set value `Unset` SHOULD be ignored. | - | В УстановитьСтатус нет проверки на Unset: вызов с Значение=ОтелКодСтатуса.НеУстановлен() допускается и при текущем КодСтатуса=НеУстановлен фактически переустанавливает статус (а не игнорируется). Особый случай ERROR->UNSET блокируется, но UNSET->UNSET и OK->UNSET (последний косвенно через OK-final) не обрабатывают семантику 'ignore Unset attempt'. |
+| 81 | SHOULD | ✅ found | An attempt to set value `Unset` SHOULD be ignored. | `src/Трассировка/Классы/ОтелСпан.os:477` |  |
 | 82 | SHOULD | ➖ n_a | When the status is set to `Error` by Instrumentation Libraries, the `Description` SHOULD be documented and predictable. | - | Это требование к авторам Instrumentation Libraries (документировать Description), а не к SDK. Проверяется в самих библиотеках инструментирования, а не в коде ядра OpenTelemetry. |
 | 83 | SHOULD | ➖ n_a | For operations not covered by the semantic conventions, Instrumentation Libraries SHOULD publish their own conventions, including possible values of `Description` and what they mean. | - | Это требование к Instrumentation Libraries (политика публикации конвенций), а не к коду SDK. |
 | 84 | SHOULD NOT | ➖ n_a | Generally, Instrumentation Libraries SHOULD NOT set the status code to `Ok`, unless explicitly configured to do so. | - | Это требование к авторам Instrumentation Libraries (не вызывать УстановитьСтатус(Ok) без явной конфигурации), а не к SDK. SDK предоставляет API, ограничения на использование - в библиотеках. |
@@ -1393,7 +1367,7 @@
 | 50 | MUST | ✅ found | Multiple-instrument Callbacks MUST be associated at the time of registration with a declared set of asynchronous instruments from the same `Meter` instance. | `src/Метрики/Классы/ОтелМетр.os:619` |  |
 | 51 | MUST | ✅ found | The API MUST treat observations from a single Callback as logically taking place at a single instant, such that when recorded, observations from a single callback MUST be reported with identical timestamps. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:380` |  |
 | 52 | MUST | ✅ found | The API MUST treat observations from a single Callback as logically taking place at a single instant, such that when recorded, observations from a single callback MUST be reported with identical timestamps. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:380` |  |
-| 53 | SHOULD | ⚠️ partial | The API SHOULD provide some way to pass `state` to the callback. | - | Отдельный параметр state для callback не предусмотрен. Передача состояния возможна только через лексические замыкания (closure capture) Действий OneScript; явного механизма state в API регистрации callback нет. |
+| 53 | SHOULD | ✅ found | The API SHOULD provide some way to pass `state` to the callback. | `src/Метрики/Классы/ОтелМетр.os:671` |  |
 
 #### General operations
 
@@ -1774,7 +1748,7 @@
 | 84 | SHOULD | ✅ found | The emitted warning SHOULD include information for the user on how to resolve the conflict, if possible. | `src/Метрики/Классы/ОтелМетр.os:1194` |  |
 | 85 | SHOULD | ✅ found | If the potential conflict involves multiple `description` properties, setting the `description` through a configured View SHOULD avoid the warning. | `src/Метрики/Классы/ОтелМетр.os:991` |  |
 | 86 | SHOULD | ✅ found | If the potential conflict involves instruments that can be distinguished by a supported View selector (e.g. name, instrument kind) a renaming View recipe SHOULD be included in the warning. | `src/Метрики/Классы/ОтелМетр.os:1194` |  |
-| 87 | SHOULD | ⚠️ partial | Otherwise (e.g., use of multiple units), the SDK SHOULD pass through the data by reporting both `Metric` objects and emit a generic warning describing the duplicate instrument registration. | `src/Метрики/Классы/ОтелМетр.os:997` | При конфликте (включая разные единицы измерения) SDK логирует предупреждение и возвращает ранее зарегистрированный инструмент; второй (конфликтующий) Metric объект не создаётся и не экспортируется отдельно. Pass-through обоих Metric объектов не реализован — вместо этого реализована стратегия 'возврат существующего'. |
+| 87 | SHOULD | ✅ found | Otherwise (e.g., use of multiple units), the SDK SHOULD pass through the data by reporting both `Metric` objects and emit a generic warning describing the duplicate instrument registration. | `src/Метрики/Классы/ОтелМетр.os:68` |  |
 | 88 | MUST | ✅ found | To accommodate the recommendations from the data model, the SDK MUST aggregate data from identical Instruments together in its export pipeline. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:91` |  |
 
 #### Name conflict
@@ -1819,7 +1793,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 96 | SHOULD | ✅ found | When a Meter creates an instrument, it SHOULD validate the instrument advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:1072` |  |
-| 97 | SHOULD | ⚠️ partial | If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided. | `src/Метрики/Классы/ОтелМетр.os:1078` | ПроверитьСовет логирует предупреждение при невалидной структуре/типе, но не сбрасывает Совет в Неопределено - последующая логика всё равно может попытаться использовать невалидное значение (ПолучитьГраницыИзСовета не валидирует тип повторно). Спецификация требует proceed as if not provided, что подразумевает игнорирование невалидного параметра. |
+| 97 | SHOULD | ✅ found | If an advisory parameter is not valid, the Meter SHOULD emit an error notifying the user and proceed as if the parameter was not provided. | `src/Метрики/Классы/ОтелМетр.os:1078` |  |
 | 98 | MUST | ✅ found | If multiple identical Instruments are created with different advisory parameters, the Meter MUST return an instrument using the first-seen advisory parameters and log an appropriate error as described in duplicate inst... | `src/Метрики/Классы/ОтелМетр.os:987` |  |
 | 99 | MUST | ✅ found | If both a View and advisory parameters specify the same aspect of the Stream configuration, the setting defined by the View MUST take precedence over the advisory parameters. | `src/Метрики/Классы/ОтелМетр.os:923` |  |
 
@@ -1863,7 +1837,7 @@
 |---|---|---|---|---|---|
 | 111 | MUST | ✅ found | The `ExemplarReservoir` interface MUST provide a method to offer measurements to the reservoir and another to collect accumulated Exemplars. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:46` |  |
 | 112 | MUST | ✅ found | A new `ExemplarReservoir` MUST be created for every known timeseries data point, as determined by aggregation and view configuration. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:445` |  |
-| 113 | SHOULD | ⚠️ partial | The “offer” method SHOULD accept measurements, including: The `value` of the measurement, The complete set of `Attributes`, The Context of the measurement, A `timestamp` that best represents when the m... | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:46` | Предложить принимает Значение, АтрибутыИзмерения и КонтекстСпана, но отдельный параметр timestamp не принимается (генерируется внутри СоздатьЭкземпляр через ОтелУтилиты.ТекущееВремяВНаносекундах) и Context (с Baggage) сводится только к КонтекстСпана. |
+| 113 | SHOULD | ✅ found | The “offer” method SHOULD accept measurements, including: The `value` of the measurement, The complete set of `Attributes`, The Context of the measurement, A `timestamp` that best represents when the m... | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:46` |  |
 | 114 | SHOULD | ✅ found | The “offer” method SHOULD have the ability to pull associated trace and span information without needing to record full context. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:436` |  |
 | 115 | MUST | ✅ found | This MUST be clearly documented in the API and the reservoir MUST be given the `Attributes` associated with its timeseries point either at construction so that additional sampling performed by the re... | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:30` |  |
 | 116 | MUST | ✅ found | This MUST be clearly documented in the API and the reservoir MUST be given the `Attributes` associated with its timeseries point either at construction so that additional sampling performed by the re... | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:46` |  |
@@ -2072,10 +2046,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 16 | SHOULD | ⚠️ partial | SDKs SHOULD support both `grpc` and `http/protobuf` transports and MUST support at least one of them. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:199` | grpc-транспорт реализован полностью (ОтелGrpcТранспорт). HTTP-транспорт принимает значение протокола 'http/protobuf', но фактически отправляет данные с Content-Type: application/json (т.е. http/json по wire-формату), реальной protobuf-сериализации над HTTP нет. |
+| 16 | SHOULD | ✅ found | SDKs SHOULD support both `grpc` and `http/protobuf` transports and MUST support at least one of them. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:81` |  |
 | 17 | MUST | ✅ found | SDKs SHOULD support both `grpc` and `http/protobuf` transports and MUST support at least one of them. | `src/Экспорт/Классы/ОтелGrpcТранспорт.os:1` |  |
 | 18 | SHOULD | ✅ found | If they support only one, it SHOULD be `http/protobuf`. | `src/Экспорт/Классы/ОтелHttpТранспорт.os:1` |  |
-| 19 | SHOULD | ⚠️ partial | If no configuration is provided the default transport SHOULD be `http/protobuf` unless SDKs have good reasons to choose `grpc` as the default (e.g. for backward compatibility... | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:234` | Дефолтное значение протокола = 'http/protobuf' (строка), но HTTP-транспорт всегда отправляет JSON (Content-Type: application/json), т.е. фактический wire-формат по умолчанию — http/json, а не http/protobuf. |
+| 19 | SHOULD | ✅ found | If no configuration is provided the default transport SHOULD be `http/protobuf` unless SDKs have good reasons to choose `grpc` as the default (e.g. for backward compatibility... | `src/Конфигурация/Модули/ОтелАвтоконфигурация.os:234` |  |
 
 #### Specifying headers via environment variables
 
