@@ -1,4 +1,4 @@
-// Fixture: медленный экспортер логов — засыпает при экспорте для тестирования таймаута.
+// Fixture: медленный экспортер логов - засыпает при экспорте для тестирования таймаута.
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off

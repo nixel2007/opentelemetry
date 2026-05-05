@@ -1,4 +1,4 @@
-// Fixture: медленный процессор спанов — засыпает в Закрыть для тестирования таймаута.
+// Fixture: медленный процессор спанов - засыпает в Закрыть для тестирования таймаута.
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off

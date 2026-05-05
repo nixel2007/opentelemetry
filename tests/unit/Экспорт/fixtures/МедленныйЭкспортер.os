@@ -1,4 +1,4 @@
-// Fixture: медленный экспортер — засыпает в Экспортировать для тестирования таймаута в ОтелБазовыйПакетныйПроцессор.
+// Fixture: медленный экспортер - засыпает в Экспортировать для тестирования таймаута в ОтелБазовыйПакетныйПроцессор.
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
