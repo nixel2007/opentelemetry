@@ -73,6 +73,7 @@
 //   OTEL_EXPORTER_OTLP_METRICS_CLIENT_KEY -> otel.exporter.otlp.metrics.client.key
 //   OTEL_EXPORTER_OTLP_METRICS_CLIENT_CERTIFICATE -> otel.exporter.otlp.metrics.client.certificate
 
+#Использовать configor
 #Использовать logos
 
 #Область ОписаниеПеременных
