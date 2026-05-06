@@ -264,7 +264,7 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/json  # или grpc
 
 | Переменная окружения | Ключ configor | По умолчанию | Описание |
 |---------------------|--------------|-------------|----------|
-| `OTEL_ENABLED` | `otel.enabled` | `true` | Включить/выключить SDK. При `false` создается NoOp SDK |
+| `OTEL_SDK_DISABLED` | `otel.sdk.disabled` | `false` | Отключить SDK. При `true` создаётся NoOp SDK (без экспортеров, сэмплер `always_off`) |
 | `OTEL_SERVICE_NAME` | `otel.service.name` | - | Имя сервиса (`service.name` в ресурсе) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `otel.exporter.otlp.endpoint` | `http://localhost:4318` (HTTP) / `http://localhost:4317` (gRPC) | Адрес OTLP-коллектора |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `otel.exporter.otlp.protocol` | `http/json` | Протокол: `http/json` или `grpc` |
@@ -306,6 +306,8 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/json  # или grpc
 | Переменная окружения | Ключ configor | По умолчанию | Описание |
 |---------------------|--------------|-------------|----------|
 | `OTEL_PROPAGATORS` | `otel.propagators` | `tracecontext,baggage` | Пропагаторы через запятую: `tracecontext`, `baggage`, `b3`, `b3multi`, `none`. Для `b3`/`b3multi` нужен пакет [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3) |
+
+Полный справочник всех поддерживаемых переменных окружения: **[docs/env-variables.md](docs/env-variables.md)**.
 
 ## Архитектура
 
