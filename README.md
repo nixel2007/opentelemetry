@@ -281,7 +281,7 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/json  # или grpc
 
 | Переменная окружения | Ключ configor | По умолчанию | Описание |
 |---------------------|--------------|-------------|----------|
-| `OTEL_TRACES_SAMPLER` | `otel.traces.sampler` | `always_on` | Стратегия семплирования |
+| `OTEL_TRACES_SAMPLER` | `otel.traces.sampler` | `parentbased_always_on` | Стратегия семплирования |
 | `OTEL_TRACES_SAMPLER_ARG` | `otel.traces.sampler.arg` | `1.0` | Аргумент семплера (доля для `traceidratio`) |
 
 Поддерживаемые семплеры: `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off`, `parentbased_traceidratio`.

@@ -101,7 +101,7 @@
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `OTEL_TRACES_SAMPLER` | `always_on` | Стратегия сэмплирования |
+| `OTEL_TRACES_SAMPLER` | `parentbased_always_on` | Стратегия сэмплирования |
 | `OTEL_TRACES_SAMPLER_ARG` | `1.0` | Аргумент сэмплера (доля для `traceidratio`) |
 
 Поддерживаемые значения `OTEL_TRACES_SAMPLER`:
