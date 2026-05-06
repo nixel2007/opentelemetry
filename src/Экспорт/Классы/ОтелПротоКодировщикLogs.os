@@ -9,6 +9,7 @@
 Перем ВайрVarint;  // 0 - Varint (int32, int64, uint32, uint64, bool, enum)
 Перем ВайрFixed64; // 1 - 64-bit (fixed64, sfixed64, double)
 Перем ВайрLen;     // 2 - Length-delimited (string, bytes, embedded messages, packed repeated)
+Перем ВайрFixed32; // 5 - 32-bit (fixed32, sfixed32, float)
 
 #КонецОбласти
 
@@ -160,11 +161,11 @@
         Писатель.ЗаписатьUInt64Varint(ОтброшенныхАтрибутов);
     КонецЕсли;
 
-    // Field 8: flags
+    // Field 8: flags (fixed32)
     Флаги = ЧисловоеПоле(ЗаписьЛога, "flags");
     Если Флаги > 0 Тогда
-        Писатель.ЗаписатьТег(8, ВайрVarint);
-        Писатель.ЗаписатьUInt64Varint(Флаги);
+        Писатель.ЗаписатьТег(8, ВайрFixed32);
+        Писатель.ЗаписатьFixed32(Флаги);
     КонецЕсли;
 
     // Field 9: trace_id (bytes from hex)
@@ -261,7 +262,8 @@
         КонецЕсли;
         Писатель.ЗаписатьUInt64Varint(БулВальЦел);
     ИначеЕсли Значение.Получить("intValue") <> Неопределено Тогда
-        ЦелЗн = Значение.Получить("intValue");
+        // intValue может быть строкой (JSON int64 without precision loss)
+        ЦелЗн = ЧисловоеПоле(Значение, "intValue");
         Писатель.ЗаписатьТег(3, ВайрVarint);
         Писатель.ЗаписатьInt64Varint(ЦелЗн);
     ИначеЕсли Значение.Получить("doubleValue") <> Неопределено Тогда
@@ -355,3 +357,4 @@
 ВайрVarint  = 0;
 ВайрFixed64 = 1;
 ВайрLen     = 2;
+ВайрFixed32 = 5;
