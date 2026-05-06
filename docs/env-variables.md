@@ -37,7 +37,7 @@
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` (HTTP) / `http://localhost:4317` (gRPC) | Адрес OTLP-коллектора |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/json` | Протокол: `http/json`, `http/protobuf`, `grpc` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Протокол: `http/json`, `http/protobuf`, `grpc` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | - | Заголовки HTTP/gRPC, формат: `key1=value1,key2=value2` |
 | `OTEL_EXPORTER_OTLP_COMPRESSION` | `none` | Сжатие: `gzip`, `none` |
 | `OTEL_EXPORTER_OTLP_TIMEOUT` | `10000` | Таймаут запроса в миллисекундах |

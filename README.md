@@ -267,7 +267,7 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/json  # или grpc
 | `OTEL_SDK_DISABLED` | `otel.sdk.disabled` | `false` | Отключить SDK. При `true` создаётся NoOp SDK (без экспортеров, сэмплер `always_off`) |
 | `OTEL_SERVICE_NAME` | `otel.service.name` | - | Имя сервиса (`service.name` в ресурсе) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `otel.exporter.otlp.endpoint` | `http://localhost:4318` (HTTP) / `http://localhost:4317` (gRPC) | Адрес OTLP-коллектора |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `otel.exporter.otlp.protocol` | `http/json` | Протокол: `http/json` или `grpc` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `otel.exporter.otlp.protocol` | `http/protobuf` | Протокол: `http/protobuf`, `http/json`, `grpc` |
 
 ### Управление экспортерами
 
