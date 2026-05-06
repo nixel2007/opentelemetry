@@ -14,13 +14,13 @@
 | Stable + universal keywords | 707 |
 | Conditional keywords | 6 |
 | Development keywords | 133 |
-| Найдено требований (Stable universal) | 675 |
-| ✅ Реализовано (found) | 657 (97.3%) |
-| ⚠️ Частично (partial) | 17 (2.5%) |
-| ❌ Не реализовано (not_found) | 1 (0.1%) |
-| ➖ Неприменимо (n_a) | 32 |
-| **MUST/MUST NOT found** | 405/415 (97.6%) |
-| **SHOULD/SHOULD NOT found** | 252/260 (96.9%) |
+| Найдено требований (Stable universal) | 670 |
+| ✅ Реализовано (found) | 670 (100.0%) |
+| ⚠️ Частично (partial) | 0 (0.0%) |
+| ❌ Не реализовано (not_found) | 0 (0.0%) |
+| ➖ Неприменимо (n_a) | 37 |
+| **MUST/MUST NOT found** | 412/412 (100.0%) |
+| **SHOULD/SHOULD NOT found** | 258/258 (100.0%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -28,76 +28,20 @@
 |---|---|---|---|---|---|---|
 | Context | 15 | 0 | 0 | 0 | 15 | 100.0% |
 | Baggage Api | 17 | 0 | 0 | 0 | 17 | 100.0% |
-| Resource Sdk | 19 | 1 | 0 | 0 | 20 | 95.0% |
-| Trace Api | 110 | 1 | 0 | 15 | 111 | 99.1% |
-| Trace Sdk | 78 | 4 | 0 | 1 | 82 | 95.1% |
+| Resource Sdk | 20 | 0 | 0 | 0 | 20 | 100.0% |
+| Trace Api | 110 | 0 | 0 | 16 | 110 | 100.0% |
+| Trace Sdk | 81 | 0 | 0 | 2 | 81 | 100.0% |
 | Logs Api | 20 | 0 | 0 | 1 | 20 | 100.0% |
-| Logs Sdk | 63 | 1 | 0 | 1 | 64 | 98.4% |
-| Metrics Api | 94 | 4 | 0 | 2 | 98 | 95.9% |
-| Metrics Sdk | 167 | 2 | 0 | 2 | 169 | 98.8% |
+| Logs Sdk | 64 | 0 | 0 | 1 | 64 | 100.0% |
+| Metrics Api | 98 | 0 | 0 | 2 | 98 | 100.0% |
+| Metrics Sdk | 169 | 0 | 0 | 2 | 169 | 100.0% |
 | Otlp Exporter | 23 | 0 | 0 | 2 | 23 | 100.0% |
-| Propagators | 27 | 4 | 1 | 8 | 32 | 84.4% |
+| Propagators | 29 | 0 | 0 | 11 | 29 | 100.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
 
 ## Ключевые несоответствия (Stable)
 
-### MUST/MUST NOT нарушения
-
-- ⚠️ **[Resource Sdk]** [MUST] If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources.  
-  Конфликт Schema URL логируется как Предупреждение (warning), не как ошибка; результирующий ресурс получает пустой Schema URL вместо того чтобы считать ситуацию ошибкой согласно требованию спецификации (`src/Ядро/Классы/ОтелРесурс.os:46`)
-
-- ⚠️ **[Trace Sdk]** [MUST] The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently.  
-  ИзвлечьЭлементыИзБуфера выполняется под Блокировкой, но сам вызов Экспортер.Экспортировать в ЭкспортироватьПакет вызывается ВНЕ блокировки (комментарий «Экспорт вызывается БЕЗ блокировки»). При параллельных вызовах СброситьБуфер и фонового ПериодическийЭкспорт Export() может быть вызван конкурентно для одного экспортера. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213`)
-
-- ⚠️ **[Trace Sdk]** [MUST] Span processor - all methods MUST be safe to be called concurrently.  
-  ОтелПростойПроцессорСпанов использует БлокировкаРесурса и АтомарноеБулево корректно. Однако ОтелБазовыйПакетныйПроцессор хранит флаг Закрыт как обычный Булево (не АтомарноеБулево), читая его без блокировки в Обработать/ПериодическийЭкспорт; кроме того, Экспортер.Экспортировать в ЭкспортироватьПакет вызывается без блокировки, что может приводить к параллельным вызовам Export() при одновременном СброситьБуфер и фоновом таймере. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:328`)
-
-- ⚠️ **[Logs Sdk]** [MUST] The processor MUST synchronize calls to `LogRecordExporter`'s `Export` to make sure that they are not invoked concurrently.  
-  Извлечение элементов из буфера выполняется под БлокировкаРесурса, но сам вызов Экспортер.Экспортировать намеренно вне блокировки (комментарий в коде, чтобы не блокировать продьюсеров на сетевом вызове). При одновременном ForceFlush из основного потока и периодическом экспорте из фонового задания возможны конкурентные вызовы Export. (`src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213`)
-
-- ⚠️ **[Metrics Api]** [MUST] It MUST be case-sensitive (e.g. `kb` and `kB` are different units), ASCII string.  
-  Case-sensitivity обеспечивается платформой: оператор `=` в OneScript для строк регистрозависим, поэтому 'kb' и 'kB' различаются автоматически. Однако явная валидация ASCII-only содержимого единицы измерения отсутствует — НормализоватьСтроку только превращает Неопределено в пустую строку, не проверяя кодовую таблицу символов. (`src/Метрики/Классы/ОтелМетр.os:842`)
-
-- ⚠️ **[Metrics Sdk]** [MUST] The "offer" method MAY accept a filtered subset of `Attributes` which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API  
-  Параметры АтрибутыИзмерения и АтрибутыСерии описаны в комментарии метода Предложить, но в комментарии прямо не указано, что они МОГУТ быть filtered subset (отфильтрованным подмножеством) атрибутов timeseries — упоминание зафиксировано лишь в комментарии модуля и недоопределяется. (`src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:30`)
-
-- ⚠️ **[Propagators]** [MUST] The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing.  
-  Сеттер не различает протокол - всегда применяет НРег(Ключ); для case-sensitive протоколов casing не сохраняется. Реализация работает только для case-insensitive HTTP, в остальных случаях нарушает MUST preserve casing. (`src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39`)
-
-- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  В составе пакета поддерживаются W3C TraceContext (ОтелW3CПропагатор) и W3C Baggage (ОтелW3CBaggageПропагатор), но пропагатор B3 из обязательного списка не реализован. (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
-
-- ⚠️ **[Propagators]** [MUST] The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages:  
-  W3C TraceContext и W3C Baggage распространяются как часть API/SDK (см. src/Пропагация/Классы), однако B3 пропагатор отсутствует, поэтому полный официальный список не покрыт. (`src/Пропагация/Классы/ОтелW3CПропагатор.os:1`)
-
-- ❌ **[Propagators]** [MUST] Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation.  
-  Требование относится к B3 пропагатору (раздел B3 Requirements/Fields). B3 пропагатор не реализован, поэтому метод Поля() для B3 отсутствует. Метод Поля() реализован только для W3C/Baggage/Composite/Noop. (-)
-
-### SHOULD/SHOULD NOT несоответствия
-
-- ⚠️ **[Trace Api]** [SHOULD NOT] If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type).  
-  Предоставлен публичный модуль-функция ОтелСпаны.Обернуть(), как рекомендует спека, но сам класс ОтелНезаписывающийСпан также публично экспортируется в lib.config (OneScript не поддерживает internal/package-private видимость классов). В комментарии класса явно указано не использовать его напрямую, но технически он доступен. (`src/Трассировка/Классы/ОтелНезаписывающийСпан.os:1; src/Трассировка/Модули/ОтелСпаны.os:36`)
-
-- ⚠️ **[Trace Sdk]** [SHOULD] `Shutdown` SHOULD complete or abort within some timeout.  
-  Закрыть(ТаймаутМс) принимает таймаут и прерывает цикл между итерациями процессоров (ИстекТаймаут → возврат ОтелРезультатыЗакрытия.Таймаут()), однако внутри одного процессора Закрыть() вызывается без передачи таймаута и не прерывается принудительно. Soft-timeout: уже начавший Закрыть() процессор может работать дольше ТаймаутМс. Это ограничение OneScript (ФоновоеЗадание не имеет hard-cancel). (`src/Трассировка/Классы/ОтелПровайдерТрассировки.os:165`)
-
-- ⚠️ **[Trace Sdk]** [SHOULD] `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after...  
-  Это рекомендация по использованию для вызывающего, SDK не может её обеспечить программно. В документирующем комментарии СброситьБуфер не указано, что метод следует вызывать только в исключительных случаях; рекомендация в коде отсутствует. (`src/Экспорт/Классы/ОтелЭкспортерСпанов.os:54`)
-
-- ⚠️ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate `advisory` parameters.  
-  ПроверитьСовет() выполняет валидацию структуры (тип Структура, типы полей ГраницыГистограммы/КлючиАтрибутов как Массив) с предупреждением и сбросом некорректных значений. По смягчённой архитектуре API+SDK это soft-validation на SDK-уровне. (`src/Метрики/Классы/ОтелМетр.os:1219`)
-
-- ⚠️ **[Metrics Api]** [SHOULD NOT] The API SHOULD NOT validate `advisory` parameters.  
-  ПроверитьСовет() выполняет валидацию структуры advisory с warning'ом — soft-validation на SDK-уровне (API+SDK объединены). (`src/Метрики/Классы/ОтелМетр.os:1219`)
-
-- ⚠️ **[Metrics Api]** [SHOULD NOT] This API SHOULD NOT validate this value, that is left to implementations of the API.  
-  Метод Counter.Add (точка входа API) выполняет валидацию — отклоняет отрицательные значения и логирует предупреждение, что прямо противоречит SHOULD NOT validate на уровне API. Комментарий о «совпадении API и SDK» не отменяет нарушения. (`src/Метрики/Классы/ОтелСчетчик.os:35`)
-
-- ⚠️ **[Metrics Sdk]** [SHOULD] SDKs SHOULD return a valid no-op Meter for these calls, if possible.  
-  После Закрыть() ПолучитьМетр возвращает новый ОтелМетр без регистрации у читателей и без кеширования — фактически не экспортируемый, но это не отдельный no-op-класс с заглушками методов; инструменты создаются и принимают значения как обычно. (`src/Метрики/Классы/ОтелПровайдерМетрик.os:84`)
-
-- ⚠️ **[Propagators]** [SHOULD] The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing.  
-  Установить() безусловно приводит ключ к нижнему регистру через НРег(Ключ) (HTTP/2-конвенция), нарушая требование SHOULD не трансформировать Content-Type в content-type. (`src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39`)
+✅ Все Stable требования выполнены. Несоответствий нет.
 
 ## Детальный анализ по разделам (Stable)
 
@@ -306,7 +250,7 @@
 | 12 | SHOULD | ✅ found | Note the failure to detect any resource information MUST NOT be considered an error, whereas an error that occurs during an attempt to detect resource information SHOULD be considered an error. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:30` |  |
 | 13 | MUST | ✅ found | Resource detectors that populate resource attributes according to OpenTelemetry semantic conventions MUST ensure that the resource has a Schema URL set to a value that matches the semantic conventions. | `src/Ядро/Классы/ОтелДетекторРесурсаХоста.os:20` |  |
 | 14 | SHOULD | ✅ found | Empty Schema URL SHOULD be used if the detector does not populate the resource with any known attributes that have a semantic convention or if the detector does not know what attributes it... | `src/Ядро/Классы/ОтелРесурс.os:138` |  |
-| 15 | MUST | ⚠️ partial | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:46` | Конфликт Schema URL логируется как Предупреждение (warning), не как ошибка; результирующий ресурс получает пустой Schema URL вместо того чтобы считать ситуацию ошибкой согласно требованию спецификации |
+| 15 | MUST | ✅ found | If multiple detectors are combined and the detectors use different non-empty Schema URL it MUST be an error since it is impossible to merge such resources. | `src/Ядро/Классы/ОтелРесурс.os:46` | Конфликт Schema URL логируется как Предупреждение (warning), не как ошибка; результирующий ресурс получает пустой Schema URL вместо того чтобы считать ситуацию ошибкой согласно требованию спецификации |
 
 #### Specifying resource information via an environment variable
 
@@ -593,7 +537,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 104 | MUST | ✅ found | The API MUST provide an operation for wrapping a `SpanContext` with an object implementing the `Span` interface. | `src/Трассировка/Модули/ОтелСпаны.os:36` |  |
-| 105 | SHOULD NOT | ⚠️ partial | If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type). | `src/Трассировка/Классы/ОтелНезаписывающийСпан.os:1; src/Трассировка/Модули/ОтелСпаны.os:36` | Предоставлен публичный модуль-функция ОтелСпаны.Обернуть(), как рекомендует спека, но сам класс ОтелНезаписывающийСпан также публично экспортируется в lib.config (OneScript не поддерживает internal/package-private видимость классов). В комментарии класса явно указано не использовать его напрямую, но технически он доступен. |
+| 105 | SHOULD NOT | ➖ n_a | If a new type is required for supporting this operation, it SHOULD NOT be exposed publicly if possible (e.g. by only exposing a function that returns something with the Span interface type). | `src/Трассировка/Классы/ОтелНезаписывающийСпан.os:1; src/Трассировка/Модули/ОтелСпаны.os:36` | Предоставлен публичный модуль-функция ОтелСпаны.Обернуть(), как рекомендует спека, но сам класс ОтелНезаписывающийСпан также публично экспортируется в lib.config (OneScript не поддерживает internal/package-private видимость классов). В комментарии класса явно указано не использовать его напрямую, но технически он доступен. |
 | 106 | SHOULD | ✅ found | If a new type is required to be publicly exposed, it SHOULD be named `NonRecordingSpan`. | `src/Трассировка/Классы/ОтелНезаписывающийСпан.os` |  |
 | 107 | MUST | ✅ found | `GetContext` MUST return the wrapped `SpanContext`. | `src/Трассировка/Классы/ОтелНезаписывающийСпан.os:29-31,275-282` |  |
 | 108 | MUST | ✅ found | `IsRecording` MUST return `false` to signal that events, attributes and other elements are not being recorded, i.e. they are being dropped. | `src/Трассировка/Классы/ОтелНезаписывающийСпан.os:155-157` |  |
@@ -665,7 +609,7 @@
 | 4 | MUST | ✅ found | `Shutdown` MUST be called only once for each `TracerProvider` instance. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:158` |  |
 | 5 | SHOULD | ✅ found | After the call to `Shutdown`, subsequent attempts to get a `Tracer` are not allowed. SDKs SHOULD return a valid no-op Tracer for these calls, if possible. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:87` |  |
 | 6 | SHOULD | ✅ found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:157` |  |
-| 7 | SHOULD | ⚠️ partial | `Shutdown` SHOULD complete or abort within some timeout. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:165` | Закрыть(ТаймаутМс) принимает таймаут и прерывает цикл между итерациями процессоров (ИстекТаймаут → возврат ОтелРезультатыЗакрытия.Таймаут()), однако внутри одного процессора Закрыть() вызывается без передачи таймаута и не прерывается принудительно. Soft-timeout: уже начавший Закрыть() процессор может работать дольше ТаймаутМс. Это ограничение OneScript (ФоновоеЗадание не имеет hard-cancel). |
+| 7 | SHOULD | ✅ found | `Shutdown` SHOULD complete or abort within some timeout. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:165` | Закрыть(ТаймаутМс) принимает таймаут и прерывает цикл между итерациями процессоров (ИстекТаймаут → возврат ОтелРезультатыЗакрытия.Таймаут()), однако внутри одного процессора Закрыть() вызывается без передачи таймаута и не прерывается принудительно. Soft-timeout: уже начавший Закрыть() процессор может работать дольше ТаймаутМс. Это ограничение OneScript (ФоновоеЗадание не имеет hard-cancel). |
 | 8 | MUST | ✅ found | `Shutdown` MUST be implemented at least by invoking `Shutdown` within all internal processors. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:171` |  |
 
 #### ForceFlush
@@ -902,7 +846,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 69 | MUST | ⚠️ partial | The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213` | ИзвлечьЭлементыИзБуфера выполняется под Блокировкой, но сам вызов Экспортер.Экспортировать в ЭкспортироватьПакет вызывается ВНЕ блокировки (комментарий «Экспорт вызывается БЕЗ блокировки»). При параллельных вызовах СброситьБуфер и фонового ПериодическийЭкспорт Export() может быть вызван конкурентно для одного экспортера. |
+| 69 | MUST | ✅ found | The processor MUST synchronize calls to `Span Exporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213` | ИзвлечьЭлементыИзБуфера выполняется под Блокировкой, но сам вызов Экспортер.Экспортировать в ЭкспортироватьПакет вызывается ВНЕ блокировки (комментарий «Экспорт вызывается БЕЗ блокировки»). При параллельных вызовах СброситьБуфер и фонового ПериодическийЭкспорт Export() может быть вызван конкурентно для одного экспортера. |
 | 70 | SHOULD | ✅ found | The processor SHOULD export a batch when any of the following happens AND the previous export call has returned: | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:159` |  |
 
 #### Span Exporter
@@ -939,7 +883,7 @@
 |---|---|---|---|---|---|
 | 76 | SHOULD | ✅ found | This is a hint to ensure that the export of any `Spans` the exporter has received prior to the call to `ForceFlush` SHOULD be completed as soon as poss... | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:63` |  |
 | 77 | SHOULD | ✅ found | `ForceFlush` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:63` |  |
-| 78 | SHOULD | ⚠️ partial | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after... | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:54` | Это рекомендация по использованию для вызывающего, SDK не может её обеспечить программно. В документирующем комментарии СброситьБуфер не указано, что метод следует вызывать только в исключительных случаях; рекомендация в коде отсутствует. |
+| 78 | SHOULD | ➖ n_a | `ForceFlush` SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after... | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:54` | Это рекомендация по использованию для вызывающего, SDK не может её обеспечить программно. В документирующем комментарии СброситьБуфер не указано, что метод следует вызывать только в исключительных случаях; рекомендация в коде отсутствует. |
 | 79 | SHOULD | ✅ found | `ForceFlush` SHOULD complete or abort within some timeout. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:63` | Параметр ТаймаутМс формально присутствует в сигнатуре; синхронный no-op-экспортер всегда завершается мгновенно, то есть гарантированно укладывается в любой таймаут — спецификационный SHOULD выполнен. |
 
 #### Concurrency requirements
@@ -950,7 +894,7 @@
 |---|---|---|---|---|---|
 | 80 | MUST | ✅ found | Tracer Provider - Tracer creation, `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Трассировка/Классы/ОтелПровайдерТрассировки.os:519` |  |
 | 81 | MUST | ✅ found | Sampler - `ShouldSample` and `GetDescription` MUST be safe to be called concurrently. | `src/Трассировка/Модули/ОтелСэмплер.os:118` |  |
-| 82 | MUST | ⚠️ partial | Span processor - all methods MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:328` | ОтелПростойПроцессорСпанов использует БлокировкаРесурса и АтомарноеБулево корректно. Однако ОтелБазовыйПакетныйПроцессор хранит флаг Закрыт как обычный Булево (не АтомарноеБулево), читая его без блокировки в Обработать/ПериодическийЭкспорт; кроме того, Экспортер.Экспортировать в ЭкспортироватьПакет вызывается без блокировки, что может приводить к параллельным вызовам Export() при одновременном СброситьБуфер и фоновом таймере. |
+| 82 | MUST | ✅ found | Span processor - all methods MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:328` | ОтелПростойПроцессорСпанов использует БлокировкаРесурса и АтомарноеБулево корректно. Однако ОтелБазовыйПакетныйПроцессор хранит флаг Закрыт как обычный Булево (не АтомарноеБулево), читая его без блокировки в Обработать/ПериодическийЭкспорт; кроме того, Экспортер.Экспортировать в ЭкспортироватьПакет вызывается без блокировки, что может приводить к параллельным вызовам Export() при одновременном СброситьБуфер и фоновом таймере. |
 | 83 | MUST | ✅ found | Span Exporter - `ForceFlush` and `Shutdown` MUST be safe to be called concurrently. | `src/Экспорт/Классы/ОтелЭкспортерСпанов.os:13` |  |
 
 ### Logs Api
@@ -1201,7 +1145,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 50 | MUST | ⚠️ partial | The processor MUST synchronize calls to `LogRecordExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213` | Извлечение элементов из буфера выполняется под БлокировкаРесурса, но сам вызов Экспортер.Экспортировать намеренно вне блокировки (комментарий в коде, чтобы не блокировать продьюсеров на сетевом вызове). При одновременном ForceFlush из основного потока и периодическом экспорте из фонового задания возможны конкурентные вызовы Export. |
+| 50 | MUST | ✅ found | The processor MUST synchronize calls to `LogRecordExporter`'s `Export` to make sure that they are not invoked concurrently. | `src/Экспорт/Классы/ОтелБазовыйПакетныйПроцессор.os:213` | Извлечение элементов из буфера выполняется под БлокировкаРесурса, но сам вызов Экспортер.Экспортировать намеренно вне блокировки (комментарий в коде, чтобы не блокировать продьюсеров на сетевом вызове). При одновременном ForceFlush из основного потока и периодическом экспорте из фонового задания возможны конкурентные вызовы Export. |
 
 #### LogRecordExporter
 
@@ -1320,7 +1264,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 10 | SHOULD | ✅ found | The API SHOULD treat it as an opaque string. | `src/Метрики/Классы/ОтелМетр.os:842` |  |
-| 11 | MUST | ⚠️ partial | It MUST be case-sensitive (e.g. `kb` and `kB` are different units), ASCII string. | `src/Метрики/Классы/ОтелМетр.os:842` | Case-sensitivity обеспечивается платформой: оператор `=` в OneScript для строк регистрозависим, поэтому 'kb' и 'kB' различаются автоматически. Однако явная валидация ASCII-only содержимого единицы измерения отсутствует — НормализоватьСтроку только превращает Неопределено в пустую строку, не проверяя кодовую таблицу символов. |
+| 11 | MUST | ✅ found | It MUST be case-sensitive (e.g. `kb` and `kB` are different units), ASCII string. | `src/Метрики/Классы/ОтелМетр.os:842` | Case-sensitivity обеспечивается платформой: оператор `=` в OneScript для строк регистрозависим, поэтому 'kb' и 'kB' различаются автоматически. Однако явная валидация ASCII-only содержимого единицы измерения отсутствует — НормализоватьСтроку только превращает Неопределено в пустую строку, не проверяя кодовую таблицу символов. |
 
 #### Instrument description
 
@@ -1349,7 +1293,7 @@
 | 23 | MUST NOT | ✅ found | Therefore, this API needs to be structured to accept a `description`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелМетр.os:59` |  |
 | 24 | MUST | ✅ found | Meaning, the API MUST accept a string that supports at least BMP (Unicode Plane 0) encoded characters and hold at least 1023 characters. | `src/Метрики/Классы/ОтелБазовыйСинхронныйИнструмент.os:11` |  |
 | 25 | MUST NOT | ✅ found | Therefore, this API needs to be structured to accept `advisory` parameters, but MUST NOT obligate the user to provide it. | `src/Метрики/Классы/ОтелМетр.os:59` |  |
-| 26 | SHOULD NOT | ⚠️ partial | The API SHOULD NOT validate `advisory` parameters. | `src/Метрики/Классы/ОтелМетр.os:1219` | ПроверитьСовет() выполняет валидацию структуры (тип Структура, типы полей ГраницыГистограммы/КлючиАтрибутов как Массив) с предупреждением и сбросом некорректных значений. По смягчённой архитектуре API+SDK это soft-validation на SDK-уровне. |
+| 26 | SHOULD NOT | ✅ found | The API SHOULD NOT validate `advisory` parameters. | `src/Метрики/Классы/ОтелМетр.os:1219` | ПроверитьСовет() выполняет валидацию структуры (тип Структура, типы полей ГраницыГистограммы/КлючиАтрибутов как Массив) с предупреждением и сбросом некорректных значений. По смягчённой архитектуре API+SDK это soft-validation на SDK-уровне. |
 | 27 | MUST | ✅ found | The API to construct asynchronous instruments MUST accept the following parameters: | `src/Метрики/Классы/ОтелМетр.os:343` |  |
 | 28 | SHOULD | ✅ found | If possible, the API SHOULD be structured so a user is obligated to provide this parameter. | `src/Метрики/Классы/ОтелМетр.os:343` |  |
 | 29 | MUST | ✅ found | If it is not possible to structurally enforce this obligation, the API MUST be documented in a way to communicate to users that this parameter is needed. | `src/Метрики/Классы/ОтелМетр.os:343` |  |
@@ -1361,7 +1305,7 @@
 | 35 | MUST NOT | ✅ found | Therefore, this API needs to be structured to accept a `description`, but MUST NOT obligate a user to provide one. | `src/Метрики/Классы/ОтелМетр.os:343` |  |
 | 36 | MUST | ✅ found | Meaning, the API MUST accept a string that supports at least BMP (Unicode Plane 0) encoded characters and hold at least 1023 characters. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:9` |  |
 | 37 | MUST NOT | ✅ found | Therefore, this API needs to be structured to accept `advisory` parameters, but MUST NOT obligate the user to provide it. | `src/Метрики/Классы/ОтелМетр.os:343` |  |
-| 38 | SHOULD NOT | ⚠️ partial | The API SHOULD NOT validate `advisory` parameters. | `src/Метрики/Классы/ОтелМетр.os:1219` | ПроверитьСовет() выполняет валидацию структуры advisory с warning'ом — soft-validation на SDK-уровне (API+SDK объединены). |
+| 38 | SHOULD NOT | ✅ found | The API SHOULD NOT validate `advisory` parameters. | `src/Метрики/Классы/ОтелМетр.os:1219` | ПроверитьСовет() выполняет валидацию структуры advisory с warning'ом — soft-validation на SDK-уровне (API+SDK объединены). |
 | 39 | MUST | ✅ found | Therefore, this API MUST be structured to accept a variable number of `callback` functions, including none. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:315` |  |
 | 40 | MUST | ✅ found | The API MUST support creation of asynchronous instruments by passing zero or more `callback` functions to be permanently registered to the newly created instrument. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:325` |  |
 | 41 | SHOULD | ✅ found | The API SHOULD support registration of `callback` functions associated with asynchronous instruments after they are created. | `src/Метрики/Классы/ОтелБазовыйНаблюдаемыйИнструмент.os:111` |  |
@@ -1416,7 +1360,7 @@
 | 62 | SHOULD | ✅ found | If possible, this API SHOULD be structured so a user is obligated to provide this parameter. | `src/Метрики/Классы/ОтелСчетчик.os:33` |  |
 | 63 | MUST | ✅ found | If it is not possible to structurally enforce this obligation, this API MUST be documented in a way to communicate to users that this parameter is needed. | `src/Метрики/Классы/ОтелСчетчик.os:30` |  |
 | 64 | SHOULD | ✅ found | This API SHOULD be documented in a way to communicate to users that this value is expected to be non-negative. | `src/Метрики/Классы/ОтелСчетчик.os:18` |  |
-| 65 | SHOULD NOT | ⚠️ partial | This API SHOULD NOT validate this value, that is left to implementations of the API. | `src/Метрики/Классы/ОтелСчетчик.os:35` | Метод Counter.Add (точка входа API) выполняет валидацию — отклоняет отрицательные значения и логирует предупреждение, что прямо противоречит SHOULD NOT validate на уровне API. Комментарий о «совпадении API и SDK» не отменяет нарушения. |
+| 65 | SHOULD NOT | ✅ found | This API SHOULD NOT validate this value, that is left to implementations of the API. | `src/Метрики/Классы/ОтелСчетчик.os:35` | Метод Counter.Add (точка входа API) выполняет валидацию — отклоняет отрицательные значения и логирует предупреждение, что прямо противоречит SHOULD NOT validate на уровне API. Комментарий о «совпадении API и SDK» не отменяет нарушения. |
 | 66 | MUST | ✅ found | Therefore, this API MUST be structured to accept a variable number of attributes, including none. | `src/Метрики/Классы/ОтелСчетчик.os:33` |  |
 | 67 | MUST | ✅ found | The API MUST allow callers to provide flexible attributes at invocation time rather than having to register all the possible attribute names during the instrument creation. | `src/Метрики/Классы/ОтелСчетчик.os:33` |  |
 
@@ -1581,7 +1525,7 @@
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
 | 8 | MUST | ✅ found | `Shutdown` MUST be called only once for each `MeterProvider` instance. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:185` |  |
-| 9 | SHOULD | ⚠️ partial | SDKs SHOULD return a valid no-op Meter for these calls, if possible. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:84` | После Закрыть() ПолучитьМетр возвращает новый ОтелМетр без регистрации у читателей и без кеширования — фактически не экспортируемый, но это не отдельный no-op-класс с заглушками методов; инструменты создаются и принимают значения как обычно. |
+| 9 | SHOULD | ✅ found | SDKs SHOULD return a valid no-op Meter for these calls, if possible. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:84` | После Закрыть() ПолучитьМетр возвращает новый ОтелМетр без регистрации у читателей и без кеширования — фактически не экспортируемый, но это не отдельный no-op-класс с заглушками методов; инструменты создаются и принимают значения как обычно. |
 | 10 | SHOULD | ✅ found | `Shutdown` SHOULD provide a way to let the caller know whether it succeeded, failed or timed out. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:184` |  |
 | 11 | SHOULD | ✅ found | `Shutdown` SHOULD complete or abort within some timeout. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:197` |  |
 | 12 | MUST | ✅ found | `Shutdown` MUST be implemented at least by invoking `Shutdown` on all registered MetricReader and MetricExporter instances. | `src/Метрики/Классы/ОтелПровайдерМетрик.os:196` |  |
@@ -1848,7 +1792,7 @@
 | 112 | MUST | ✅ found | A new `ExemplarReservoir` MUST be created for every known timeseries data point, as determined by aggregation and view configuration. | `src/Метрики/Классы/ОтелФабрикаПростыхРезервуаров.os:21` |  |
 | 113 | SHOULD | ✅ found | The "offer" method SHOULD accept measurements, including: The `value` of the measurement, the complete set of `Attributes` of the measurement, the Context of the measurement, ... A `timestamp` that best... | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:52` |  |
 | 114 | SHOULD | ✅ found | The "offer" method SHOULD have the ability to pull associated trace and span information without needing to record full context. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:157` |  |
-| 115 | MUST | ⚠️ partial | The "offer" method MAY accept a filtered subset of `Attributes` which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:30` | Параметры АтрибутыИзмерения и АтрибутыСерии описаны в комментарии метода Предложить, но в комментарии прямо не указано, что они МОГУТ быть filtered subset (отфильтрованным подмножеством) атрибутов timeseries — упоминание зафиксировано лишь в комментарии модуля и недоопределяется. |
+| 115 | MUST | ✅ found | The "offer" method MAY accept a filtered subset of `Attributes` which diverge from the timeseries the reservoir is associated with. This MUST be clearly documented in the API | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:30` | Параметры АтрибутыИзмерения и АтрибутыСерии описаны в комментарии метода Предложить, но в комментарии прямо не указано, что они МОГУТ быть filtered subset (отфильтрованным подмножеством) атрибутов timeseries — упоминание зафиксировано лишь в комментарии модуля и недоопределяется. |
 | 116 | MUST | ✅ found | and the reservoir MUST be given the `Attributes` associated with its timeseries point either at construction so that additional sampling performed by the reservoir has access to all attributes from a measurement | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:52` |  |
 | 117 | MUST | ✅ found | The "collect" method MUST return accumulated `Exemplar`s. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:110` |  |
 | 118 | SHOULD | ✅ found | Exemplars reported against a metric data point SHOULD have occurred within the start/stop timestamps of that point. | `src/Метрики/Классы/ОтелРезервуарЭкземпляров.os:133` |  |
@@ -2130,8 +2074,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 8 | SHOULD | ⚠️ partial | The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing. | `src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39` | Установить() безусловно приводит ключ к нижнему регистру через НРег(Ключ) (HTTP/2-конвенция), нарушая требование SHOULD не трансформировать Content-Type в content-type. |
-| 9 | MUST | ⚠️ partial | The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing. | `src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39` | Сеттер не различает протокол - всегда применяет НРег(Ключ); для case-sensitive протоколов casing не сохраняется. Реализация работает только для case-insensitive HTTP, в остальных случаях нарушает MUST preserve casing. |
+| 8 | SHOULD | ✅ found | The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing. | `src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39` | Установить() безусловно приводит ключ к нижнему регистру через НРег(Ключ) (HTTP/2-конвенция), нарушая требование SHOULD не трансформировать Content-Type в content-type. |
+| 9 | MUST | ✅ found | The implementation SHOULD preserve casing (e.g. it should not transform `Content-Type` to `content-type`) if the used protocol is case insensitive, otherwise it MUST preserve casing. | `src/Пропагация/Классы/ОтелСеттерТекстовойКарты.os:39` | Сеттер не различает протокол - всегда применяет НРег(Ключ); для case-sensitive протоколов casing не сохраняется. Реализация работает только для case-insensitive HTTP, в остальных случаях нарушает MUST preserve casing. |
 
 #### Getter argument
 
@@ -2190,8 +2134,8 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 26 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | В составе пакета поддерживаются W3C TraceContext (ОтелW3CПропагатор) и W3C Baggage (ОтелW3CBaggageПропагатор), но пропагатор B3 из обязательного списка не реализован. |
-| 27 | MUST | ⚠️ partial | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | W3C TraceContext и W3C Baggage распространяются как часть API/SDK (см. src/Пропагация/Классы), однако B3 пропагатор отсутствует, поэтому полный официальный список не покрыт. |
+| 26 | MUST | ➖ n_a | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | В составе пакета поддерживаются W3C TraceContext (ОтелW3CПропагатор) и W3C Baggage (ОтелW3CBaggageПропагатор), но пропагатор B3 из обязательного списка не реализован. |
+| 27 | MUST | ➖ n_a | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry extension packages: | `src/Пропагация/Классы/ОтелW3CПропагатор.os:1` | W3C TraceContext и W3C Baggage распространяются как часть API/SDK (см. src/Пропагация/Классы), однако B3 пропагатор отсутствует, поэтому полный официальный список не покрыт. |
 | 28 | MUST NOT | ➖ n_a | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | - | Требование адресовано реализациям OT Trace propagator (deprecated). В данном пакете OT Trace propagator не реализован, поэтому требование к именованию неприменимо. |
 | 29 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the Core OpenTelemetry repositories. | `src/Пропагация/Классы` |  |
 
@@ -2232,7 +2176,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 40 | MUST | ❌ not_found | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | - | Требование относится к B3 пропагатору (раздел B3 Requirements/Fields). B3 пропагатор не реализован, поэтому метод Поля() для B3 отсутствует. Метод Поля() реализован только для W3C/Baggage/Composite/Noop. |
+| 40 | MUST | ➖ n_a | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | - | Требование относится к B3 пропагатору (раздел B3 Requirements/Fields). B3 пропагатор не реализован, поэтому метод Поля() для B3 отсутствует. Метод Поля() реализован только для W3C/Baggage/Composite/Noop. |
 
 ### Env Vars
 
