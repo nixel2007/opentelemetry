@@ -4,7 +4,6 @@
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
 // BSLLS:DuplicateStringLiteral-off
-// BSLLS:CommentedCode-off
 #Использовать "../../.."
 #Использовать asserts
 #Использовать json
@@ -176,7 +175,9 @@
 
 &Тест
 Процедура ПоляSum_ВременнаяАгрегация() Экспорт
+    // BSLLS:CommentedCode-off
     // aggregationTemporality: 1 = DELTA, 2 = CUMULATIVE
+    // BSLLS:CommentedCode-on
     ТочкаДанных = Новый Соответствие();
     ТочкаДанных.Вставить("timeUnixNano", 1000000000);
     ТочкаДанных.Вставить("asInt", "1");
@@ -338,7 +339,9 @@
     // explicitBounds
     Ожидаем.Что(ТочкаД["explicit_bounds"][0]).Равно(10.0);
     Ожидаем.Что(ТочкаД["explicit_bounds"][1]).Равно(100.0);
+    // BSLLS:CommentedCode-off
     // aggregationTemporality = CUMULATIVE
+    // BSLLS:CommentedCode-on
     Ожидаем.Что(М["histogram"]["aggregation_temporality"]).Равно("AGGREGATION_TEMPORALITY_CUMULATIVE");
 КонецПроцедуры
 
