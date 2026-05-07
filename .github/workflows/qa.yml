@@ -9,14 +9,109 @@ permissions:
   contents: read
 
 jobs:
-  qa:
-    uses: autumn-library/workflows/.github/workflows/sonar.yml@copilot/add-recursive-flag-for-tests
-    with:
-      github_repository: ${{ github.repository }}
-      oscript_version: 2.0.0
-      test_engine: oneunit
-      test_recursive: true
-      coveralls: true
-      sonarqube: true
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  test:
+    runs-on: ubuntu-latest
+    env:
+      LANG: ru_RU.UTF-8
+      LC_ALL: ru_RU.UTF-8
+    steps:
+      - name: Актуализация
+        uses: actions/checkout@v4
+
+      - name: Установка OneScript
+        uses: otymko/setup-onescript@v1.5.1
+        with:
+          version: 2.0.0
+
+      - name: Установка зависимостей
+        run: |
+          opm install opm
+          opm install -l --dev
+          opm install -l oneunit
+
+      - name: Установка Python-зависимостей
+        run: pip install protobuf
+
+      - name: Тестирование
+        run: >
+          ./oscript_modules/bin/oneunit e -d tests --recursive
+          --genericExecution out/genericExecution.xml
+          --genericCoverage out/genericCoverage.xml
+          --cobertura out/coverage.xml
+
+      - name: Сохранение артефактов покрытия
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            out/*overage*.xml
+            out/genericExecution.xml
+          if-no-files-found: ignore
+
+  sonar:
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: >
+      github.repository == 'nixel2007/opentelemetry' &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.event.repository.full_name)
+    steps:
+      - name: Актуализация
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Вычисление имени ветки
+        uses: nelonoel/branch-name@v1.0.1
+
+      - name: Скачивание артефактов
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: out
+
+      - name: Извлечение версии пакета
+        shell: bash
+        id: extract_version
+        run: echo "version=$(cat packagedef | grep '.Версия(' | sed 's|[^\"]*\"||' | sed -r 's/\".+//')" >> $GITHUB_OUTPUT
+
+      - name: Настройка sonar-scanner
+        uses: warchant/setup-sonar-scanner@v9
+
+      - name: Анализ в SonarQube (branch)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: sonar-scanner
+          -Dsonar.host.url=https://sonar.openbsl.ru
+          -Dsonar.branch.name=${{ env.BRANCH_NAME }}
+          -Dsonar.projectVersion=${{ steps.extract_version.outputs.version }}
+
+      - name: Анализ в SonarQube (pull-request)
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: sonar-scanner
+          -Dsonar.host.url=https://sonar.openbsl.ru
+          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+          -Dsonar.pullrequest.branch=${{ github.event.pull_request.head.ref }}
+          -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }}
+          -Dsonar.scm.revision=${{ github.event.pull_request.head.sha }}
+
+  coveralls:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Актуализация
+        uses: actions/checkout@v4
+
+      - name: Скачивание артефактов
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: out
+
+      - name: Отправка отчёта о покрытии в Coveralls
+        uses: coverallsapp/github-action@v2
+
