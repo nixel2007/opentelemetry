@@ -48,14 +48,8 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 ## Документация
 
-- [Обзор и быстрый старт](docs/product/010-index.md)
-- [Автоконфигурация](docs/product/020-autoconfig.md)
-- [Трассировка](docs/product/030-tracing.md)
-- [Логирование](docs/product/040-logging.md)
-- [Метрики](docs/product/050-metrics.md)
-- [Пропагация контекста](docs/product/060-propagation.md)
-- [Экспорт данных](docs/product/070-export.md)
-- [Переменные окружения](docs/env-variables.md)
+- [Руководство пользователя](https://autumn-library.github.io/opentelemetry/)
+- [Справочник API](https://autumn-library.github.io/api/opentelemetry/)
 
 ## Лицензия
 
