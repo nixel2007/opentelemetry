@@ -13,41 +13,13 @@ import sys
 import os
 import json
 
-PROTO_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'proto')
-
-# Добавляем скомпилированные proto в sys.path
-# (генерируем при первом запуске в /tmp/otlp_proto_gen)
-GENERATED_DIR = '/tmp/otlp_proto_gen'
-
-def compile_protos():
-    from grpc_tools import protoc
-    os.makedirs(GENERATED_DIR, exist_ok=True)
-    proto_files = [
-        'opentelemetry/proto/common/v1/common.proto',
-        'opentelemetry/proto/resource/v1/resource.proto',
-        'opentelemetry/proto/trace/v1/trace.proto',
-        'opentelemetry/proto/logs/v1/logs.proto',
-        'opentelemetry/proto/metrics/v1/metrics.proto',
-        'opentelemetry/proto/collector/trace/v1/trace_service.proto',
-        'opentelemetry/proto/collector/logs/v1/logs_service.proto',
-        'opentelemetry/proto/collector/metrics/v1/metrics_service.proto',
-    ]
-    args = [
-        'grpc_tools.protoc',
-        f'-I{PROTO_DIR}',
-        f'--python_out={GENERATED_DIR}',
-    ] + proto_files
-    result = protoc.main(args)
-    if result != 0:
-        print(f'ERROR: proto compilation failed (code {result})', file=sys.stderr)
-        sys.exit(1)
+# Используем pre-compiled proto stubs из proto_generated/
+GENERATED_DIR = os.path.join(os.path.dirname(__file__), 'proto_generated')
+if GENERATED_DIR not in sys.path:
+    sys.path.insert(0, GENERATED_DIR)
 
 def ensure_compiled():
-    marker = os.path.join(GENERATED_DIR, 'opentelemetry', 'proto', 'collector', 'trace', 'v1', 'trace_service_pb2.py')
-    if not os.path.exists(marker):
-        compile_protos()
-    if GENERATED_DIR not in sys.path:
-        sys.path.insert(0, GENERATED_DIR)
+    pass  # stubs уже скомпилированы и закоммичены в proto_generated/
 
 def decode(signal, data):
     ensure_compiled()
