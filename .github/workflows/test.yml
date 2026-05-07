@@ -10,28 +10,10 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-    env:
-      LANG: ru_RU.UTF-8
-      LC_ALL: ru_RU.UTF-8
-    steps:
-      - name: Актуализация
-        uses: actions/checkout@v4
-
-      - name: Установка OneScript
-        uses: otymko/setup-onescript@v1.5.1
-        with:
-          version: 2.0.0
-
-      - name: Установка зависимостей
-        run: |
-          opm install opm
-          opm install -l --dev
-          opm install -l oneunit
-
-      - name: Установка Python-зависимостей
-        run: pip install protobuf
-
-      - name: Тестирование
-        run: ./oscript_modules/bin/oneunit e -d tests --recursive --mode none
+    uses: autumn-library/workflows/.github/workflows/test.yml@copilot/add-recursive-flag-for-tests
+    with:
+      oscript_version: 2.0.0
+      test_engine: oneunit
+      os_versions: '["ubuntu-latest"]'
+      test_recursive: true
 
