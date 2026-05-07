@@ -10,10 +10,11 @@ permissions:
 
 jobs:
   test:
-    uses: autumn-library/workflows/.github/workflows/test.yml@copilot/add-recursive-flag-for-tests
+    uses: autumn-library/workflows/.github/workflows/test.yml@v1
     with:
       oscript_version: 2.0.0
       test_engine: oneunit
       os_versions: '["ubuntu-latest"]'
       test_recursive: true
+      additional_pip_packages: protobuf
 

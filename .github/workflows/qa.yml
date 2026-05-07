@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   qa:
-    uses: autumn-library/workflows/.github/workflows/sonar.yml@copilot/add-recursive-flag-for-tests
+    uses: autumn-library/workflows/.github/workflows/sonar.yml@v1
     with:
       github_repository: ${{ github.repository }}
       oscript_version: 2.0.0
@@ -18,5 +18,6 @@ jobs:
       test_recursive: true
       coveralls: true
       sonarqube: true
+      additional_pip_packages: protobuf
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
