@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<opm-metadata xmlns="http://oscript.io/schemas/opm-metadata/1.0">
+    <name>opentelemetry</name>
+    <version>1.0.0</version>
+    <author>Nikita Fedkin</author>
+    <author-email>nixel2007@gmail.com</author-email>
+    <repo-address>https://github.com/nixel2007/opentelemetry</repo-address>
+    <description>OpenTelemetry SDK для OneScript</description>
+    <engine-version>2.0.0</engine-version>
+    <depends-on name="atomic" dev="false" version="0.1.1"/>
+    <depends-on name="logos" dev="false" version="1.7.1"/>
+    <depends-on name="1connector" dev="false" version="2.2.1"/>
+    <depends-on name="collectionos" dev="false" version="0.8.2"/>
+    <depends-on name="oint" dev="false" version="1.33.0"/>
+    <depends-on name="lambdas" dev="false" version="0.3.3"/>
+    <depends-on name="cpuinfo" dev="false" version="1.4.0"/>
+    <depends-on name="configor" dev="false" version="0.11.1"/>
+    <depends-on name="prometheus" dev="false" version="1.0.2"/>
+    <depends-on name="async" dev="false" version="0.3.0"/>
+    <depends-on name="compressor" dev="false" version="1.1.0"/>
+    <depends-on name="extends" dev="false" version="0.2.0"/>
+    <depends-on name="resilience" dev="false" version="0.1.0"/>
+    <depends-on name="oneunit" dev="true" version="0.3.3"/>
+    <depends-on name="asserts" dev="true" version="1.5.0"/>
+    <depends-on name="moskito" dev="true" version="0.4.1"/>
+    <depends-on name="testcontainers" dev="true" version="1.0.1"/>
+</opm-metadata>
