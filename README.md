@@ -42,7 +42,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 ## Совместимость
 
-- OneScript 2.0.0+
+- OneScript 2.2.0+
 - logos 1.7.1+, 1connector 2.2.1+, collectionos 0.8.2+, configor 0.11.1+, async 0.3.0+
 - oint 1.33.0+ (для gRPC-транспорта)
 
