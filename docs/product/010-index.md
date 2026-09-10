@@ -91,7 +91,7 @@ export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 
 | Зависимость | Минимальная версия |
 |-------------|-------------------|
-| OneScript | 2.0.0+ |
+| OneScript | 2.2.0+ |
 | logos | 1.7.1+ |
 | 1connector | 2.2.1+ |
 | collectionos | 0.8.2+ |

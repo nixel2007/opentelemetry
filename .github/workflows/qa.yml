@@ -13,7 +13,6 @@ jobs:
     uses: autumn-library/workflows/.github/workflows/sonar.yml@v1
     with:
       github_repository: ${{ github.repository }}
-      oscript_version: 2.0.0
       test_engine: oneunit
       test_recursive: true
       coveralls: true
