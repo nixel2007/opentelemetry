@@ -165,11 +165,11 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines = []
 
     # Заголовок
-    lines.append("# Анализ соответствия спецификации OpenTelemetry v1.55.0")
+    lines.append("# Анализ соответствия спецификации OpenTelemetry v1.61.0")
     lines.append("")
     lines.append(
         f"> **Версия спецификации**: "
-        f"[v1.55.0](https://opentelemetry.io/docs/specs/otel/)"
+        f"[v1.61.0](https://opentelemetry.io/docs/specs/otel/)"
     )
     lines.append(f"> **Дата анализа**: {date.today().isoformat()}")
     lines.append(
