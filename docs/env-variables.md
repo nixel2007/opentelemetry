@@ -13,7 +13,7 @@
 |------------|-------------|----------|
 | `OTEL_SDK_DISABLED` | `false` | Отключить SDK. При `true` создаётся NoOp SDK (без экспортеров, сэмплер `always_off`) |
 | `OTEL_SERVICE_NAME` | - | Имя сервиса (`service.name` в ресурсе) |
-| `OTEL_RESOURCE_ATTRIBUTES` | - | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2` |
+| `OTEL_RESOURCE_ATTRIBUTES` | - | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2`, спецсимволы в percent-encoding (`%2C` — запятая). Значение с ошибкой декодирования игнорируется целиком, ошибка пишется в лог |
 | `OTEL_SDK_SHUTDOWN_TIMEOUT` | `30000` | Таймаут завершения SDK в миллисекундах |
 | `OTEL_CONFIG_FILE` | - | Путь к файлу конфигурации configor (YAML/JSON) |
 | `OTEL_EXPERIMENTAL_CONFIG_FILE` | - | **Устарела.** Используйте `OTEL_CONFIG_FILE` |
