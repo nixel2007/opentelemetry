@@ -248,11 +248,8 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append("| Раздел | ✅ | ⚠️ | ❌ | ➖ | Всего | % found |")
     lines.append("|---|---|---|---|---|---|---|")
 
-    page_order = [
-        "Context", "Baggage Api", "Resource Sdk", "Trace Api", "Trace Sdk",
-        "Logs Api", "Logs Sdk", "Metrics Api", "Metrics Sdk",
-        "Otlp Exporter", "Propagators", "Env Vars",
-    ]
+    # Страницы в порядке sections.json (порядок SPEC_URLS в extract_requirements.py)
+    page_order = list(dict.fromkeys(s["page"] for s in sections))
     for page in page_order:
         ps = stats["page_stats"].get(page, Counter())
         found = ps.get("found", 0)
@@ -594,7 +591,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append("")
     lines.append(
         "1. **Извлечение требований** (`extract_requirements.py`): "
-        "загрузка 12 страниц спецификации, разбиение на секции, "
+        f"загрузка {len(page_order)} страниц спецификации, разбиение на секции, "
         "подсчёт MUST/SHOULD keywords"
     )
     lines.append(
@@ -639,7 +636,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append("")
     lines.append("| Метрика | Значение |")
     lines.append("|---|---|")
-    lines.append("| Страниц спецификации | 12 |")
+    lines.append(f"| Страниц спецификации | {len(page_order)} |")
     lines.append(f"| Всего секций | {total_sections} |")
     lines.append(f"| Stable секций | {stable_sections} |")
     lines.append(f"| Development секций | {dev_sections_count} |")

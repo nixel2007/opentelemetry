@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Извлечение секций спецификации OpenTelemetry для анализа соответствия.
 
-Загружает 12 страниц спецификации с opentelemetry.io, разбивает на секции
+Загружает 14 страниц спецификации с opentelemetry.io, разбивает на секции
 по заголовкам (##/###), сохраняет полный текст каждой секции с метаданными.
 
 Агенты верификации получают полные секции и сами идентифицируют
@@ -32,12 +32,21 @@ SPEC_URLS = {
     "Otlp Exporter": "https://opentelemetry.io/docs/specs/otel/protocol/exporter/",
     "Propagators": "https://opentelemetry.io/docs/specs/otel/context/api-propagators/",
     "Env Vars": "https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/",
+    "Prometheus Compatibility": "https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/",
+    "Prometheus Exporter": "https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/",
 }
 
 # Условные подразделы - применяются только при реализации фичи
 CONDITIONAL_SUBSECTIONS = {
     r"^GetAll": "GetAll Getter (post-stable extension)",
     r"^Resource detector name": "Resource Detector Naming (conditional)",
+}
+
+# Условные ветки документа (по section_id): заголовки внутри веток повторяются
+# в других частях страницы, поэтому классифицируются по пути, а не по заголовку
+CONDITIONAL_PATHS = {
+    r"^Prometheus Compatibility/Prometheus Metric points to OTLP":
+        "Prometheus Receiver (Prometheus → OTLP)",
 }
 
 # Deprecated секции
@@ -125,8 +134,11 @@ def _make_anchor(subsection):
     return anchor
 
 
-def _classify_subsection(subsection):
-    """Определяет scope подраздела."""
+def _classify_subsection(subsection, section_id=""):
+    """Определяет scope подраздела по пути секции и по ее заголовку."""
+    for pattern, feature in CONDITIONAL_PATHS.items():
+        if re.search(pattern, section_id):
+            return f"conditional:{feature}"
     for pattern, feature in CONDITIONAL_SUBSECTIONS.items():
         if re.search(pattern, subsection):
             return f"conditional:{feature}"
@@ -255,11 +267,11 @@ def extract_sections(text, page_name, page_url):
 
         anchor = _make_anchor(title)
         stability = _detect_stability(section_text, page_default)
-        scope = _classify_subsection(title)
 
         # Уникальный идентификатор: page + путь из родительских заголовков
         parent_path = _build_parent_path(headings, idx)
         section_id = f"{page_name}/{parent_path}"
+        scope = _classify_subsection(title, section_id)
 
         sections.append({
             "page": page_name,

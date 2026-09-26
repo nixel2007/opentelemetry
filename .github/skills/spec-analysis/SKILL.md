@@ -55,15 +55,22 @@ description: >
 |---|---|---|
 | GetAll | GetAll Getter | Добавляется после stable релиза Getter |
 | Resource detector name | Resource Detector Naming | Только для SDK с реализованными детекторами |
+| Prometheus Compatibility → Prometheus Metric points to OTLP (вся ветка) | Prometheus Receiver (Prometheus → OTLP) | Нужна только приемнику Prometheus-метрик; SDK их только экспортирует |
+
+> Заголовки ветки Prometheus → OTLP (Counters, Histograms, Exemplars...) повторяются в ветке
+> OTLP → Prometheus, поэтому ветка классифицируется по пути секции (`CONDITIONAL_PATHS`),
+> а не по заголовку (`CONDITIONAL_SUBSECTIONS`).
 
 > B3 Propagator и Prometheus Exporter ранее были условными, но теперь реализованы
 > (ОтелB3Пропагатор, ОтелПрометеусЧитательМетрик) и считаются как universal.
+> Для Prometheus анализируются две страницы: Prometheus Exporter и Prometheus Compatibility
+> (перевод OTLP → Prometheus, по которому работает `ОтелПрометеусЧитательМетрик`).
 
 ## Шаг 1: Извлечение секций из спецификации
 
 Запусти Python-скрипт для парсинга всех страниц спецификации OTel.
 
-> **ВАЖНО:** Скрипт загружает 12 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
+> **ВАЖНО:** Скрипт загружает 14 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
 > При повторных запусках скрипт использует кеш из `<output_dir>/*.txt`. Удали кеш-файлы для обновления.
 
 ```bash
@@ -71,13 +78,17 @@ python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-s
 ```
 
 Скрипт:
-1. Загружает 12 страниц спецификации
+1. Загружает 14 страниц спецификации (список - `SPEC_URLS` в скрипте)
 2. Разбивает каждую страницу на секции по заголовкам (`##`/`###`)
 3. Для каждой секции сохраняет **полный текст**, URL-якорь, стабильность, scope
 4. Считает количество MUST/SHOULD ключевых слов в каждой секции
 5. Сохраняет результат в `/tmp/otel-specs/sections.json`
 
-Ожидаемый результат: ~200-250 секций, в сумме содержащих ~800+ ключевых слов MUST/SHOULD.
+Ожидаемый результат: ~300 секций, в сумме содержащих ~1000+ ключевых слов MUST/SHOULD.
+
+> Новую страницу добавляй в `SPEC_URLS` и в `DOMAIN_CONFIG` скрипта `generate_prompts.py`
+> (домен → каталоги кода). Страница без домена не получит агента: `generate_prompts.py`
+> предупредит о неназначенных секциях. Список страниц отчета `assemble_report.py` берет из `sections.json`.
 
 ## Шаг 2: Генерация промптов для агентов
 
@@ -87,7 +98,7 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 
 Скрипт:
 1. Читает `sections.json`
-2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export и т.д.)
+2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
 3. Разбивает крупные домены на группы по 5-8 секций
 4. Для каждого агента генерирует промпт с:
    - Полным текстом секций
@@ -99,7 +110,7 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 > Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.
 
-Ожидаемый результат: ~30-40 агентов.
+Ожидаемый результат: ~40-45 агентов.
 
 ## Шаг 3: Запуск агентов верификации
 

@@ -81,6 +81,11 @@ DOMAIN_CONFIG = [
         "code_dirs": ["src/Экспорт/"],
     },
     {
+        "domain": "prometheus",
+        "pages": ["Prometheus Compatibility", "Prometheus Exporter"],
+        "code_dirs": ["src/Метрики/"],
+    },
+    {
         "domain": "env-vars",
         "pages": ["Env Vars"],
         "code_dirs": ["src/Конфигурация/", "src/Экспорт/", "src/Ядро/"],
@@ -371,6 +376,7 @@ MUST / MUST NOT / SHOULD / SHOULD NOT в тексте секции (блоки �
 
 **Условные фичи** (scope: conditional) - только если фича НЕ реализована:
 - Resource Detector Naming (не реализованы детекторы)
+- Prometheus Receiver (Prometheus → OTLP): SDK только экспортирует метрики в Prometheus (`ОтелПрометеусЧитательМетрик`), приема Prometheus-метрик и их перевода в OTLP нет
 
 > **ЗАПРЕЩЕНО** ставить n_a по причинам вроде:
 > - "Optional for OneScript" - если спецификация говорит MUST/SHOULD, это не optional
