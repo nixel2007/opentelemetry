@@ -214,12 +214,14 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 
 | Переменная | Ключ configor | По умолчанию | Описание |
 |------------|--------------|-------------|----------|
-| `OTEL_BSP_MAX_QUEUE_SIZE` | `otel.bsp.max.queue.size` | `2048` | Максимальный размер очереди |
+| `OTEL_BSP_MAX_QUEUE_SIZE` | `otel.bsp.max.queue.size` | `2048` | Максимальный размер очереди, больше 0 |
 | `OTEL_BSP_SCHEDULE_DELAY` | `otel.bsp.schedule.delay` | `5000` | Интервал запуска экспорта (мс) |
-| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `otel.bsp.max.export.batch.size` | `512` | Максимальный размер пакета |
+| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `otel.bsp.max.export.batch.size` | `512` | Максимальный размер пакета, больше 0 |
 | `OTEL_BSP_EXPORT_TIMEOUT` | `otel.bsp.export.timeout` | `30000` | Таймаут экспорта (мс) |
 
-> Пакетный процессор логов использует те же параметры, но со значением по умолчанию `OTEL_BSP_SCHEDULE_DELAY = 1000` мс.
+> Пакетный процессор логов настраивается аналогичными переменными `OTEL_BLRP_*` (ключи `otel.blrp.*`),
+> значение по умолчанию `OTEL_BLRP_SCHEDULE_DELAY` — `1000` мс. Размер очереди или пакета меньше 1
+> записывается в лог предупреждением и заменяется значением по умолчанию.
 
 ### Периодический экспорт метрик
 
