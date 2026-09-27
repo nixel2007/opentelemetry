@@ -12,6 +12,7 @@ jobs:
   test:
     uses: autumn-library/workflows/.github/workflows/test.yml@v1
     with:
+      oscript_version: dev
       test_engine: oneunit
       os_versions: '["ubuntu-latest"]'
       test_recursive: true
