@@ -9,7 +9,7 @@
 [![Telegram](https://img.shields.io/badge/Telegram-чат-blue?logo=telegram)](https://t.me/autumn_winow)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/nixel2007/opentelemetry)
 
-Библиотека на [OneScript](https://oscript.io) для использования [OpenTelemetry](https://opentelemetry.io) в оскриптовых проектах. Реализует [спецификацию OpenTelemetry v1.55.0](https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.55.0).
+Библиотека на [OneScript](https://oscript.io) для использования [OpenTelemetry](https://opentelemetry.io) в оскриптовых проектах. Реализует [спецификацию OpenTelemetry v1.61.0](https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.61.0).
 
 Позволяет собирать и отправлять телеметрию (трассировку, логи, метрики) в формате OTLP в любой совместимый коллектор — [Grafana LGTM](https://grafana.com/oss/), [OpenTelemetry Collector](https://opentelemetry.io/docs/collector/) и другие. Поддерживает HTTP/JSON, HTTP/Protobuf и gRPC.
 
