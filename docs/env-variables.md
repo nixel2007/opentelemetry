@@ -60,6 +60,21 @@
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | - | Путь к клиентскому сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_INSECURE` | `false` | Отключить проверку TLS-сертификата |
 
+Заголовок `User-Agent` в `OTEL_EXPORTER_OTLP_HEADERS` — идентификатор продукта: он добавляется
+перед стандартным `OTel-OTLP-Exporter-OneScript/<версия>`, а не заменяет его.
+
+Ограничения платформы:
+
+- для `grpc` сжатие не поддерживается клиентом OPI_GRPC: при заданном `gzip` в лог пишется
+  предупреждение, данные отправляются без сжатия; mTLS (`CLIENT_KEY`, `CLIENT_CERTIFICATE`)
+  для `grpc` тоже не поддерживается;
+- для `http/protobuf` и `http/json` файлы сертификатов (`CERTIFICATE`, `CLIENT_KEY`,
+  `CLIENT_CERTIFICATE`) не применяются HTTP-клиентом OneScript: транспорт предупреждает об этом,
+  сертификат сервера проверяется по системному хранилищу.
+
+Для `grpc` адрес сигнала (`OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT`) — цель соединения: сервис сигнала
+выбирается по сигналу, путь в адресе не используется.
+
 ---
 
 ## OTLP - трассировка (per-signal)

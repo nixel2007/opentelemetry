@@ -8,6 +8,7 @@ Responds based on path:
   /retry     - 503 Service Unavailable (first 2 calls), then 200
   /too-many  - 429 Too Many Requests
   /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
+  /big-response - 200 OK with a 2048-byte body
 """
 import gzip
 import http.server
@@ -65,6 +66,14 @@ class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(429)
             self.end_headers()
             self.wfile.write(b'too many requests')
+        elif self.path == '/big-response':
+            body = b'{"partialSuccess":{"errorMessage":"' + b'x' * 2000 + b'"}}'
+            body = body + b' ' * (2048 - len(body))
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         else:
             self.send_response(404)
             self.end_headers()
