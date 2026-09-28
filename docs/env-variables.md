@@ -170,6 +170,7 @@
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `OTEL_METRIC_EXPORT_INTERVAL` | `60000` | Интервал экспорта метрик (мс) |
+| `OTEL_METRIC_EXPORT_TIMEOUT` | `30000` | Таймаут одного экспорта метрик (мс) |
 | `OTEL_METRICS_EXEMPLAR_FILTER` | `trace_based` | Фильтр exemplars: `always_on`, `always_off`, `trace_based` (только измерения в контексте сэмплированного спана) |
 
 ---

@@ -237,6 +237,7 @@ otel:
 | Переменная | Ключ configor | По умолчанию | Описание |
 |------------|--------------|-------------|----------|
 | `OTEL_METRIC_EXPORT_INTERVAL` | `otel.metric.export.interval` | `60000` | Интервал экспорта метрик (мс) |
+| `OTEL_METRIC_EXPORT_TIMEOUT` | `otel.metric.export.timeout` | `30000` | Таймаут одного экспорта метрик (мс) |
 | `OTEL_METRICS_EXEMPLAR_FILTER` | `otel.metrics.exemplar.filter` | `trace_based` | Фильтр exemplars: `always_on`, `always_off`, `trace_based` |
 
 ### Пропагаторы контекста
