@@ -139,9 +139,7 @@ otel:
 |------------|--------------|-------------|----------|
 | `OTEL_TRACES_EXPORTER` | `otel.traces.exporter` | `otlp` | Экспортер трассировки: `otlp`, `none` |
 | `OTEL_LOGS_EXPORTER` | `otel.logs.exporter` | `otlp` | Экспортер логов: `otlp`, `none` |
-| `OTEL_METRICS_EXPORTER` | `otel.metrics.exporter` | `otlp` | Экспортер метрик: `otlp`, `prometheus` (HTTP-сервер метрик), `none` |
-| `OTEL_EXPORTER_PROMETHEUS_HOST` | `otel.exporter.prometheus.host` | `localhost` | Хост HTTP-сервера метрик Prometheus |
-| `OTEL_EXPORTER_PROMETHEUS_PORT` | `otel.exporter.prometheus.port` | `9464` | Порт HTTP-сервера метрик Prometheus |
+| `OTEL_METRICS_EXPORTER` | `otel.metrics.exporter` | `otlp` | Экспортер метрик: `otlp`, `none` |
 
 ### OTLP — общие параметры
 
