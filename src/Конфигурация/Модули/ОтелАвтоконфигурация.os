@@ -610,7 +610,7 @@
     МаксАтрибутов = ЧислоСОткатом(Менеджер,
         "otel.span.attribute.count.limit", "otel.attribute.count.limit", ЛимитАтрибутовПоУмолчанию);
     МаксДлинаЗначения = ЧислоСОткатом(Менеджер,
-        "otel.span.attribute.value.length.limit", "otel.attribute.value.length.limit", 0);
+        "otel.span.attribute.value.length.limit", "otel.attribute.value.length.limit", Неопределено);
 
     МаксСобытий = БезопасноеЧисло(
         Менеджер.Параметр("otel.span.event.count.limit"),
@@ -757,7 +757,7 @@
     МаксАтрибутов = ЧислоСОткатом(Менеджер,
         "otel.logrecord.attribute.count.limit", "otel.attribute.count.limit", ЛимитАтрибутовПоУмолчанию);
     МаксДлинаЗначения = ЧислоСОткатом(Менеджер,
-        "otel.logrecord.attribute.value.length.limit", "otel.attribute.value.length.limit", 0);
+        "otel.logrecord.attribute.value.length.limit", "otel.attribute.value.length.limit", Неопределено);
 
     Возврат Новый ОтелЛимитыЗаписейЛога()
         .УстановитьМаксАтрибутов(МаксАтрибутов)
