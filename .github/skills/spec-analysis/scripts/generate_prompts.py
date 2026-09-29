@@ -134,9 +134,12 @@ MUST / MUST NOT / SHOULD / SHOULD NOT в тексте секции (блоки �
 ### Требования нестабильной части секции
 
 Анализ проводится только по Stable-требованиям: тебе переданы только секции со статусом Stable.
-Но часть такой секции может быть нестабильной: ветка с пометкой «(Development)» или
-«Development:» в секции со статусом Mixed или «Stable, except where otherwise specified»,
-либо требование, которое задаёт только поведение, описанное в разделе со статусом Development
+Но часть такой секции может быть нестабильной: утверждение или элемент списка со встроенным
+маркером «Status: Development» (например, «Status: Development - The `MeterProvider` MUST
+compute the relevant MeterConfig…» или «* Status: Development - `Tracer` is disabled…»), ветка с
+пометкой «(Development)» или «Development:» в секции со статусом Mixed или «Stable, except where
+otherwise specified», либо требование, которое задаёт только поведение, описанное в разделе со
+статусом Development
 (например, слияние ресурсов с Entities или содержимое метрики target_info). Такое требование
 всё равно включи в результат (число требований обязано совпасть с `expected_keywords`) и добавь
 в него поле `"stability": "Development"`: в отчёт оно не войдёт. Не помечай требование, если

@@ -2,7 +2,7 @@
 """Извлечение секций спецификации OpenTelemetry для анализа соответствия.
 
 Загружает 14 страниц спецификации с opentelemetry.io, разбивает на секции
-по заголовкам (##/###), сохраняет полный текст каждой секции с метаданными.
+по заголовкам (#-######), сохраняет полный текст каждой секции с метаданными.
 
 Агенты верификации получают полные секции и сами идентифицируют
 MUST/SHOULD требования в контексте окружающего текста.
@@ -153,9 +153,10 @@ def _count_keywords(text):
     # Убираем блоки кода - они не содержат нормативных требований
     clean = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
     must = len(re.findall(r"\bMUST\b", clean))
-    must_not = len(re.findall(r"\bMUST NOT\b", clean))
+    # MUST NOT / SHOULD NOT могут быть разорваны переносом строки
+    must_not = len(re.findall(r"\bMUST\s+NOT\b", clean))
     should = len(re.findall(r"\bSHOULD\b", clean))
-    should_not = len(re.findall(r"\bSHOULD NOT\b", clean))
+    should_not = len(re.findall(r"\bSHOULD\s+NOT\b", clean))
     return {
         "must": must - must_not,  # MUST без MUST NOT
         "must_not": must_not,
@@ -165,10 +166,43 @@ def _count_keywords(text):
     }
 
 
-def _detect_stability(text, page_default):
-    """Определяет стабильность секции по маркерам Status:."""
-    if re.search(r"Status:\s*Development", text):
-        return "Development"
+SECTION_STATUS_RE = re.compile(
+    r"^Status:\s*(Stable|Development|Mixed)(,?\s*except where otherwise specified)?\.?$"
+)
+
+
+def _own_stability(text):
+    """Стабильность по собственному маркеру секции или None без маркера.
+
+    Маркер секции - отдельная строка "Status: ..." сразу после заголовка. Встроенные
+    маркеры ("Status: Development - The `Meter` MUST ...", "* Status: Development - ...")
+    относятся только к своему утверждению или элементу списка: их требования агент
+    помечает "stability": "Development" по отдельности.
+    """
+    lines = text.split("\n")
+    if len(lines) < 2:
+        return None
+    m = SECTION_STATUS_RE.match(lines[1].strip())
+    if not m:
+        return None
+    return "Development" if m.group(1) == "Development" else "Stable"
+
+
+def _detect_stability(headings, own_statuses, idx, page_default):
+    """Определяет стабильность секции: собственный маркер Status:, иначе маркер
+    ближайшего родительского заголовка, иначе стабильность страницы.
+
+    Маркер родителя стоит в его собственном тексте (до первого подзаголовка),
+    поэтому без наследования подразделы Development-раздела считались бы Stable.
+    """
+    if own_statuses[idx] is not None:
+        return own_statuses[idx]
+    level = headings[idx][1]
+    for i in range(idx - 1, -1, -1):
+        if headings[i][1] < level:
+            if own_statuses[i] is not None:
+                return own_statuses[i]
+            level = headings[i][1]
     return page_default
 
 
@@ -209,7 +243,9 @@ def extract_sections(text, page_name, page_url):
                 page_default = "Development"
             break
 
-    # Находим все заголовки ## и ### (пропуская строки внутри fenced code blocks)
+    # Находим все заголовки (пропуская строки внутри fenced code blocks). Заголовки
+    # 5-6 уровня тоже отдельные секции: у них бывает свой статус (например, Development
+    # у "Compatibility warnings for TraceIdRatioBased sampler" в Stable-секции)
     headings = []
     in_code_block = False
     for i, line in enumerate(lines):
@@ -219,7 +255,7 @@ def extract_sections(text, page_name, page_url):
             continue
         if in_code_block:
             continue
-        m = re.match(r"^(#{1,4})\s+(.+)", stripped)
+        m = re.match(r"^(#{1,6})\s+(.+)", stripped)
         if m:
             level = len(m.group(1))
             title = m.group(2).strip()
@@ -243,15 +279,22 @@ def extract_sections(text, page_name, page_url):
             })
         return sections
 
-    # Разбиваем на секции между заголовками
+    # Текст секции - от текущего заголовка до следующего заголовка любого уровня
+    section_texts = []
     for idx, (line_idx, hlevel, title) in enumerate(headings):
-        # Текст секции - от текущего заголовка до следующего того же или более высокого уровня
         if idx + 1 < len(headings):
             end_idx = headings[idx + 1][0]
         else:
             end_idx = len(lines)
+        section_texts.append("\n".join(lines[line_idx:end_idx]).strip())
 
-        section_text = "\n".join(lines[line_idx:end_idx]).strip()
+    # Собственные маркеры Status: - по всем заголовкам, включая секции без требований:
+    # их маркер наследуют подразделы
+    own_statuses = [_own_stability(t) for t in section_texts]
+
+    # Разбиваем на секции между заголовками
+    for idx, (line_idx, hlevel, title) in enumerate(headings):
+        section_text = section_texts[idx]
         kw = _count_keywords(section_text)
 
         # Пропускаем секции без требований
@@ -266,7 +309,7 @@ def extract_sections(text, page_name, page_url):
             continue
 
         anchor = _make_anchor(title)
-        stability = _detect_stability(section_text, page_default)
+        stability = _detect_stability(headings, own_statuses, idx, page_default)
 
         # Уникальный идентификатор: page + путь из родительских заголовков
         parent_path = _build_parent_path(headings, idx)
