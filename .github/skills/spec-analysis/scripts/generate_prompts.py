@@ -131,6 +131,18 @@ MUST / MUST NOT / SHOULD / SHOULD NOT в тексте секции (блоки �
 3. Укажи файл:строка для found/partial
 4. Укажи URL секции спецификации (поле `url`)
 
+### Требования нестабильной части секции
+
+Анализ проводится только по Stable-требованиям: тебе переданы только секции со статусом Stable.
+Но часть такой секции может быть нестабильной: ветка с пометкой «(Development)» или
+«Development:» в секции со статусом Mixed или «Stable, except where otherwise specified»,
+либо требование, которое задаёт только поведение, описанное в разделе со статусом Development
+(например, слияние ресурсов с Entities или содержимое метрики target_info). Такое требование
+всё равно включи в результат (число требований обязано совпасть с `expected_keywords`) и добавь
+в него поле `"stability": "Development"`: в отчёт оно не войдёт. Не помечай требование, если
+Development-пометка стоит только у элемента перечисления внутри стабильного требования
+(например, «(Development) TracerConfigurator» в перечне конфигурации провайдера).
+
 ### Строгие критерии статуса
 
 **found** - ВСЕ следующие условия выполнены:
@@ -400,7 +412,7 @@ RESULT_JSON_SCHEMA = r"""
       "subsection": "<подраздел>",
       "section_id": "<уникальный идентификатор секции>",
       "spec_url": "<URL секции>",
-      "stability": "Stable|Development",
+      "stability": "Stable",
       "scope": "universal|conditional:...",
       "expected_keywords": "<число>",
       "requirements": [
@@ -409,7 +421,8 @@ RESULT_JSON_SCHEMA = r"""
           "status": "found|partial|not_found|n_a",
           "spec_text": "Полный текст требования из спецификации",
           "code_location": "path/to/file.os:line или - если не найдено",
-          "explanation": "Пояснение для partial/not_found/n_a (пустая строка для found)"
+          "explanation": "Пояснение для partial/not_found/n_a (пустая строка для found)",
+          "stability": "Development - только у требования нестабильной части секции, иначе поле не указывай"
         }
       ]
     }
@@ -627,6 +640,9 @@ def main():
         sections = json.load(f)
 
     print(f"Загружено {len(sections)} секций из {sections_file}")
+    # Анализ проводится только по Stable-разделам спецификации
+    sections = [s for s in sections if s["stability"] == "Stable"]
+    print(f"Stable-секций для верификации: {len(sections)}")
 
     # Группируем секции в агентов
     agents = group_sections_into_agents(sections)
@@ -688,7 +704,7 @@ def main():
     total_sections = sum(len(a["sections"]) for a in agents)
     total_keywords = sum(a["total_keywords"] for a in agents_config)
     print(f"\nВсего: {total_sections} секций, ~{total_keywords} keywords")
-    print(f"Секций в sections.json: {len(sections)}")
+    print(f"Stable-секций в sections.json: {len(sections)}")
     if total_sections != len(sections):
         missing = len(sections) - total_sections
         print(f"⚠️  {missing} секций не назначены агентам (проверь DOMAIN_CONFIG)")

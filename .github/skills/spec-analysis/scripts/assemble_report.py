@@ -35,6 +35,39 @@ STATUS_ICONS = {
 LEVEL_ORDER = ["MUST", "MUST NOT", "SHOULD", "SHOULD NOT"]
 
 
+def section_key(section):
+    """Возвращает идентификатор секции."""
+    return section.get("section_id", f"{section['page']}/{section['subsection']}")
+
+
+def is_stable_section(section):
+    """Секция входит в отчёт: отчёт строится только по разделам со статусом Stable."""
+    return section.get("stability") == "Stable"
+
+
+def is_reported(req):
+    """Требование входит в отчёт. Агент помечает "stability": "Development" требования
+    Stable-секции, относящиеся к её нестабильной части (например, ветка "(Development) If
+    view_matching_mode is composable" раздела со статусом Mixed): такие требования в отчёт
+    не входят."""
+    return req.get("stability", "Stable") == "Stable"
+
+
+def reported_requirements(result):
+    """Возвращает требования результата секции, входящие в отчёт."""
+    if not result:
+        return []
+    return [r for r in result.get("requirements", []) if is_reported(r)]
+
+
+def reported_keywords(section, merged):
+    """Число требований секции в отчёте; без результата агента - число keywords секции."""
+    result = merged.get(section_key(section))
+    if not result:
+        return section["keywords"]["total"]
+    return len(reported_requirements(result))
+
+
 def load_results(results_dir):
     """Загружает все JSON-файлы результатов агентов.
 
@@ -85,11 +118,14 @@ def load_sections_metadata(sections_file):
 
 
 def validate_completeness(sections, sections_index, merged):
-    """Проверяет полноту результатов: все секции покрыты, keywords совпадают."""
+    """Проверяет полноту результатов Stable-секций: все секции покрыты, число требований
+    совпадает с числом keywords (вместе с требованиями, не входящими в отчёт)."""
     warnings = []
 
     for s in sections:
-        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+        if not is_stable_section(s):
+            continue
+        key = section_key(s)
         if key not in merged:
             warnings.append(
                 f"Секция {key} ({s['keywords']['total']} kw) "
@@ -125,20 +161,16 @@ def compute_stats(merged, sections):
     total_should = Counter()
 
     for s in sections:
-        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-        result = merged.get(key)
+        # Считаем только Stable + universal для основной статистики
+        if not is_stable_section(s) or s.get("scope", "universal") != "universal":
+            continue
+        result = merged.get(section_key(s))
         if not result:
             continue
 
-        for req in result.get("requirements", []):
+        for req in reported_requirements(result):
             status = req.get("status", "not_found")
             level = req.get("level", "MUST")
-            stability = s.get("stability", "Stable")
-            scope = s.get("scope", "universal")
-
-            # Считаем только Stable + universal для основной статистики
-            if stability != "Stable" or scope != "universal":
-                continue
 
             page_stats[s["page"]][status] += 1
             total[status] += 1
@@ -161,8 +193,9 @@ def compute_stats(merged, sections):
 
 
 def generate_markdown(merged, sections, sections_index, stats, warnings):
-    """Генерирует полный markdown-документ."""
+    """Генерирует полный markdown-документ по Stable-разделам спецификации."""
     lines = []
+    sections = [s for s in sections if is_stable_section(s)]
 
     # Заголовок
     lines.append("# Анализ соответствия спецификации OpenTelemetry v1.61.0")
@@ -174,7 +207,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append(f"> **Дата анализа**: {date.today().isoformat()}")
     lines.append(
         "> **Методология**: spec-first - извлечены все MUST/SHOULD "
-        "требования из спецификации, затем каждое прослежено до кода"
+        "требования стабильных разделов спецификации, затем каждое прослежено до кода"
     )
     lines.append("")
 
@@ -187,23 +220,14 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     must_applicable = tm["found"] + tm["partial"] + tm["not_found"]
     should_applicable = ts["found"] + ts["partial"] + ts["not_found"]
 
-    # Подсчёт keywords
+    # Подсчёт требований Stable-разделов
     stable_universal_kw = sum(
-        s["keywords"]["total"]
-        for s in sections
-        if s["stability"] == "Stable" and s["scope"] == "universal"
-    )
-    dev_kw = sum(
-        s["keywords"]["total"]
-        for s in sections
-        if s["stability"] == "Development"
+        reported_keywords(s, merged) for s in sections if s["scope"] == "universal"
     )
     cond_kw = sum(
-        s["keywords"]["total"]
-        for s in sections
-        if "conditional" in s.get("scope", "")
+        reported_keywords(s, merged) for s in sections if "conditional" in s.get("scope", "")
     )
-    total_kw = sum(s["keywords"]["total"] for s in sections)
+    total_kw = stable_universal_kw + cond_kw
 
     pct = lambda n, d: f"{n / d * 100:.1f}%" if d > 0 else "N/A"
 
@@ -216,10 +240,9 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append("")
     lines.append("| Показатель | Значение |")
     lines.append("|---|---|")
-    lines.append(f"| Всего keywords в спецификации | {total_kw} |")
-    lines.append(f"| Stable + universal keywords | {stable_universal_kw} |")
-    lines.append(f"| Conditional keywords | {cond_kw} |")
-    lines.append(f"| Development keywords | {dev_kw} |")
+    lines.append(f"| Всего Stable-требований | {total_kw} |")
+    lines.append(f"| Stable + universal | {stable_universal_kw} |")
+    lines.append(f"| Stable + conditional | {cond_kw} |")
     lines.append(f"| Найдено требований (Stable universal) | {applicable} |")
     lines.append(
         f"| ✅ Реализовано (found) | {t['found']} ({pct(t['found'], applicable)}) |"
@@ -271,13 +294,12 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     must_violations = []
     should_violations = []
     for s in sections:
-        if s["stability"] != "Stable" or s["scope"] != "universal":
+        if s["scope"] != "universal":
             continue
-        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-        result = merged.get(key)
+        result = merged.get(section_key(s))
         if not result:
             continue
-        for req in result.get("requirements", []):
+        for req in reported_requirements(result):
             if req["status"] in ("not_found", "partial"):
                 entry = {
                     "page": s["page"],
@@ -331,11 +353,13 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     current_page = None
     req_counter = 0
     for s in sections:
-        if s["stability"] != "Stable" or s["scope"] != "universal":
+        if s["scope"] != "universal":
             continue
 
-        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-        result = merged.get(key)
+        result = merged.get(section_key(s))
+        if result and result.get("requirements") and not reported_requirements(result):
+            # Все требования секции относятся к её нестабильной части
+            continue
 
         # Заголовок страницы
         if s["page"] != current_page:
@@ -359,7 +383,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
             lines.append("")
             continue
 
-        requirements = result["requirements"]
+        requirements = reported_requirements(result)
 
         lines.append(
             "| # | Уровень | Статус | Требование "
@@ -387,73 +411,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
 
         lines.append("")
 
-    # Development-статус
-    lines.append("## Требования Development-статуса")
-    lines.append("")
-    lines.append(
-        "Эти требования находятся в секциях со статусом Development. "
-        "Их реализация не обязательна для соответствия стабильной спецификации."
-    )
-    lines.append("")
-
-    dev_sections = [s for s in sections if s["stability"] == "Development"]
-    if dev_sections:
-        current_page = None
-        for s in dev_sections:
-            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-            result = merged.get(key)
-
-            if s["page"] != current_page:
-                current_page = s["page"]
-                lines.append(f"### {current_page}")
-                lines.append("")
-
-            url = (
-                result.get("spec_url", s.get("url", ""))
-                if result
-                else s.get("url", "")
-            )
-            lines.append(f"#### {s['subsection']}")
-            lines.append("")
-            lines.append(f"[Ссылка на спецификацию]({url})")
-            lines.append("")
-
-            if not result or not result.get("requirements"):
-                lines.append(
-                    f"> Нет данных от агента "
-                    f"(ожидалось ~{s['keywords']['total']} требований)"
-                )
-                lines.append("")
-                continue
-
-            lines.append(
-                "| # | Уровень | Статус | Требование "
-                "| Расположение в коде | Пояснение |"
-            )
-            lines.append("|---|---|---|---|---|---|")
-
-            for i, req in enumerate(result["requirements"], 1):
-                level = req.get("level", "?")
-                status = req.get("status", "?")
-                icon = STATUS_ICONS.get(status, "?")
-                spec_text = (
-                    req.get("spec_text", "").replace("|", "\\|").replace("\n", " ")
-                )
-                loc = req.get("code_location", "-")
-                if loc and loc != "-":
-                    loc = f"`{loc}`"
-                explanation = (
-                    req.get("explanation", "").replace("|", "\\|").replace("\n", " ")
-                )
-                lines.append(
-                    f"| {i} | {level} | {icon} {status} | {spec_text} "
-                    f"| {loc} | {explanation} |"
-                )
-
-            lines.append("")
-
     # Условные требования - полные таблицы для Stable+conditional секций
-    # (Development+conditional уже отображены в Development-секции)
     lines.append("## Условные требования (Conditional)")
     lines.append("")
     lines.append(
@@ -464,13 +422,12 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
 
     cond_stable_sections = [
         s for s in sections
-        if "conditional" in s.get("scope", "") and s["stability"] == "Stable"
+        if "conditional" in s.get("scope", "") and reported_keywords(s, merged) > 0
     ]
     if cond_stable_sections:
         current_page = None
         for s in cond_stable_sections:
-            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-            result = merged.get(key)
+            result = merged.get(section_key(s))
 
             if s["page"] != current_page:
                 current_page = s["page"]
@@ -504,7 +461,7 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
             )
             lines.append("|---|---|---|---|---|---|")
 
-            for i, req in enumerate(result["requirements"], 1):
+            for i, req in enumerate(reported_requirements(result), 1):
                 level = req.get("level", "?")
                 status = req.get("status", "?")
                 icon = STATUS_ICONS.get(status, "?")
@@ -524,18 +481,16 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
 
             lines.append("")
 
-    # Сводка условных секций (включая Development+conditional)
-    all_cond_sections = [s for s in sections if "conditional" in s.get("scope", "")]
-    if all_cond_sections:
+    # Сводка условных секций
+    if cond_stable_sections:
         lines.append("### Сводка условных секций")
         lines.append("")
-        lines.append("| Раздел | Секция | Scope | Stability | Keywords | Ссылка |")
-        lines.append("|---|---|---|---|---|---|")
-        for s in all_cond_sections:
+        lines.append("| Раздел | Секция | Scope | Keywords | Ссылка |")
+        lines.append("|---|---|---|---|---|")
+        for s in cond_stable_sections:
             lines.append(
                 f"| {s['page']} | {s['subsection']} | {s['scope']} | "
-                f"{s['stability']} | {s['keywords']['total']} | "
-                f"[spec]({s['url']}) |"
+                f"{reported_keywords(s, merged)} | [spec]({s['url']}) |"
             )
         lines.append("")
 
@@ -592,7 +547,8 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append(
         "1. **Извлечение требований** (`extract_requirements.py`): "
         f"загрузка {len(page_order)} страниц спецификации, разбиение на секции, "
-        "подсчёт MUST/SHOULD keywords"
+        "подсчёт MUST/SHOULD keywords; в отчёт входят только требования разделов "
+        "со статусом Stable"
     )
     lines.append(
         "2. **Генерация промптов** (`generate_prompts.py`): "
@@ -622,14 +578,11 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     )
     lines.append("| ❌ not_found | Реализация отсутствует |")
     lines.append(
-        "| ➖ n_a | Неприменимо из-за ограничений платформы |"
+        "| ➖ n_a | Неприменимо: ограничение платформы или не выполнено условие требования |"
     )
     lines.append("")
 
     # Статистика
-    total_sections = len(sections)
-    stable_sections = sum(1 for s in sections if s["stability"] == "Stable")
-    dev_sections_count = sum(1 for s in sections if s["stability"] == "Development")
     cond_count = sum(1 for s in sections if "conditional" in s.get("scope", ""))
 
     lines.append("### Статистика извлечения")
@@ -637,12 +590,10 @@ def generate_markdown(merged, sections, sections_index, stats, warnings):
     lines.append("| Метрика | Значение |")
     lines.append("|---|---|")
     lines.append(f"| Страниц спецификации | {len(page_order)} |")
-    lines.append(f"| Всего секций | {total_sections} |")
-    lines.append(f"| Stable секций | {stable_sections} |")
-    lines.append(f"| Development секций | {dev_sections_count} |")
-    lines.append(f"| Conditional секций | {cond_count} |")
-    lines.append(f"| Всего keywords | {total_kw} |")
-    lines.append(f"| Stable universal keywords | {stable_universal_kw} |")
+    lines.append(f"| Stable секций | {len(sections)} |")
+    lines.append(f"| Из них условных | {cond_count} |")
+    lines.append(f"| Stable-требований | {total_kw} |")
+    lines.append(f"| Из них universal | {stable_universal_kw} |")
     lines.append("")
 
     return "\n".join(lines) + "\n"
@@ -683,9 +634,22 @@ def parse_report_requirements(markdown_text):
     current_page = None
     current_subsection = None
     in_table = False
+    # Отчёты прежних версий содержали блок "## Требования Development-статуса": его
+    # требования в сравнение не входят
+    skip_block = False
 
     for line in markdown_text.split("\n"):
         stripped = line.strip()
+
+        # Заголовок блока отчёта: ## Block
+        if stripped.startswith("## "):
+            skip_block = "Development" in stripped
+            current_page = None
+            current_subsection = None
+            in_table = False
+            continue
+        if skip_block:
+            continue
 
         # Заголовок страницы: ### Page
         if stripped.startswith("### ") and not stripped.startswith("#### "):
@@ -737,6 +701,33 @@ def parse_report_requirements(markdown_text):
             in_table = False
 
     return sections
+
+
+def drop_unreported(old_sections, merged, sections_meta):
+    """Убирает из требований прежнего отчёта те, что не входят в текущий отчёт:
+    требования Stable-секций, которые агент пометил как относящиеся к нестабильной части
+    секции. Совпадение - по уровню, началу текста и статусу; каждое помеченное требование
+    убирает не больше одного требования прежнего отчёта.
+    """
+    for s in sections_meta:
+        if not is_stable_section(s):
+            continue
+        result = merged.get(section_key(s))
+        if not result:
+            continue
+        old_reqs = old_sections.get((s["page"], s["subsection"]))
+        if not old_reqs:
+            continue
+        for req in result.get("requirements", []):
+            if is_reported(req):
+                continue
+            prefix = req.get("spec_text", "").lower()[:60]
+            for i, old in enumerate(old_reqs):
+                if (old["level"] == req.get("level") and old["status"] == req.get("status")
+                        and old["spec_text"].lower()[:60] == prefix):
+                    del old_reqs[i]
+                    break
+    return old_sections
 
 
 def _build_current_sections(merged, sections_meta):
@@ -1076,7 +1067,7 @@ def main():
     comparison_path = os.path.join(report_dir, "spec-comparison-report.md")
     old_markdown = load_previous_report(report_path)
     if old_markdown:
-        old_sections_parsed = parse_report_requirements(old_markdown)
+        old_sections_parsed = drop_unreported(parse_report_requirements(old_markdown), merged, sections)
         new_sections_parsed = parse_report_requirements(markdown)
         diff_lines = compare_with_previous(old_sections_parsed, new_sections_parsed)
         comparison_text = "# Отчёт сравнения spec-compliance\n\n```\n" + "\n".join(diff_lines) + "\n```\n"
@@ -1102,21 +1093,24 @@ def main():
     print(f"   Stable universal: {t['found']} found, {t['partial']} partial, "
           f"{t['not_found']} not_found, {t['n_a']} n_a (из {applicable} применимых)")
 
-    # Финальная валидация: total requirements в markdown == total keywords в sections
-    expected_kw = sum(s["keywords"]["total"] for s in sections)
+    # Финальная валидация по Stable-секциям: требований в JSON столько же, сколько keywords;
+    # в markdown - все требования, кроме относящихся к нестабильным частям секций
+    stable_sections = [s for s in sections if is_stable_section(s)]
+    expected_kw = sum(s["keywords"]["total"] for s in stable_sections)
     actual_reqs = 0
-    for s in sections:
-        key = s.get("section_id", f"{s['page']}/{s['subsection']}")
-        result = merged.get(key)
+    reported_reqs = 0
+    for s in stable_sections:
+        result = merged.get(section_key(s))
         if result:
             actual_reqs += len(result.get("requirements", []))
+            reported_reqs += len(reported_requirements(result))
 
     # Проверяем также, что markdown содержит все требования (через парсинг)
     parsed_sections = parse_report_requirements(markdown)
     md_reqs = sum(len(reqs) for reqs in parsed_sections.values())
 
-    print(f"\n📊 Валидация полноты:")
-    print(f"   Keywords в спецификации: {expected_kw}")
+    print(f"\n📊 Валидация полноты (Stable):")
+    print(f"   Keywords в Stable-разделах спецификации: {expected_kw}")
     print(f"   Требований от агентов (JSON): {actual_reqs}")
     print(f"   Требований в markdown: {md_reqs}")
 
@@ -1125,8 +1119,8 @@ def main():
         print(f"   ❌ ОШИБКА: Разница агенты vs спецификация: {delta} "
               f"(агенты вернули {actual_reqs}, ожидалось {expected_kw})")
         # Показываем какие секции не совпали
-        for s in sections:
-            key = s.get("section_id", f"{s['page']}/{s['subsection']}")
+        for s in stable_sections:
+            key = section_key(s)
             result = merged.get(key)
             if not result:
                 print(f"      Нет результата: {key} ({s['keywords']['total']} kw)")
@@ -1134,12 +1128,11 @@ def main():
                 print(f"      Несовпадение: {key} "
                       f"(ожидалось {s['keywords']['total']}, "
                       f"получено {len(result.get('requirements', []))})")
-    elif md_reqs != expected_kw:
-        print(f"   ❌ ОШИБКА: Разница markdown vs спецификация: "
-              f"{expected_kw - md_reqs}")
+    elif md_reqs != reported_reqs:
+        print(f"   ❌ ОШИБКА: Разница markdown vs JSON: {reported_reqs - md_reqs}")
     else:
-        print(f"   ✅ Все {expected_kw} требований присутствуют "
-              f"(JSON: {actual_reqs}, markdown: {md_reqs})")
+        print(f"   ✅ Все {expected_kw} требований разобраны агентами, в отчёте {reported_reqs} "
+              f"(исключены требования нестабильных частей секций: {expected_kw - reported_reqs})")
 
 
 if __name__ == "__main__":
