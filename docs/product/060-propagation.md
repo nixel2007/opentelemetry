@@ -158,7 +158,7 @@ B3 Single Header использует заголовок `b3`, B3 Multi Header �
 | `baggage` | `ОтелW3CBaggageПропагатор` | `baggage` |
 | `b3` | B3 Single (пакет `opentelemetry-propagator-b3`) | `b3` |
 | `b3multi` | B3 Multi (пакет `opentelemetry-propagator-b3`) | `X-B3-TraceId`, `X-B3-SpanId`, … |
-| `none` | — | Отключить все пропагаторы |
+| `none` | — | Отключить все пропагаторы; указанные вместе с `none` значения игнорируются с предупреждением |
 
 ## Смотрите также
 

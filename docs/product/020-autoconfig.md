@@ -258,7 +258,7 @@ otel:
 | `baggage` | W3C Baggage |
 | `b3` | B3 Single Header (требуется пакет [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3)) |
 | `b3multi` | B3 Multi Header (требуется тот же пакет) |
-| `none` | Отключить все пропагаторы |
+| `none` | Отключить все пропагаторы; указанные вместе с `none` значения игнорируются с предупреждением |
 
 ### Ограничения атрибутов
 
