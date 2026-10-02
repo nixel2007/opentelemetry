@@ -1,5 +1,4 @@
-// Fixture: Пользовательский генератор ID, не реализующий ФлагRandomДляНовыхИд().
-// Используется для тестирования ветки исключения в ОтелПровайдерТрассировки.ФлагRandomДляНовыхИд().
+// Fixture: Пользовательский генератор ID с фиксированными идентификаторами.
 // BSLLS:PublicMethodsDescription-off
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
