@@ -350,17 +350,17 @@ docs/spec-compliance.md
 Сравнение выполняется **автоматически** в шаге 4. Скрипт записывает подробный отчёт расхождений в файл:
 
 ```
-out/spec-comparison-report.md
+docs/spec-comparison-report.md
 ```
 
-> **ВАЖНО:** Отчёт сохраняется в рабочий файл в каталоге `out/` (он в `.gitignore` и не коммитится), а не
-> выводится в терминал. Это критически важно, потому что он может быть очень большим (сотни строк)
+> **ВАЖНО:** Отчёт сохраняется в файл в репозитории (рядом с `spec-compliance.md`), а не выводится в терминал.
+> Это критически важно, потому что он может быть очень большим (сотни строк)
 > и вымывается из контекста при выводе в stdout. Всегда читай его из файла.
 
 ### 5.1. Прочитай отчёт сравнения
 
 ```bash
-cat out/spec-comparison-report.md
+cat docs/spec-comparison-report.md
 ```
 
 Если файл слишком большой, используй `view` tool для чтения по частям.
@@ -381,7 +381,7 @@ git --no-pager diff docs/spec-compliance.md | head -100
 ## Шаг 6: Коммит
 
 ```bash
-git add docs/spec-compliance.md
+git add docs/spec-compliance.md docs/spec-comparison-report.md
 git commit -m "docs: обновить анализ соответствия спецификации OpenTelemetry vX.Y.Z
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
