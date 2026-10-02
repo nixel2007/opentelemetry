@@ -1062,22 +1062,22 @@ def main():
     markdown = generate_markdown(merged, sections, sections_index, stats, warnings)
 
     # Сравнение с предыдущей версией
-    # Файл сравнения лежит рядом с отчётом: docs/spec-compliance.md -> docs/spec-comparison-report.md
-    report_dir = os.path.dirname(os.path.abspath(report_path))
-    comparison_path = os.path.join(report_dir, "spec-comparison-report.md")
+    # Файл сравнения - рабочий, в каталоге out/ (не коммитится): out/spec-comparison-report.md
+    comparison_dir = os.path.join(os.getcwd(), "out")
+    comparison_path = os.path.join(comparison_dir, "spec-comparison-report.md")
     old_markdown = load_previous_report(report_path)
     if old_markdown:
         old_sections_parsed = drop_unreported(parse_report_requirements(old_markdown), merged, sections)
         new_sections_parsed = parse_report_requirements(markdown)
         diff_lines = compare_with_previous(old_sections_parsed, new_sections_parsed)
         comparison_text = "# Отчёт сравнения spec-compliance\n\n```\n" + "\n".join(diff_lines) + "\n```\n"
-        os.makedirs(report_dir, exist_ok=True)
+        os.makedirs(comparison_dir, exist_ok=True)
         with open(comparison_path, "w", encoding="utf-8") as f:
             f.write(comparison_text)
         print(f"\n📋 Отчёт сравнения записан в {comparison_path}")
     else:
         print("\nПредыдущая версия отчёта не найдена в git - сравнение пропущено.")
-        os.makedirs(report_dir, exist_ok=True)
+        os.makedirs(comparison_dir, exist_ok=True)
         with open(comparison_path, "w", encoding="utf-8") as f:
             f.write("# Отчёт сравнения spec-compliance\n\nПредыдущая версия отчёта не найдена в git - сравнение пропущено.\n")
 
