@@ -11,16 +11,15 @@
 | Показатель | Значение |
 |---|---|
 | Всего keywords в спецификации | 1047 |
-| Stable + universal keywords | 799 |
+| Stable + universal keywords | 789 |
 | Conditional keywords | 54 |
-| Development keywords | 212 |
-| Найдено требований (Stable universal) | 742 |
-| ✅ Реализовано (found) | 714 (96.2%) |
-| ⚠️ Частично (partial) | 17 (2.3%) |
-| ❌ Не реализовано (not_found) | 11 (1.5%) |
+| Найдено требований (Stable universal) | 732 |
+| ✅ Реализовано (found) | 712 (97.3%) |
+| ⚠️ Частично (partial) | 16 (2.2%) |
+| ❌ Не реализовано (not_found) | 4 (0.5%) |
 | ➖ Неприменимо (n_a) | 57 |
-| **MUST/MUST NOT found** | 440/453 (97.1%) |
-| **SHOULD/SHOULD NOT found** | 274/289 (94.8%) |
+| **MUST/MUST NOT found** | 438/445 (98.4%) |
+| **SHOULD/SHOULD NOT found** | 274/287 (95.5%) |
 
 ## Соответствие по разделам (Stable)
 
@@ -39,7 +38,7 @@
 | Propagators | 29 | 0 | 0 | 11 | 29 | 100.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
 | Prometheus Compatibility | 38 | 5 | 3 | 8 | 46 | 82.6% |
-| Prometheus Exporter | 14 | 1 | 8 | 1 | 23 | 60.9% |
+| Prometheus Exporter | 12 | 0 | 1 | 1 | 13 | 92.3% |
 
 ## Ключевые несоответствия (Stable)
 
@@ -65,24 +64,6 @@
 
 - ⚠️ **[Prometheus Compatibility]** [MUST] In such cases, the values MUST be concatenated together, separated by `;`, and ordered by the lexicographical order of the original keys.  
   Значения атрибутов, чьи ключи дали одно имя лейбла, склеиваются через ';' в порядке исходных ключей (ЛейблыИзАтрибутовOtlp, стр. 1320-1349, ВставитьПоПорядкуКлюча, стр. 1357-1363; проверено запуском: a.b, a:b и a_b дали a_b='first;third;second'). Но коллизии с лейблами, которые добавляет сама спецификация (в тексте пример - otel_scope_name), не склеиваются: ЛейблыТочки (стр. 1154-1165) перезаписывает атрибут точки лейблом области (otel.scope.name='user' потерян, остался otel_scope_name='lib'), а атрибут точки с тем же именем, что и скопированный атрибут ресурса, вытесняет ресурсный (service.name='point-attr' без 'checkout'). (`src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1154-1165,1320-1349,1357-1363,1374-1387`)
-
-- ❌ **[Prometheus Exporter]** [MUST] The option MAY be named `host`, and MUST be `localhost` by default.  
-  Опции host нет (см. предыдущее требование), поэтому нет и значения по умолчанию localhost: значение по умолчанию не равно localhost. В src localhost встречается только в адресах OTLP-коллектора (ОтелАвтоконфигурация.os:251,261,713,715; ОтелКонфигурационнаяФабрика.os:367), к Prometheus это не относится. (-)
-
-- ❌ **[Prometheus Exporter]** [MUST] The option MAY be named `port`, and MUST be `9464` by default.  
-  Значения по умолчанию 9464 нет: опции port не существует, поиск 9464 по src, tests и docs (кроме отчета docs/spec-compliance.md) ничего не находит. Значение по умолчанию не равно 9464. (-)
-
-- ❌ **[Prometheus Exporter]** [MUST] A Prometheus Exporter MUST support content negotiation to allow clients to request metrics in different formats based on the `Accept` header in HTTP requests.  
-  Согласования содержимого по заголовку Accept нет: СобратьВТексте(РезультатСбора) и ContentType() не принимают Accept, выдача одна - text format 0.0.4 (Prometheus.СериализоватьВТекст, Prometheus.ContentTypeМетрик). Библиотека prometheus 1.0.5 не поддерживает ни OpenMetrics, ни выбор формата по Accept (grep Accept, OpenMetrics, escaping по oscript_modules/prometheus пуст; в PrometheusTextFormat только ContentType и Сериализовать). HTTP-сервера в читателе нет, метрики отдает приложение, которое получает от читателя один формат (docs/api/Метрики/ОтелПрометеусЧитательМетрик.md: выдача не зависит от заголовка Accept). (-)
-
-- ❌ **[Prometheus Exporter]** [MUST] Content negotiation MUST follow Prometheus Content Negotiation guidelines.  
-  Процесса согласования содержимого нет, поэтому рекомендациям Prometheus Content Negotiation (разбор Accept с приоритетами, выбор формата и escaping-схемы, Content-Type ответа с параметрами) следовать нечему: им соответствует только ветка без Accept (см. следующее требование). (-)
-
-- ⚠️ **[Prometheus Exporter]** [MUST] Regardless of the configured `translation_strategy`, the final output format and character escaping MUST comply with the content negotiation’s restrictions based on the `Accept` header.  
-  Выдача всегда text 0.0.4 с underscore-экранированием (ContentType() = text/plain; version=0.0.4; charset=utf-8; НормализоватьИмя и НормализоватьИмяЛейбла), то есть соответствует ограничениям согласования по умолчанию, без Accept, и приемлема для любого клиента text 0.0.4. Но формат и экранирование не выбираются по Accept: запрос OpenMetrics или escaping=allow-utf-8/dots выполнить нельзя, translation_strategy не настраивается. (`src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:95-110,1496-1527`)
-
-- ❌ **[Prometheus Exporter]** [MUST] Then, the Prometheus Exporter MUST apply content negotiation, which may include a second translation of metric names using the requested escaping scheme.  
-  Согласование содержимого читателем не применяется (см. Content Negotiation): нет ни разбора Accept, ни второго перевода имен по запрошенной escaping-схеме (allow-utf-8, dots, values); имена переводятся один раз и всегда по underscores. (-)
 
 ### SHOULD/SHOULD NOT несоответствия
 
@@ -124,12 +105,6 @@
 
 - ❌ **[Prometheus Exporter]** [SHOULD NOT] A Prometheus Exporter SHOULD use an official Prometheus client library when one exists for the implementation language and it is practical to do so (e.g., dependency concerns) for serving Prometheus m...  
   Экспортер использует неофициальную стороннюю клиентскую библиотеку prometheus для OneScript (yellow-hammer/prometheus 1.0.5, автор Ivan Karlo): в официальном списке клиентских библиотек Prometheus (Go, Java/Scala, Node.js, Python, Ruby, Rust) ее нет, официальной библиотеки для OneScript не существует. Зависимость времени выполнения объявлена в packagedef:32 и opm-metadata.xml:22 (dev=false); '#Использовать prometheus' (стр. 4), текст выдачи формирует Prometheus.СериализоватьВТекст (стр. 100), Content-Type берется из Prometheus.ContentTypeМетрик (стр. 109), для реестра библиотеки читатель отдает семейства через Collect() (стр. 207-209). Спецификация допускает вместо этого собственную реализацию формата экспозиции (документация Prometheus: если клиентской библиотеки для языка нет, формат экспозиции можно реализовать самостоятельно); ранее выдачу формировал встроенный сериализатор без библиотеки, теперь зависимость возвращена. (`src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:4,100,109,207-209; packagedef:32; opm-metadata.xml:22`)
-
-- ❌ **[Prometheus Exporter]** [SHOULD] A Prometheus Exporter SHOULD support a configuration option to set the host that metrics are served on.  
-  У ОтелПрометеусЧитательМетрик нет опции host: HTTP-сервера в читателе нет (удален намеренно, метрики отдает приложение из собственного HTTP-обработчика через СобратьВТексте() и ContentType(), см. docs/api/Метрики/ОтелПрометеусЧитательМетрик.md, раздел 'Отдача по HTTP'). Конструктор ПриСозданииОбъекта() (src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1540) параметров не принимает, метода настройки хоста нет. Автоконфигурация Prometheus-читатель не создает: НормализоватьИмяЭкспортера (src/Конфигурация/Модули/ОтелАвтоконфигурация.os:1205-1214) принимает только otlp и none, для OTEL_METRICS_EXPORTER=prometheus пишет предупреждение и берет otlp (тест ЭкспортерМетрикPrometheusНеПоддерживается), OTEL_EXPORTER_PROMETHEUS_HOST нигде в src не читается. Адрес, на котором отдаются метрики, целиком определяет HTTP-сервер приложения. (-)
-
-- ❌ **[Prometheus Exporter]** [SHOULD] A Prometheus Exporter SHOULD support a configuration option to set the port that metrics are served on.  
-  У ОтелПрометеусЧитательМетрик нет опции port: HTTP-сервера в читателе нет (удален намеренно, метрики отдает приложение из собственного HTTP-обработчика через СобратьВТексте() и ContentType(), см. docs/api/Метрики/ОтелПрометеусЧитательМетрик.md, раздел 'Отдача по HTTP'). Конструктор ПриСозданииОбъекта() (src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1540) параметров не принимает, метода настройки порта нет. OTEL_EXPORTER_PROMETHEUS_PORT нигде в src не читается, автоконфигурация не поддерживает OTEL_METRICS_EXPORTER=prometheus (ОтелАвтоконфигурация.os:1205-1214: предупреждение и otlp). Порт определяет HTTP-сервер приложения. (-)
 
 ## Детальный анализ по разделам (Stable)
 
@@ -2554,32 +2529,14 @@
 |---|---|---|---|---|---|
 | 8 | MUST | ✅ found | A Prometheus Exporter MUST set the MetricReader `temporality` as a function of instrument kind to be `cumulative` for all instrument kinds. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:122-124,338-340; src/Метрики/Модули/ОтелПотокиМетрик.os:162-175` |  |
 
-#### Host
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#host)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 9 | SHOULD | ❌ not_found | A Prometheus Exporter SHOULD support a configuration option to set the host that metrics are served on. | - | У ОтелПрометеусЧитательМетрик нет опции host: HTTP-сервера в читателе нет (удален намеренно, метрики отдает приложение из собственного HTTP-обработчика через СобратьВТексте() и ContentType(), см. docs/api/Метрики/ОтелПрометеусЧитательМетрик.md, раздел 'Отдача по HTTP'). Конструктор ПриСозданииОбъекта() (src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1540) параметров не принимает, метода настройки хоста нет. Автоконфигурация Prometheus-читатель не создает: НормализоватьИмяЭкспортера (src/Конфигурация/Модули/ОтелАвтоконфигурация.os:1205-1214) принимает только otlp и none, для OTEL_METRICS_EXPORTER=prometheus пишет предупреждение и берет otlp (тест ЭкспортерМетрикPrometheusНеПоддерживается), OTEL_EXPORTER_PROMETHEUS_HOST нигде в src не читается. Адрес, на котором отдаются метрики, целиком определяет HTTP-сервер приложения. |
-| 10 | MUST | ❌ not_found | The option MAY be named `host`, and MUST be `localhost` by default. | - | Опции host нет (см. предыдущее требование), поэтому нет и значения по умолчанию localhost: значение по умолчанию не равно localhost. В src localhost встречается только в адресах OTLP-коллектора (ОтелАвтоконфигурация.os:251,261,713,715; ОтелКонфигурационнаяФабрика.os:367), к Prometheus это не относится. |
-
-#### Port
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#port)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 11 | SHOULD | ❌ not_found | A Prometheus Exporter SHOULD support a configuration option to set the port that metrics are served on. | - | У ОтелПрометеусЧитательМетрик нет опции port: HTTP-сервера в читателе нет (удален намеренно, метрики отдает приложение из собственного HTTP-обработчика через СобратьВТексте() и ContentType(), см. docs/api/Метрики/ОтелПрометеусЧитательМетрик.md, раздел 'Отдача по HTTP'). Конструктор ПриСозданииОбъекта() (src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1540) параметров не принимает, метода настройки порта нет. OTEL_EXPORTER_PROMETHEUS_PORT нигде в src не читается, автоконфигурация не поддерживает OTEL_METRICS_EXPORTER=prometheus (ОтелАвтоконфигурация.os:1205-1214: предупреждение и otlp). Порт определяет HTTP-сервер приложения. |
-| 12 | MUST | ❌ not_found | The option MAY be named `port`, and MUST be `9464` by default. | - | Значения по умолчанию 9464 нет: опции port не существует, поиск 9464 по src, tests и docs (кроме отчета docs/spec-compliance.md) ничего не находит. Значение по умолчанию не равно 9464. |
-
 #### Default Aggregation
 
 [Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#default-aggregation)
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 13 | SHOULD | ✅ found | A Prometheus Exporter SHOULD support a configuration option to set the MetricReader default `aggregation` as a function of instrument kind. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:301-328; src/Метрики/Модули/ОтелПотокиМетрик.os:415-443` |  |
-| 14 | MUST | ✅ found | This option MAY be named `default_aggregation`, and MUST use the default aggregation by default. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:315-318,1556; src/Метрики/Модули/ОтелПотокиМетрик.os:429-434; src/Метрики/Модули/ОтелАгрегация.os:180-187` |  |
+| 9 | SHOULD | ✅ found | A Prometheus Exporter SHOULD support a configuration option to set the MetricReader default `aggregation` as a function of instrument kind. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:301-328; src/Метрики/Модули/ОтелПотокиМетрик.os:415-443` |  |
+| 10 | MUST | ✅ found | This option MAY be named `default_aggregation`, and MUST use the default aggregation by default. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:315-318,1556; src/Метрики/Модули/ОтелПотокиМетрик.os:429-434; src/Метрики/Модули/ОтелАгрегация.os:180-187` |  |
 
 #### Resource Attributes as Metric Labels
 
@@ -2587,9 +2544,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 15 | MUST NOT | ✅ found | By default, it MUST NOT add any resource attributes as metric labels. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1176-1180,1553` |  |
-| 16 | SHOULD | ✅ found | The configuration SHOULD allow the user to select resource attributes to include or exclude. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:221-227,1176-1252` |  |
-| 17 | MUST NOT | ➖ n_a | Copied Resource attributes MUST NOT be excluded from the `target_info` metric. | - | Требование относится к содержимому метрики target_info, а ее описывает раздел Target Info со статусом Development: target_info не формируется (удалена в f85d745 вместе с остальными Development-возможностями; тест РесурсНеВыводитсяМетрикойTargetInfo). Скопированные атрибуты ресурса выводятся лейблами метрик (УстановитьАтрибутыРесурсаВЛейблах, ОтелПрометеусЧитательМетрик.os:221-227), исключать их неоткуда. |
+| 11 | MUST NOT | ✅ found | By default, it MUST NOT add any resource attributes as metric labels. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:1176-1180,1553` |  |
+| 12 | SHOULD | ✅ found | The configuration SHOULD allow the user to select resource attributes to include or exclude. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:221-227,1176-1252` |  |
+| 13 | MUST NOT | ➖ n_a | Copied Resource attributes MUST NOT be excluded from the `target_info` metric. | - | Требование относится к содержимому метрики target_info, а ее описывает раздел Target Info со статусом Development: target_info не формируется (удалена в f85d745 вместе с остальными Development-возможностями; тест РесурсНеВыводитсяМетрикойTargetInfo). Скопированные атрибуты ресурса выводятся лейблами метрик (УстановитьАтрибутыРесурсаВЛейблах, ОтелПрометеусЧитательМетрик.os:221-227), исключать их неоткуда. |
 
 #### Scope Info
 
@@ -2597,27 +2554,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 18 | MUST | ✅ found | The option MAY be named `scope_info_enabled`, and MUST be `true` by default. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:149-160,1154-1165,1265-1288` |  |
-
-#### Content Negotiation
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#content-negotiation)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 19 | MUST | ❌ not_found | A Prometheus Exporter MUST support content negotiation to allow clients to request metrics in different formats based on the `Accept` header in HTTP requests. | - | Согласования содержимого по заголовку Accept нет: СобратьВТексте(РезультатСбора) и ContentType() не принимают Accept, выдача одна - text format 0.0.4 (Prometheus.СериализоватьВТекст, Prometheus.ContentTypeМетрик). Библиотека prometheus 1.0.5 не поддерживает ни OpenMetrics, ни выбор формата по Accept (grep Accept, OpenMetrics, escaping по oscript_modules/prometheus пуст; в PrometheusTextFormat только ContentType и Сериализовать). HTTP-сервера в читателе нет, метрики отдает приложение, которое получает от читателя один формат (docs/api/Метрики/ОтелПрометеусЧитательМетрик.md: выдача не зависит от заголовка Accept). |
-| 20 | MUST | ❌ not_found | Content negotiation MUST follow Prometheus Content Negotiation guidelines. | - | Процесса согласования содержимого нет, поэтому рекомендациям Prometheus Content Negotiation (разбор Accept с приоритетами, выбор формата и escaping-схемы, Content-Type ответа с параметрами) следовать нечему: им соответствует только ветка без Accept (см. следующее требование). |
-| 21 | MUST | ✅ found | If no `Accept` header is provided and no fallback protocol is configured, the exporter MUST use Prometheus text format 0.0.4 (`text/plain; version=0.0.4`) and apply `underscores` escaping. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:95-110,467-500,1060-1072,1496-1527` |  |
-
-#### Interaction with Translation Strategy
-
-[Ссылка на спецификацию](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy)
-
-| # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
-|---|---|---|---|---|---|
-| 22 | MUST | ⚠️ partial | Regardless of the configured `translation_strategy`, the final output format and character escaping MUST comply with the content negotiation’s restrictions based on the `Accept` header. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:95-110,1496-1527` | Выдача всегда text 0.0.4 с underscore-экранированием (ContentType() = text/plain; version=0.0.4; charset=utf-8; НормализоватьИмя и НормализоватьИмяЛейбла), то есть соответствует ограничениям согласования по умолчанию, без Accept, и приемлема для любого клиента text 0.0.4. Но формат и экранирование не выбираются по Accept: запрос OpenMetrics или escaping=allow-utf-8/dots выполнить нельзя, translation_strategy не настраивается. |
-| 23 | MUST | ✅ found | First, `translation_strategy` MUST be applied to construct metric names. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:467-500,1060-1072,1496-1514` |  |
-| 24 | MUST | ❌ not_found | Then, the Prometheus Exporter MUST apply content negotiation, which may include a second translation of metric names using the requested escaping scheme. | - | Согласование содержимого читателем не применяется (см. Content Negotiation): нет ни разбора Accept, ни второго перевода имен по запрошенной escaping-схеме (allow-utf-8, dots, values); имена переводятся один раз и всегда по underscores. |
+| 14 | MUST | ✅ found | The option MAY be named `scope_info_enabled`, and MUST be `true` by default. | `src/Метрики/Классы/ОтелПрометеусЧитательМетрик.os:149-160,1154-1165,1265-1288` |  |
 
 ## Требования Development-статуса
 

@@ -49,6 +49,15 @@ CONDITIONAL_PATHS = {
         "Prometheus Receiver (Prometheus → OTLP)",
 }
 
+# Stable-секции, требования которых задают только поведение Development-раздела
+# (по section_id): настройки HTTP-сервера и согласование содержимого по заголовку Accept
+# HTTP-запроса имеют смысл только у Pull Metric Exporter, отвечающего на HTTP-запросы
+# (Status: Development)
+DEVELOPMENT_DEPENDENT_PATHS = [
+    r"^Prometheus Exporter/Configuration/(Host|Port)$",
+    r"^Prometheus Exporter/(.+/)?Content Negotiation(/|$)",
+]
+
 # Deprecated секции
 DEPRECATED_PATTERNS = [
     r"Jaeger",
@@ -315,6 +324,8 @@ def extract_sections(text, page_name, page_url):
         parent_path = _build_parent_path(headings, idx)
         section_id = f"{page_name}/{parent_path}"
         scope = _classify_subsection(title, section_id)
+        if any(re.search(p, section_id) for p in DEVELOPMENT_DEPENDENT_PATHS):
+            stability = "Development"
 
         sections.append({
             "page": page_name,

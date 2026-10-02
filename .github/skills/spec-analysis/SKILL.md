@@ -48,6 +48,14 @@ description: >
 «* Status: Development - ...») относится только к своему утверждению и статус секции не меняет.
 Заголовки 5-6 уровня - отдельные секции со своим статусом.
 
+Stable-секция, все требования которой задают только поведение Development-раздела, считается
+Development (`DEVELOPMENT_DEPENDENT_PATHS` в `extract_requirements.py`, по пути секции):
+
+| Секция спецификации | От какого Development-раздела зависит |
+|---|---|
+| Prometheus Exporter → Configuration → Host, Port | Pull Metric Exporter: хост и порт, на которых HTTP-сервер отдает метрики |
+| Prometheus Exporter → Content Negotiation (с подразделом Interaction with Translation Strategy) | Pull Metric Exporter (заголовок `Accept` HTTP-запроса) и Translation Strategy |
+
 > **Анализ проводится только по Stable-требованиям.** `generate_prompts.py` не передает агентам
 > секции со статусом Development, `assemble_report.py` не включает их в отчет. Требование
 > нестабильной части Stable-секции (встроенный маркер `Status: Development`, ветка «(Development)»
