@@ -41,7 +41,8 @@ OPI_GRPC при открытии соединения записываются �
   настроить его нельзя;
 - заголовок `user-agent` задаёт сам клиент tonic внутри OPI_GRPC: метаданные `user-agent` до сервера
   не доходят, сервер получает `tonic/0.13.1`. User-Agent в tonic задаётся только при создании
-  gRPC-канала (`Endpoint::user_agent`), а такой настройки OPI_GRPC пока не даёт.
+  gRPC-канала (`Endpoint::user_agent`), а такой настройки OPI_GRPC пока не даёт
+  ([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111)).
 
 ## Конструктор
 

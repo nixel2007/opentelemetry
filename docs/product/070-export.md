@@ -86,7 +86,8 @@ gRPC-транспорт повторяет временные ошибки по 
 
 Заголовок `User-Agent` (метаданные `user-agent` для gRPC) — идентификатор продукта: он добавляется
 перед стандартным `OTel-OTLP-Exporter-OneScript/<версия>`. По gRPC метаданные `user-agent` до сервера
-пока не доходят: клиент tonic внутри OPI_GRPC ставит свой заголовок, и сервер получает `tonic/0.13.1`.
+пока не доходят: клиент tonic внутри OPI_GRPC ставит свой заголовок, и сервер получает `tonic/0.13.1`
+([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111)).
 
 ```bsl
 Заголовки = Новый Соответствие();
