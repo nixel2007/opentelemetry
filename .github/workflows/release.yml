@@ -5,11 +5,21 @@ on:
     types:
       - published
   workflow_dispatch:
+    inputs:
+      pool:
+        description: Пул хаба
+        required: false
+        default: default
+
+# Доверенная публикация: хабу предъявляется OIDC id-token конвейера, токен хаба в секретах не нужен
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   release:
     uses: autumn-library/workflows/.github/workflows/release.yml@v1
     with:
       package_mask: "opentelemetry-*.ospx"
-    secrets:
-      PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+      trusted_publishing: true
+      pool: ${{ inputs.pool }}
