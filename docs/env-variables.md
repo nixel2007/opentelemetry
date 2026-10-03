@@ -5,6 +5,20 @@
 Переменные читаются через [configor](https://github.com/oscript-library/configor): `OTEL_FOO_BAR` → ключ `otel.foo.bar`.  
 Альтернативно параметры можно задать через файл конфигурации configor или программно через `МенеджерПараметров`.
 
+Пустое значение переменной равносильно незаданной. Значения-перечисления (протокол, сжатие,
+временная агрегация, сэмплер, экспортеры, пропагаторы, фильтр exemplars) читаются без учета регистра;
+нераспознанное значение записывается в лог предупреждением и заменяется значением по умолчанию.
+
+Числовые значения, кроме `OTEL_TRACES_SAMPLER_ARG`, — неотрицательные целые. Нераспознанное,
+отрицательное или дробное значение записывается в лог предупреждением и считается незаданным:
+специфичная переменная сигнала, спана или записи лога (`OTEL_EXPORTER_OTLP_TRACES_TIMEOUT`,
+`OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT` и т.п.), протокол и сжатие сигнала откатываются на общую переменную
+(`OTEL_EXPORTER_OTLP_TIMEOUT`, `OTEL_ATTRIBUTE_COUNT_LIMIT`, ...), общая — на значение по умолчанию.
+
+При заданной `OTEL_CONFIG_FILE` SDK строится только из файла: остальные переменные окружения, включая
+`OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` и `OTEL_SDK_SHUTDOWN_TIMEOUT`, не читаются, кроме
+подставленных в файл через `${VAR}`.
+
 ---
 
 ## Общие параметры SDK
@@ -13,8 +27,8 @@
 |------------|-------------|----------|
 | `OTEL_SDK_DISABLED` | `false` | Отключить SDK. При `true` создаётся NoOp SDK (без экспортеров, сэмплер `always_off`) |
 | `OTEL_SERVICE_NAME` | - | Имя сервиса (`service.name` в ресурсе) |
-| `OTEL_RESOURCE_ATTRIBUTES` | - | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2` |
-| `OTEL_SDK_SHUTDOWN_TIMEOUT` | `30000` | Таймаут завершения SDK в миллисекундах |
+| `OTEL_RESOURCE_ATTRIBUTES` | - | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2`, спецсимволы в percent-encoding (`%2C` — запятая). Значение с ошибкой разбора (элемент не в формате `ключ=значение`, пустой ключ, некорректный percent-encoding) игнорируется целиком, ошибка пишется в лог |
+| `OTEL_SDK_SHUTDOWN_TIMEOUT` | `30000` | Таймаут завершения SDK в миллисекундах, `0` — без ограничения. Действует, если `Закрыть` вызван без таймаута |
 | `OTEL_CONFIG_FILE` | - | Путь к файлу конфигурации configor (YAML/JSON) |
 | `OTEL_EXPERIMENTAL_CONFIG_FILE` | - | **Устарела.** Используйте `OTEL_CONFIG_FILE` |
 
@@ -40,11 +54,28 @@
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Протокол: `http/json`, `http/protobuf`, `grpc` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | - | Заголовки HTTP/gRPC, формат: `key1=value1,key2=value2` |
 | `OTEL_EXPORTER_OTLP_COMPRESSION` | `none` | Сжатие: `gzip`, `none` |
-| `OTEL_EXPORTER_OTLP_TIMEOUT` | `10000` | Таймаут запроса в миллисекундах |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | `10000` | Таймаут запроса в миллисекундах, `0` — без ограничения |
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | - | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | - | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | - | Путь к клиентскому сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_INSECURE` | `false` | Отключить проверку TLS-сертификата |
+
+Заголовок `User-Agent` в `OTEL_EXPORTER_OTLP_HEADERS` — идентификатор продукта: он добавляется
+перед стандартным `OTel-OTLP-Exporter-OneScript/<версия>`, а не заменяет его.
+
+Ограничения платформы:
+
+- для `grpc` сжатие не поддерживается клиентом OPI_GRPC: при заданном `gzip` в лог пишется
+  предупреждение, данные отправляются без сжатия; mTLS (`CLIENT_KEY`, `CLIENT_CERTIFICATE`)
+  для `grpc` тоже не поддерживается; заголовок `User-Agent` по `grpc` до сервера не доходит:
+  клиент tonic внутри OPI_GRPC ставит свой, `tonic/0.13.1`
+  ([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111));
+- для `http/protobuf` и `http/json` файлы сертификатов (`CERTIFICATE`, `CLIENT_KEY`,
+  `CLIENT_CERTIFICATE`) не применяются HTTP-клиентом OneScript: транспорт предупреждает об этом,
+  сертификат сервера проверяется по системному хранилищу.
+
+Для `grpc` адрес сигнала (`OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT`) — цель соединения: сервис сигнала
+выбирается по сигналу, путь в адресе не используется.
 
 ---
 
@@ -123,12 +154,16 @@
 
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
-| `OTEL_BSP_MAX_QUEUE_SIZE` | `2048` | Максимальный размер очереди |
+| `OTEL_BSP_MAX_QUEUE_SIZE` | `2048` | Максимальный размер очереди, целое число больше 0 |
 | `OTEL_BSP_SCHEDULE_DELAY` | `5000` | Интервал запуска экспорта (мс) |
-| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `512` | Максимальный размер пакета |
+| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `512` | Максимальный размер пакета, целое число больше 0, не больше `OTEL_BSP_MAX_QUEUE_SIZE` |
 | `OTEL_BSP_EXPORT_TIMEOUT` | `30000` | Таймаут экспорта (мс) |
 
-> Пакетный процессор логов использует те же параметры, но с дефолтом `OTEL_BSP_SCHEDULE_DELAY = 1000` мс.
+> Пакетный процессор логов настраивается аналогичными переменными `OTEL_BLRP_MAX_QUEUE_SIZE`,
+> `OTEL_BLRP_SCHEDULE_DELAY` (по умолчанию `1000` мс), `OTEL_BLRP_MAX_EXPORT_BATCH_SIZE` и `OTEL_BLRP_EXPORT_TIMEOUT`.
+> Размер очереди или пакета меньше 1 или дробный записывается в лог предупреждением и заменяется
+> значением по умолчанию. Размер пакета больше размера очереди записывается в лог предупреждением
+> и заменяется размером очереди.
 
 ---
 
@@ -137,7 +172,8 @@
 | Переменная | По умолчанию | Описание |
 |------------|-------------|----------|
 | `OTEL_METRIC_EXPORT_INTERVAL` | `60000` | Интервал экспорта метрик (мс) |
-| `OTEL_METRICS_EXEMPLAR_FILTER` | `trace_based` | Фильтр exemplars: `always_on`, `always_off`, `trace_based` |
+| `OTEL_METRIC_EXPORT_TIMEOUT` | `30000` | Таймаут одного экспорта метрик (мс) |
+| `OTEL_METRICS_EXEMPLAR_FILTER` | `trace_based` | Фильтр exemplars: `always_on`, `always_off`, `trace_based` (только измерения в контексте сэмплированного спана) |
 
 ---
 
@@ -155,7 +191,7 @@
 | `baggage` | W3C Baggage |
 | `b3` | B3 Single Header (требуется пакет [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3)) |
 | `b3multi` | B3 Multi Header (требуется тот же пакет) |
-| `none` | Отключить все пропагаторы |
+| `none` | Отключить все пропагаторы; указанные вместе с `none` значения игнорируются с предупреждением |
 
 ---
 
@@ -173,3 +209,7 @@
 | `OTEL_LINK_ATTRIBUTE_COUNT_LIMIT` | `128` | Максимальное число атрибутов ссылки |
 | `OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT` | наследует `OTEL_ATTRIBUTE_COUNT_LIMIT` | Переопределение для записей лога |
 | `OTEL_LOGRECORD_ATTRIBUTE_VALUE_LENGTH_LIMIT` | наследует `OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT` | Переопределение для записей лога |
+
+`0` — нулевой лимит, а не отсутствие лимита: атрибуты отбрасываются, строки усекаются до пустых.
+Лимит длины действует на строки и двоичные данные, в том числе внутри массивов и соответствий.
+Атрибуты ресурса и метрик лимитами не ограничиваются.
