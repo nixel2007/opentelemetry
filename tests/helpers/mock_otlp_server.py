@@ -9,6 +9,7 @@ Responds based on path:
   /too-many  - 429 Too Many Requests
   /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
   /big-response - 200 OK with a 2048-byte body
+  /?token=1  - 200 OK (per-signal endpoint with a query and no path)
 """
 import gzip
 import http.server
@@ -74,6 +75,11 @@ class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        elif self.path == '/?token=1':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{}')
         else:
             self.send_response(404)
             self.end_headers()
