@@ -54,7 +54,7 @@
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Протокол: `http/json`, `http/protobuf`, `grpc` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | - | Заголовки HTTP/gRPC, формат: `key1=value1,key2=value2` |
 | `OTEL_EXPORTER_OTLP_COMPRESSION` | `none` | Сжатие: `gzip`, `none` |
-| `OTEL_EXPORTER_OTLP_TIMEOUT` | `10000` | Таймаут запроса в миллисекундах |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | `10000` | Таймаут запроса в миллисекундах, `0` — без ограничения |
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | - | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | - | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | - | Путь к клиентскому сертификату (PEM) |

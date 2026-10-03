@@ -155,7 +155,7 @@ otel:
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `otel.exporter.otlp.protocol` | `http/protobuf` | Протокол: `http/json`, `http/protobuf`, `grpc` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `otel.exporter.otlp.headers` | — | Заголовки HTTP/gRPC, формат: `key1=value1,key2=value2` |
 | `OTEL_EXPORTER_OTLP_COMPRESSION` | `otel.exporter.otlp.compression` | `none` | Сжатие: `gzip`, `none` |
-| `OTEL_EXPORTER_OTLP_TIMEOUT` | `otel.exporter.otlp.timeout` | `10000` | Таймаут запроса в миллисекундах |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | `otel.exporter.otlp.timeout` | `10000` | Таймаут запроса в миллисекундах, `0` — без ограничения |
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | `otel.exporter.otlp.certificate` | — | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | `otel.exporter.otlp.client.key` | — | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | `otel.exporter.otlp.client.certificate` | — | Путь к клиентскому сертификату (PEM) |
