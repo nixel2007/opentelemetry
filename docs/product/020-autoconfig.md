@@ -159,7 +159,7 @@ otel:
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | `otel.exporter.otlp.certificate` | — | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | `otel.exporter.otlp.client.key` | — | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | `otel.exporter.otlp.client.certificate` | — | Путь к клиентскому сертификату (PEM) |
-| `OTEL_EXPORTER_OTLP_INSECURE` | `otel.exporter.otlp.insecure` | `false` | Отключить проверку TLS-сертификата |
+| `OTEL_EXPORTER_OTLP_INSECURE` | `otel.exporter.otlp.insecure` | `false` | `true` — gRPC-соединение с endpoint без схемы идёт без TLS (по умолчанию такое соединение защищено TLS); схема `http`/`https` важнее, на OTLP/HTTP не влияет |
 
 ### OTLP — трассировка (per-signal)
 

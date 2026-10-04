@@ -58,7 +58,7 @@
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | - | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | - | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | - | Путь к клиентскому сертификату (PEM) |
-| `OTEL_EXPORTER_OTLP_INSECURE` | `false` | Отключить проверку TLS-сертификата |
+| `OTEL_EXPORTER_OTLP_INSECURE` | `false` | `true` — gRPC-соединение с endpoint без схемы идёт без TLS (по умолчанию такое соединение защищено TLS); схема `http`/`https` важнее, на OTLP/HTTP не влияет |
 
 Заголовок `User-Agent` в `OTEL_EXPORTER_OTLP_HEADERS` — идентификатор продукта: он добавляется
 перед стандартным `OTel-OTLP-Exporter-OneScript/<версия>`, а не заменяет его.
