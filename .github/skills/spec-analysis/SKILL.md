@@ -42,6 +42,28 @@ description: >
 - **Stable** - стабильное требование, обязательное к исполнению
 - **Development** - нестабильное, может измениться в будущих версиях
 
+Статус секции задает отдельная строка `Status: ...` сразу после ее заголовка; секция без такой
+строки наследует статус ближайшего родительского заголовка, а без него - статус страницы.
+Встроенный маркер («Status: Development - The `MeterProvider` MUST ...», элемент списка
+«* Status: Development - ...») относится только к своему утверждению и статус секции не меняет.
+Заголовки 5-6 уровня - отдельные секции со своим статусом.
+
+Stable-секция, все требования которой задают только поведение Development-раздела, считается
+Development (`DEVELOPMENT_DEPENDENT_PATHS` в `extract_requirements.py`, по пути секции):
+
+| Секция спецификации | От какого Development-раздела зависит |
+|---|---|
+| Prometheus Exporter → Configuration → Host, Port | Pull Metric Exporter: хост и порт, на которых HTTP-сервер отдает метрики |
+| Prometheus Exporter → Content Negotiation (с подразделом Interaction with Translation Strategy) | Pull Metric Exporter (заголовок `Accept` HTTP-запроса) и Translation Strategy |
+
+> **Анализ проводится только по Stable-требованиям.** `generate_prompts.py` не передает агентам
+> секции со статусом Development, `assemble_report.py` не включает их в отчет. Требование
+> нестабильной части Stable-секции (встроенный маркер `Status: Development`, ветка «(Development)»
+> в секции со статусом Mixed, требование, задающее только поведение Development-раздела) агент
+> включает в результат с полем `"stability": "Development"`: число требований секции
+> по-прежнему совпадает с keywords, но в отчет такое требование не входит ни в таблицы, ни в
+> итоги.
+
 **Область применения** (scope):
 - **universal** - обязательно для любой реализации SDK
 - **conditional** - обязательно **только** при реализации конкретной опциональной фичи
@@ -55,15 +77,22 @@ description: >
 |---|---|---|
 | GetAll | GetAll Getter | Добавляется после stable релиза Getter |
 | Resource detector name | Resource Detector Naming | Только для SDK с реализованными детекторами |
+| Prometheus Compatibility → Prometheus Metric points to OTLP (вся ветка) | Prometheus Receiver (Prometheus → OTLP) | Нужна только приемнику Prometheus-метрик; SDK их только экспортирует |
+
+> Заголовки ветки Prometheus → OTLP (Counters, Histograms, Exemplars...) повторяются в ветке
+> OTLP → Prometheus, поэтому ветка классифицируется по пути секции (`CONDITIONAL_PATHS`),
+> а не по заголовку (`CONDITIONAL_SUBSECTIONS`).
 
 > B3 Propagator и Prometheus Exporter ранее были условными, но теперь реализованы
 > (ОтелB3Пропагатор, ОтелПрометеусЧитательМетрик) и считаются как universal.
+> Для Prometheus анализируются две страницы: Prometheus Exporter и Prometheus Compatibility
+> (перевод OTLP → Prometheus, по которому работает `ОтелПрометеусЧитательМетрик`).
 
 ## Шаг 1: Извлечение секций из спецификации
 
 Запусти Python-скрипт для парсинга всех страниц спецификации OTel.
 
-> **ВАЖНО:** Скрипт загружает 12 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
+> **ВАЖНО:** Скрипт загружает 14 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
 > При повторных запусках скрипт использует кеш из `<output_dir>/*.txt`. Удали кеш-файлы для обновления.
 
 ```bash
@@ -71,13 +100,17 @@ python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-s
 ```
 
 Скрипт:
-1. Загружает 12 страниц спецификации
+1. Загружает 14 страниц спецификации (список - `SPEC_URLS` в скрипте)
 2. Разбивает каждую страницу на секции по заголовкам (`##`/`###`)
 3. Для каждой секции сохраняет **полный текст**, URL-якорь, стабильность, scope
 4. Считает количество MUST/SHOULD ключевых слов в каждой секции
 5. Сохраняет результат в `/tmp/otel-specs/sections.json`
 
-Ожидаемый результат: ~200-250 секций, в сумме содержащих ~800+ ключевых слов MUST/SHOULD.
+Ожидаемый результат: ~300 секций, в сумме содержащих ~1000+ ключевых слов MUST/SHOULD.
+
+> Новую страницу добавляй в `SPEC_URLS` и в `DOMAIN_CONFIG` скрипта `generate_prompts.py`
+> (домен → каталоги кода). Страница без домена не получит агента: `generate_prompts.py`
+> предупредит о неназначенных секциях. Список страниц отчета `assemble_report.py` берет из `sections.json`.
 
 ## Шаг 2: Генерация промптов для агентов
 
@@ -86,8 +119,8 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 ```
 
 Скрипт:
-1. Читает `sections.json`
-2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export и т.д.)
+1. Читает `sections.json` и оставляет только секции со статусом Stable
+2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
 3. Разбивает крупные домены на группы по 5-8 секций
 4. Для каждого агента генерирует промпт с:
    - Полным текстом секций
@@ -99,7 +132,7 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 > Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.
 
-Ожидаемый результат: ~30-40 агентов.
+Ожидаемый результат: ~35 агентов.
 
 ## Шаг 3: Запуск агентов верификации
 
@@ -256,7 +289,8 @@ python3 .github/skills/spec-analysis/scripts/assemble_report.py /tmp/otel-specs 
 
 Скрипт:
 1. Загружает все `results/*.json`
-2. Валидирует полноту (все секции покрыты, keywords ≈ найденным требованиям)
+2. Валидирует полноту Stable-секций (все покрыты, число требований = keywords); требования с
+   `"stability": "Development"` в отчет не входят
 3. Вычисляет статистику по доменам
 4. **Детерминированно** генерирует markdown с **каждым** требованием как отдельной строкой таблицы
 5. Загружает предыдущую версию `docs/spec-compliance.md` из git (`HEAD`)
@@ -285,7 +319,6 @@ docs/spec-compliance.md
 │   ├── MUST/MUST NOT нарушения
 │   └── SHOULD/SHOULD NOT несоответствия
 ├── Детальный анализ по разделам (Stable) - каждая секция = ####, каждое требование = строка таблицы
-├── Требования Development-статуса - с полными таблицами
 ├── Условные требования (Conditional) - с полными таблицами для Stable+conditional
 ├── Ограничения платформы OneScript
 └── Методология
@@ -299,11 +332,11 @@ docs/spec-compliance.md
 Скрипт `scripts/assemble_report.py` автоматически проверяет полноту:
 
 ```
-📊 Валидация полноты:
-   Keywords в спецификации: 824
-   Требований от агентов (JSON): 824
-   Требований в markdown: 824
-   ✅ Все 824 требований присутствуют (JSON: 824, markdown: 824)
+📊 Валидация полноты (Stable):
+   Keywords в Stable-разделах спецификации: 835
+   Требований от агентов (JSON): 835
+   Требований в markdown: 831
+   ✅ Все 835 требований разобраны агентами, в отчёте 831 (исключены требования нестабильных частей секций: 4)
 ```
 
 **Если total не совпадает** (❌ ОШИБКА в выводе):

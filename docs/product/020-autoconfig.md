@@ -63,7 +63,9 @@ export OTEL_SDK_DISABLED=true
 
 ## Настройка через файл конфигурации (configor)
 
-Путь к файлу задаётся переменной `OTEL_CONFIG_FILE` или программно. Поддерживаются форматы JSON и YAML.
+Параметры можно хранить в файле JSON или YAML с теми же ключами, что и у переменных окружения (`otel.service.name` и т.д.). Файл подключается программно: `МенеджерПараметров` из configor читает его и передаётся в `ОтелАвтоконфигурация.Инициализировать`.
+
+> Переменная `OTEL_CONFIG_FILE` задаёт файл другого формата — декларативной конфигурации с обязательным полем `file_format`. Он описан в [ОтелФайловаяКонфигурация](/api/opentelemetry/Конфигурация/ОтелФайловаяКонфигурация.md).
 
 :::code-group
 
@@ -84,9 +86,7 @@ export OTEL_SDK_DISABLED=true
         },
         "traces": {
             "sampler": "parentbased_traceidratio",
-            "sampler": {
-                "arg": "0.1"
-            }
+            "sampler.arg": "0.1"
         },
         "propagators": "tracecontext,baggage"
     }
@@ -107,8 +107,16 @@ otel:
   propagators: tracecontext,baggage
 ```
 
-```bash [Указание пути к файлу]
-export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
+```bsl [Подключение файла]
+#Использовать opentelemetry
+
+Менеджер = Новый МенеджерПараметров();
+Менеджер.ИспользоватьПровайдерJSON(); // для YAML — ИспользоватьПровайдерYAML()
+Менеджер.УстановитьФайлПараметров("/etc/myapp/otel-config.json");
+Менеджер.Прочитать();
+
+// Переменные окружения в этом случае не читаются
+Сдк = ОтелАвтоконфигурация.Инициализировать(Менеджер);
 ```
 
 :::
@@ -121,8 +129,8 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 |------------|--------------|-------------|----------|
 | `OTEL_SDK_DISABLED` | `otel.sdk.disabled` | `false` | Отключить SDK. При `true` создаётся NoOp SDK |
 | `OTEL_SERVICE_NAME` | `otel.service.name` | — | Имя сервиса (`service.name` в ресурсе) |
-| `OTEL_RESOURCE_ATTRIBUTES` | `otel.resource.attributes` | — | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2` |
-| `OTEL_SDK_SHUTDOWN_TIMEOUT` | `otel.sdk.shutdown.timeout` | `30000` | Таймаут завершения SDK в миллисекундах |
+| `OTEL_RESOURCE_ATTRIBUTES` | `otel.resource.attributes` | — | Дополнительные атрибуты ресурса, формат: `key1=value1,key2=value2`, спецсимволы в percent-encoding. Значение с ошибкой разбора (элемент не в формате `ключ=значение`, пустой ключ, некорректный percent-encoding) игнорируется целиком |
+| `OTEL_SDK_SHUTDOWN_TIMEOUT` | `otel.sdk.shutdown.timeout` | `30000` | Таймаут завершения SDK в миллисекундах, `0` — без ограничения. Действует, если `Закрыть` вызван без таймаута |
 | `OTEL_CONFIG_FILE` | `otel.config.file` | — | Путь к файлу конфигурации configor (YAML/JSON) |
 
 ### Экспортеры
@@ -132,6 +140,10 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 | `OTEL_TRACES_EXPORTER` | `otel.traces.exporter` | `otlp` | Экспортер трассировки: `otlp`, `none` |
 | `OTEL_LOGS_EXPORTER` | `otel.logs.exporter` | `otlp` | Экспортер логов: `otlp`, `none` |
 | `OTEL_METRICS_EXPORTER` | `otel.metrics.exporter` | `otlp` | Экспортер метрик: `otlp`, `none` |
+
+С экспортером `none` (или недоступным транспортом) сэмплер, лимиты и фильтр exemplars из переменных
+окружения всё равно применяются: решение сэмплера задаёт флаг sampled, который передаётся дальше, а
+спаны, записи и метрики получают процессоры и читатели, добавленные в коде.
 
 ### OTLP — общие параметры
 
@@ -143,11 +155,11 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `otel.exporter.otlp.protocol` | `http/protobuf` | Протокол: `http/json`, `http/protobuf`, `grpc` |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `otel.exporter.otlp.headers` | — | Заголовки HTTP/gRPC, формат: `key1=value1,key2=value2` |
 | `OTEL_EXPORTER_OTLP_COMPRESSION` | `otel.exporter.otlp.compression` | `none` | Сжатие: `gzip`, `none` |
-| `OTEL_EXPORTER_OTLP_TIMEOUT` | `otel.exporter.otlp.timeout` | `10000` | Таймаут запроса в миллисекундах |
+| `OTEL_EXPORTER_OTLP_TIMEOUT` | `otel.exporter.otlp.timeout` | `10000` | Таймаут запроса в миллисекундах, `0` — без ограничения |
 | `OTEL_EXPORTER_OTLP_CERTIFICATE` | `otel.exporter.otlp.certificate` | — | Путь к CA-сертификату (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_KEY` | `otel.exporter.otlp.client.key` | — | Путь к клиентскому приватному ключу (PEM) |
 | `OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE` | `otel.exporter.otlp.client.certificate` | — | Путь к клиентскому сертификату (PEM) |
-| `OTEL_EXPORTER_OTLP_INSECURE` | `otel.exporter.otlp.insecure` | `false` | Отключить проверку TLS-сертификата |
+| `OTEL_EXPORTER_OTLP_INSECURE` | `otel.exporter.otlp.insecure` | `false` | `true` — gRPC-соединение с endpoint без схемы идёт без TLS (по умолчанию такое соединение защищено TLS); схема `http`/`https` важнее, на OTLP/HTTP не влияет |
 
 ### OTLP — трассировка (per-signal)
 
@@ -214,18 +226,22 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 
 | Переменная | Ключ configor | По умолчанию | Описание |
 |------------|--------------|-------------|----------|
-| `OTEL_BSP_MAX_QUEUE_SIZE` | `otel.bsp.max.queue.size` | `2048` | Максимальный размер очереди |
+| `OTEL_BSP_MAX_QUEUE_SIZE` | `otel.bsp.max.queue.size` | `2048` | Максимальный размер очереди, целое число больше 0 |
 | `OTEL_BSP_SCHEDULE_DELAY` | `otel.bsp.schedule.delay` | `5000` | Интервал запуска экспорта (мс) |
-| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `otel.bsp.max.export.batch.size` | `512` | Максимальный размер пакета |
+| `OTEL_BSP_MAX_EXPORT_BATCH_SIZE` | `otel.bsp.max.export.batch.size` | `512` | Максимальный размер пакета, целое число больше 0, не больше `OTEL_BSP_MAX_QUEUE_SIZE` |
 | `OTEL_BSP_EXPORT_TIMEOUT` | `otel.bsp.export.timeout` | `30000` | Таймаут экспорта (мс) |
 
-> Пакетный процессор логов использует те же параметры, но со значением по умолчанию `OTEL_BSP_SCHEDULE_DELAY = 1000` мс.
+> Пакетный процессор логов настраивается аналогичными переменными `OTEL_BLRP_*` (ключи `otel.blrp.*`),
+> значение по умолчанию `OTEL_BLRP_SCHEDULE_DELAY` — `1000` мс. Размер очереди или пакета меньше 1
+> или дробный записывается в лог предупреждением и заменяется значением по умолчанию. Размер пакета
+> больше размера очереди записывается в лог предупреждением и заменяется размером очереди.
 
 ### Периодический экспорт метрик
 
 | Переменная | Ключ configor | По умолчанию | Описание |
 |------------|--------------|-------------|----------|
 | `OTEL_METRIC_EXPORT_INTERVAL` | `otel.metric.export.interval` | `60000` | Интервал экспорта метрик (мс) |
+| `OTEL_METRIC_EXPORT_TIMEOUT` | `otel.metric.export.timeout` | `30000` | Таймаут одного экспорта метрик (мс) |
 | `OTEL_METRICS_EXEMPLAR_FILTER` | `otel.metrics.exemplar.filter` | `trace_based` | Фильтр exemplars: `always_on`, `always_off`, `trace_based` |
 
 ### Пропагаторы контекста
@@ -242,7 +258,7 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 | `baggage` | W3C Baggage |
 | `b3` | B3 Single Header (требуется пакет [`opentelemetry-propagator-b3`](https://github.com/nixel2007/opentelemetry-propagator-b3)) |
 | `b3multi` | B3 Multi Header (требуется тот же пакет) |
-| `none` | Отключить все пропагаторы |
+| `none` | Отключить все пропагаторы; указанные вместе с `none` значения игнорируются с предупреждением |
 
 ### Ограничения атрибутов
 
@@ -258,6 +274,10 @@ export OTEL_CONFIG_FILE=/etc/myapp/otel-config.json
 | `OTEL_LINK_ATTRIBUTE_COUNT_LIMIT` | `128` | Максимальное число атрибутов ссылки |
 | `OTEL_LOGRECORD_ATTRIBUTE_COUNT_LIMIT` | наследует `OTEL_ATTRIBUTE_COUNT_LIMIT` | Переопределение для записей лога |
 | `OTEL_LOGRECORD_ATTRIBUTE_VALUE_LENGTH_LIMIT` | наследует `OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT` | Переопределение для записей лога |
+
+`0` — нулевой лимит, а не отсутствие лимита: атрибуты отбрасываются, строки усекаются до пустых.
+Лимит длины действует на строки и двоичные данные, в том числе внутри массивов и соответствий.
+Атрибуты ресурса и метрик лимитами не ограничиваются.
 
 ## Смотрите также
 
