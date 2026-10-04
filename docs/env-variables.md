@@ -66,8 +66,11 @@
 Ограничения платформы:
 
 - для `grpc` сжатие не поддерживается клиентом OPI_GRPC: при заданном `gzip` в лог пишется
-  предупреждение, данные отправляются без сжатия; mTLS (`CLIENT_KEY`, `CLIENT_CERTIFICATE`)
-  для `grpc` тоже не поддерживается; заголовок `User-Agent` по `grpc` до сервера не доходит:
+  предупреждение, данные отправляются без сжатия
+  ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112));
+  mTLS (`CLIENT_KEY`, `CLIENT_CERTIFICATE`) для `grpc` тоже не поддерживается
+  ([OpenIntegrations#102](https://github.com/Bayselonarrend/OpenIntegrations/issues/102));
+  заголовок `User-Agent` по `grpc` до сервера не доходит:
   клиент tonic внутри OPI_GRPC ставит свой, `tonic/0.13.1`
   ([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111));
 - для `http/protobuf` и `http/json` файлы сертификатов (`CERTIFICATE`, `CLIENT_KEY`,

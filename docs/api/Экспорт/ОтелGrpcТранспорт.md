@@ -41,10 +41,13 @@ OPI_GRPC при открытии соединения записываются �
 
 Ограничения клиента OPI_GRPC:
 
-- сжатие (`gzip`) не поддерживается, данные отправляются без сжатия;
-- mTLS (клиентский ключ и сертификат) не поддерживается;
+- сжатие (`gzip`) не поддерживается, данные отправляются без сжатия
+  ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112));
+- mTLS (клиентский ключ и сертификат) не поддерживается
+  ([OpenIntegrations#102](https://github.com/Bayselonarrend/OpenIntegrations/issues/102));
 - максимальный размер ответа фиксирован клиентом gRPC — 4 MiB (значение по умолчанию спецификации),
-  настроить его нельзя;
+  настроить его нельзя
+  ([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113));
 - заголовок `user-agent` задаёт сам клиент tonic внутри OPI_GRPC: метаданные `user-agent` до сервера
   не доходят, сервер получает `tonic/0.13.1`. User-Agent в tonic задаётся только при создании
   gRPC-канала (`Endpoint::user_agent`), а такой настройки OPI_GRPC пока не даёт

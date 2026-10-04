@@ -82,7 +82,8 @@ gRPC-транспорт повторяет временные ошибки по 
 
 Оба транспорта не отправляют запрос больше 64 MiB (размер до сжатия) — лимит меняется методом
 `УстановитьМаксРазмерЗапроса`. HTTP-транспорт не принимает ответ больше 4 MiB
-(`УстановитьМаксРазмерОтвета`), у gRPC этот лимит фиксирован клиентом gRPC.
+(`УстановитьМаксРазмерОтвета`), у gRPC этот лимит фиксирован клиентом gRPC
+([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113)).
 
 Заголовок `User-Agent` (метаданные `user-agent` для gRPC) — идентификатор продукта: он добавляется
 перед стандартным `OTel-OTLP-Exporter-OneScript/<версия>`. По gRPC метаданные `user-agent` до сервера
@@ -159,10 +160,10 @@ TLS через переменные окружения:
 | Certificate File | ✗ сертификат сервера не проверяется | ✓ |
 | Client key file, Client certificate file (mTLS) | ✗ | ✗ |
 | Headers | ✓ | ✓ метаданные gRPC |
-| Compression (`gzip`) | ✓ | ✗ данные отправляются без сжатия |
+| Compression (`gzip`) | ✓ | ✗ данные отправляются без сжатия ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112)) |
 | Timeout | ✓ | ✓ |
 | Max Request Size | ✓ `УстановитьМаксРазмерЗапроса` | ✓ `УстановитьМаксРазмерЗапроса` |
-| Max Response Size | ✓ `УстановитьМаксРазмерОтвета` | ✗ лимит клиента gRPC 4 MiB, как по умолчанию в спецификации |
+| Max Response Size | ✓ `УстановитьМаксРазмерОтвета` | ✗ лимит клиента gRPC 4 MiB, как по умолчанию в спецификации ([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113)) |
 | Protocol | `http/protobuf`, `http/json` | `grpc` |
 
 Неприменяемая опция не теряется молча: транспорт или автоконфигурация пишут предупреждение в лог.
@@ -173,8 +174,10 @@ TLS через переменные окружения:
   и `СертификатКлиентаФайл`. Сертификат сервера по HTTPS он не проверяет: принимается любой.
 - gRPC-клиент OPI_GRPC (oint 1.33.0) принимает из настроек TLS только корневой сертификат:
   клиентского сертификата нет
-  ([OpenIntegrations#102](https://github.com/Bayselonarrend/OpenIntegrations/issues/102)), сжатия и
-  настройки лимитов размера сообщения тоже.
+  ([OpenIntegrations#102](https://github.com/Bayselonarrend/OpenIntegrations/issues/102)), сжатия
+  ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112)) и
+  настройки лимитов размера сообщения
+  ([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113)) тоже.
 
 ## Полные примеры
 
