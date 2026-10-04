@@ -71,8 +71,8 @@
   клиент tonic внутри OPI_GRPC ставит свой, `tonic/0.13.1`
   ([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111));
 - для `http/protobuf` и `http/json` файлы сертификатов (`CERTIFICATE`, `CLIENT_KEY`,
-  `CLIENT_CERTIFICATE`) не применяются HTTP-клиентом OneScript: транспорт предупреждает об этом,
-  сертификат сервера проверяется по системному хранилищу.
+  `CLIENT_CERTIFICATE`) не применяются HTTP-клиентом OneScript: транспорт предупреждает об этом.
+  Сертификат сервера по HTTPS HTTP-клиент OneScript не проверяет: принимается любой сертификат.
 
 Для `grpc` адрес сигнала (`OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT`) — цель соединения: сервис сигнала
 выбирается по сигналу, путь в адресе не используется.
