@@ -161,7 +161,7 @@ TLS через переменные окружения:
 | Client key file, Client certificate file (mTLS) | ✗ | ✗ |
 | Headers | ✓ | ✓ метаданные gRPC |
 | Compression (`gzip`) | ✓ | ✗ данные отправляются без сжатия ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112)) |
-| Timeout | ✓ | ✓ |
+| Timeout | ✓ | ✓ кроме открытия соединения и переподключения ([OpenIntegrations#114](https://github.com/Bayselonarrend/OpenIntegrations/issues/114)) |
 | Max Request Size | ✓ `УстановитьМаксРазмерЗапроса` | ✓ `УстановитьМаксРазмерЗапроса` |
 | Max Response Size | ✓ `УстановитьМаксРазмерОтвета` | ✗ лимит клиента gRPC 4 MiB, как по умолчанию в спецификации ([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113)) |
 | Protocol | `http/protobuf`, `http/json` | `grpc` |
@@ -178,6 +178,11 @@ TLS через переменные окружения:
   ([OpenIntegrations#112](https://github.com/Bayselonarrend/OpenIntegrations/issues/112)) и
   настройки лимитов размера сообщения
   ([OpenIntegrations#113](https://github.com/Bayselonarrend/OpenIntegrations/issues/113)) тоже.
+  Таймаута подключения у OPI_GRPC нет: открытие соединения и переподключение не укладываются в
+  срок экспорта. Сервер, который принял TCP-соединение и молчит при TLS-рукопожатии, держит
+  экспорт, пока не закроет соединение, поэтому для gRPC требование «Export MUST NOT block
+  indefinitely» выполняется не полностью
+  ([OpenIntegrations#114](https://github.com/Bayselonarrend/OpenIntegrations/issues/114)).
 
 ## Полные примеры
 
