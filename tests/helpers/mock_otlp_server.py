@@ -7,6 +7,7 @@ Responds based on path:
   /error     - 500 Internal Server Error
   /retry     - 503 Service Unavailable (first 2 calls), then 200
   /too-many  - 429 Too Many Requests
+  /retry-after - 429 Too Many Requests with Retry-After: 5
   /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
   /big-response - 200 OK with a 2048-byte body
   /?token=1  - 200 OK (per-signal endpoint with a query and no path)
@@ -65,6 +66,11 @@ class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
                 retry_counts['/retry'] = 0
         elif self.path == '/too-many':
             self.send_response(429)
+            self.end_headers()
+            self.wfile.write(b'too many requests')
+        elif self.path == '/retry-after':
+            self.send_response(429)
+            self.send_header('Retry-After', '5')
             self.end_headers()
             self.wfile.write(b'too many requests')
         elif self.path == '/big-response':
