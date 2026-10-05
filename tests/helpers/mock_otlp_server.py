@@ -7,7 +7,9 @@ Responds based on path:
   /error     - 500 Internal Server Error
   /retry     - 503 Service Unavailable (first 2 calls), then 200
   /too-many  - 429 Too Many Requests
-  /retry-after - 429 Too Many Requests with Retry-After: 5
+  /retry-after/<seconds> - 429 Too Many Requests with Retry-After: <seconds>
+  /retry-after-date/<format>/<seconds> - 429 Too Many Requests with Retry-After: HTTP-date
+      <seconds> from now; <format> is imf (IMF-fixdate), rfc850 or asctime (RFC 7231, 7.1.1.1)
   /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
   /big-response - 200 OK with a 2048-byte body
   /?token=1  - 200 OK (per-signal endpoint with a query and no path)
@@ -16,8 +18,25 @@ import gzip
 import http.server
 import json
 import sys
+import time
 
 retry_counts = {}
+
+WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+WEEKDAYS_FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+
+def http_date(timestamp, date_format):
+    t = time.gmtime(timestamp)
+    clock = f'{t.tm_hour:02d}:{t.tm_min:02d}:{t.tm_sec:02d}'
+    month = MONTHS[t.tm_mon - 1]
+    if date_format == 'rfc850':
+        return f'{WEEKDAYS_FULL[t.tm_wday]}, {t.tm_mday:02d}-{month}-{t.tm_year % 100:02d} {clock} GMT'
+    if date_format == 'asctime':
+        return f'{WEEKDAYS[t.tm_wday]} {month} {t.tm_mday:2d} {clock} {t.tm_year}'
+    return f'{WEEKDAYS[t.tm_wday]}, {t.tm_mday:02d} {month} {t.tm_year} {clock} GMT'
+
 
 class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
@@ -68,9 +87,15 @@ class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(429)
             self.end_headers()
             self.wfile.write(b'too many requests')
-        elif self.path == '/retry-after':
+        elif self.path.startswith('/retry-after/'):
             self.send_response(429)
-            self.send_header('Retry-After', '5')
+            self.send_header('Retry-After', self.path.split('/')[2])
+            self.end_headers()
+            self.wfile.write(b'too many requests')
+        elif self.path.startswith('/retry-after-date/'):
+            _, _, date_format, seconds = self.path.split('/')
+            self.send_response(429)
+            self.send_header('Retry-After', http_date(time.time() + int(seconds), date_format))
             self.end_headers()
             self.wfile.write(b'too many requests')
         elif self.path == '/big-response':
