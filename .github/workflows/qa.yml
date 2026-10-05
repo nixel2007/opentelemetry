@@ -18,6 +18,6 @@ jobs:
       test_recursive: true
       coveralls: true
       sonarqube: true
-      additional_pip_packages: protobuf
+      additional_pip_packages: protobuf grpcio grpcio-status
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

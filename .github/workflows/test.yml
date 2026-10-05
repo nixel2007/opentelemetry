@@ -16,5 +16,5 @@ jobs:
       test_engine: oneunit
       os_versions: '["ubuntu-latest"]'
       test_recursive: true
-      additional_pip_packages: protobuf
+      additional_pip_packages: protobuf grpcio grpcio-status
 
