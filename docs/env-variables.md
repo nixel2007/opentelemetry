@@ -73,6 +73,9 @@
   заголовок `User-Agent` по `grpc` до сервера не доходит:
   клиент tonic внутри OPI_GRPC ставит свой, `tonic/0.13.1`
   ([OpenIntegrations#111](https://github.com/Bayselonarrend/OpenIntegrations/issues/111));
+  `TIMEOUT` для `grpc` не ограничивает открытие соединения и переподключение: таймаута
+  подключения у OPI_GRPC нет
+  ([OpenIntegrations#114](https://github.com/Bayselonarrend/OpenIntegrations/issues/114));
 - для `http/protobuf` и `http/json` файлы сертификатов (`CERTIFICATE`, `CLIENT_KEY`,
   `CLIENT_CERTIFICATE`) не применяются HTTP-клиентом OneScript: транспорт предупреждает об этом.
   Сертификат сервера по HTTPS HTTP-клиент OneScript не проверяет: принимается любой сертификат.

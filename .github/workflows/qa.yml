@@ -13,11 +13,10 @@ jobs:
     uses: autumn-library/workflows/.github/workflows/sonar.yml@v1
     with:
       github_repository: ${{ github.repository }}
-      oscript_version: dev
       test_engine: oneunit
       test_recursive: true
       coveralls: true
       sonarqube: true
-      additional_pip_packages: protobuf
+      additional_pip_packages: protobuf grpcio grpcio-status
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
