@@ -70,7 +70,7 @@
 
 #Область СлужебныеПроцедурыИФункции
 
-// Построитель ресурса (ResourceBuilder) по спецификации OpenTelemetry.
+// Построитель ресурса. В спецификации OpenTelemetry построителя нет, это расширение SDK.
 // Аналог Java SDK: io.opentelemetry.sdk.resources.ResourceBuilder
 //
 // Fluent API для создания ресурса с произвольными атрибутами.
