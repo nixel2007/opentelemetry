@@ -141,6 +141,13 @@ export OTEL_PROPAGATORS=tracecontext,baggage,b3
 export OTEL_PROPAGATORS=tracecontext,baggage,b3multi
 ```
 
+или в файле конфигурации (`OTEL_CONFIG_FILE`):
+
+```yaml
+propagator:
+  composite_list: tracecontext,baggage,b3multi
+```
+
 B3 Single Header использует заголовок `b3`, B3 Multi Header — отдельные заголовки `X-B3-TraceId`, `X-B3-SpanId`, `X-B3-Sampled`.
 
 ## Настройка через переменные окружения
