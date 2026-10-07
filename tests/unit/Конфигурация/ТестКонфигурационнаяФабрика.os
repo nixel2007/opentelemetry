@@ -1588,6 +1588,7 @@
 &ИсточникЗначение("attribute_value_depth_limit")
 &ИсточникЗначение("max_request_size")
 &ИсточникЗначение("max_response_size")
+&ИсточникЗначение("encoding")
 &ИсточникЗначение("interval")
 &ИсточникЗначение("cardinality_limits")
 &ИсточникЗначение("exemplar_filter")
@@ -2097,6 +2098,8 @@
 		ПроцессорСпанов.Экспортер.ПредпочтениеВременнойАгрегации = "delta";
 	ИначеЕсли Случай = "max_request_size" Тогда
 		ПроцессорСпанов.Экспортер.МаксРазмерЗапроса = -1;
+	ИначеЕсли Случай = "encoding" Тогда
+		ПроцессорСпанов.Экспортер.Кодирование = "JSON";
 	ИначеЕсли Случай = "ratio" Тогда
 		ПровайдерТрассировки.Сэмплер.Доля = 1.5;
 	ИначеЕсли Случай = "event_count_limit" Тогда
@@ -2167,6 +2170,8 @@
 		"/attribute_limits/attribute_value_depth_limit: Значение 0 меньше минимума 1");
 	Нарушения.Вставить("max_request_size",
 		"/tracer_provider/processors/0/batch/exporter/otlp_http/max_request_size: Значение -1 меньше минимума 0");
+	Нарушения.Вставить("encoding",
+		"/tracer_provider/processors/0/batch/exporter/otlp_http/encoding: Значение ""JSON"" не входит в перечисление");
 	Нарушения.Вставить("max_response_size",
 		"/meter_provider/readers/0/periodic/exporter/otlp_http/max_response_size: Значение 0 меньше минимума 1");
 	Нарушения.Вставить("interval", "/meter_provider/readers/0/periodic/interval: Значение -1 меньше минимума 0");
