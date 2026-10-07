@@ -1301,6 +1301,55 @@
 	Ожидаем.Что(Экспортер.МаксРазмерЗапроса).Равно(67108864);
 	Ожидаем.Что(Экспортер.МаксРазмерОтвета).Равно(4194304);
 	Ожидаем.Что(Экспортер.Кодирование).Равно("");
+	Ожидаем.Что(Экспортер.НастройкиTls).Равно(Неопределено);
+
+КонецПроцедуры
+
+&Тест
+Процедура РазборНастроекTlsЭкспортеров() Экспорт
+
+	// Дано
+	ТекстYaml =
+	"file_format: ""1.0""
+	|tracer_provider:
+	|  processors:
+	|    - simple:
+	|        exporter:
+	|          otlp_http:
+	|            tls:
+	|              ca_file: /etc/otel/ca.pem
+	|              key_file: /etc/otel/client.key
+	|              cert_file: /etc/otel/client.pem
+	|    - simple:
+	|        exporter:
+	|          otlp_grpc:
+	|            endpoint: collector:4317
+	|            tls:
+	|              insecure: true
+	|    - simple:
+	|        exporter:
+	|          otlp_grpc:
+	|            tls:";
+	ПутьКФайлу = СоздатьТестовыйФайл("otlp_tls.yaml", ТекстYaml);
+
+	// Когда
+	Конфигурация = ОтелФайловаяКонфигурация.Разобрать(ПутьКФайлу);
+
+	// Тогда
+	Процессоры = Конфигурация.ПровайдерТрассировки.Процессоры;
+	НастройкиHttp = Процессоры[0].Экспортер.НастройкиTls;
+	Ожидаем.Что(НастройкиHttp).ИмеетТип("ОтелНастройкиTls");
+	Ожидаем.Что(НастройкиHttp.ФайлСертификата).Равно("/etc/otel/ca.pem");
+	Ожидаем.Что(НастройкиHttp.ФайлКлиентскогоКлюча).Равно("/etc/otel/client.key");
+	Ожидаем.Что(НастройкиHttp.ФайлКлиентскогоСертификата).Равно("/etc/otel/client.pem");
+	Ожидаем.Что(НастройкиHttp.Insecure).Равно(Ложь);
+
+	НастройкиGrpc = Процессоры[1].Экспортер.НастройкиTls;
+	Ожидаем.Что(НастройкиGrpc.ФайлСертификата).Равно("");
+	Ожидаем.Что(НастройкиGrpc.Insecure).Равно(Истина);
+
+	// Тогда - tls без значения: настройки TLS по умолчанию
+	Ожидаем.Что(Процессоры[2].Экспортер.НастройкиTls).Равно(Неопределено);
 
 КонецПроцедуры
 
@@ -1841,12 +1890,19 @@
 	|            max_request_size: 1000
 	|            max_response_size: 2000
 	|            encoding: json
+	|            tls:
+	|              ca_file: /etc/otel/ca.pem
+	|              key_file: /etc/otel/client.key
+	|              cert_file: /etc/otel/client.pem
 	|    - simple:
 	|        exporter:
 	|          otlp_grpc:
 	|            endpoint: http://localhost:1
 	|            max_request_size: 0
 	|            max_response_size: 4194304
+	|            tls:
+	|              ca_file: /etc/otel/ca.pem
+	|              insecure: true
 	|    - my_processor:
 	|  limits:
 	|    attribute_value_length_limit: 10
