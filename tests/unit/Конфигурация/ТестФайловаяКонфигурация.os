@@ -1633,6 +1633,160 @@
 
 КонецПроцедуры
 
+// ПроверитьМодель проверяет модель по той же схеме, что и Разобрать файл: модель, разобранная из файла со
+// всеми свойствами, которые читает SDK, проходит проверку - перевод модели в данные схемы ничего не теряет
+// и не искажает
+
+&Тест
+Процедура МодельИзФайлаПроходитПроверкуСхемы() Экспорт
+
+	// Дано - все свойства модели, в том числе компоненты, которых нет в SDK
+	ТекстYaml =
+	"file_format: ""1.0""
+	|disabled: false
+	|resource:
+	|  schema_url: https://opentelemetry.io/schemas/1.26.0
+	|  attributes_list: env=prod
+	|  attributes:
+	|    - name: service.name
+	|      value: svc
+	|    - name: port
+	|      value: 8080
+	|      type: int
+	|    - name: ratio
+	|      value: 0.5
+	|      type: double
+	|    - name: enabled
+	|      value: true
+	|      type: bool
+	|    - name: tags
+	|      value: [a, b]
+	|      type: string_array
+	|    - name: removed
+	|      value:
+	|attribute_limits:
+	|  attribute_value_length_limit: 100
+	|  attribute_count_limit: 50
+	|propagator:
+	|  composite:
+	|    - tracecontext:
+	|    - xray:
+	|  composite_list: baggage
+	|tracer_provider:
+	|  processors:
+	|    - batch:
+	|        schedule_delay: 100
+	|        export_timeout: 200
+	|        max_queue_size: 10
+	|        max_export_batch_size: 5
+	|        exporter:
+	|          otlp_http:
+	|            endpoint: http://localhost:1/v1/traces
+	|            compression: gzip
+	|            timeout: 1000
+	|            headers:
+	|              - name: x-a
+	|                value: a
+	|            headers_list: x-b=b
+	|    - simple:
+	|        exporter:
+	|          otlp_grpc:
+	|            endpoint: http://localhost:1
+	|    - my_processor:
+	|  limits:
+	|    attribute_value_length_limit: 10
+	|    attribute_count_limit: 10
+	|    event_count_limit: 10
+	|    link_count_limit: 10
+	|    event_attribute_count_limit: 10
+	|    link_attribute_count_limit: 10
+	|  sampler:
+	|    parent_based:
+	|      root:
+	|        trace_id_ratio_based:
+	|          ratio: 0.5
+	|      remote_parent_sampled:
+	|        always_on:
+	|      remote_parent_not_sampled:
+	|        always_off:
+	|      local_parent_sampled:
+	|        always_record:
+	|          root:
+	|            my_sampler:
+	|              rate: 5
+	|      local_parent_not_sampled:
+	|        always_off:
+	|  id_generator:
+	|    random:
+	|meter_provider:
+	|  readers:
+	|    - periodic:
+	|        interval: 1000
+	|        timeout: 500
+	|        exporter:
+	|          otlp_grpc:
+	|            temporality_preference: delta
+	|            default_histogram_aggregation: base2_exponential_bucket_histogram
+	|        producers:
+	|          - opencensus:
+	|    - pull:
+	|        exporter:
+	|          my_pull_exporter:
+	|  exemplar_filter: always_on
+	|logger_provider:
+	|  processors:
+	|    - batch:
+	|        exporter:
+	|          console:
+	|  limits:
+	|    attribute_value_length_limit: 10
+	|    attribute_count_limit: 10";
+	ПутьКФайлу = СоздатьТестовыйФайл("full_model.yaml", ТекстYaml);
+	Конфигурация = ОтелФайловаяКонфигурация.Разобрать(ПутьКФайлу);
+
+	// Когда
+	ТекстОшибки = "";
+	Попытка
+		ОтелФайловаяКонфигурация.ПроверитьМодель(Конфигурация);
+	Исключение
+		ТекстОшибки = ОписаниеОшибки();
+	КонецПопытки;
+
+	// Тогда
+	Ожидаем.Что(ТекстОшибки).Равно("");
+
+КонецПроцедуры
+
+&Тест
+Процедура ПроверитьМодельСообщаетНарушенияСхемы() Экспорт
+
+	// Дано - модель, собранная в коде, со значениями вне границ схемы
+	КонфигПроцессора = Новый ОтелКонфигурацияПакетногоПроцессора();
+	КонфигПроцессора.Экспортер = Новый ОтелКонфигурацияЭкспортераOtlpHttp();
+	КонфигПроцессора.ЗадержкаОтправки = -1;
+	КонфигПроцессора.МаксРазмерПакета = 0;
+	Модель = Новый ОтелКонфигурация();
+	Модель.ФорматФайла = "1.0";
+	Модель.ПровайдерЛогирования = Новый ОтелКонфигурацияПровайдераЛогирования();
+	Модель.ПровайдерЛогирования.Процессоры.Добавить(КонфигПроцессора);
+
+	// Когда
+	ТекстОшибки = "";
+	Попытка
+		ОтелФайловаяКонфигурация.ПроверитьМодель(Модель);
+	Исключение
+		ТекстОшибки = ОписаниеОшибки();
+	КонецПопытки;
+
+	// Тогда - все нарушения с путями свойств схемы
+	Ожидаем.Что(ТекстОшибки).Содержит("Модель конфигурации не соответствует схеме opentelemetry-configuration 1.2:");
+	Ожидаем.Что(ТекстОшибки).Содержит(
+		"/logger_provider/processors/0/batch/schedule_delay: Значение -1 меньше минимума 0");
+	Ожидаем.Что(ТекстОшибки).Содержит(
+		"/logger_provider/processors/0/batch/max_export_batch_size: Значение 0 не больше строгого минимума 0");
+
+КонецПроцедуры
+
 // ------------------------------------------------------------------
 // Служебные
 // ------------------------------------------------------------------
