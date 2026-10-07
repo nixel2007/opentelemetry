@@ -13,6 +13,7 @@ Responds based on path:
   /v1/gzip-traces - 200 OK if Content-Encoding: gzip and body is valid gzip, else 400
   /big-response - 200 OK with a 2048-byte body
   /?token=1  - 200 OK (per-signal endpoint with a query and no path)
+  /header/<name>/<value> - 200 OK if the request header <name> equals <value>, else 400
 """
 import gzip
 import http.server
@@ -111,6 +112,18 @@ class OTLPMockHandler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(b'{}')
+        elif self.path.startswith('/header/'):
+            _, _, name, value = self.path.split('/', 3)
+            actual = self.headers.get(name)
+            if actual == value:
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{}')
+            else:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(f'header {name}: {actual}'.encode())
         else:
             self.send_response(404)
             self.end_headers()
