@@ -3,18 +3,19 @@
 // Конфигурация сэмплера (Sampler).
 //
 // Union-тип: тип определяется полем Тип.
-// Для parent_based заполняются вложенные сэмплеры.
+// Для parent_based заполняются вложенные сэмплеры, для always_record - обернутый сэмплер Корневой.
 // Для trace_id_ratio_based заполняется Доля.
 
 #Область ОписаниеПеременных
 
-// Строка - тип сэмплера: "always_on", "always_off", "trace_id_ratio_based", "parent_based"
+// Строка - тип сэмплера: "always_on", "always_off", "trace_id_ratio_based", "parent_based",
+//   "always_record"
 Перем Тип Экспорт;
 
 // ratio - Число - доля сэмплирования для trace_id_ratio_based (0.0..1.0)
 Перем Доля Экспорт;
 
-// root - ОтелКонфигурацияСэмплера - корневой сэмплер для parent_based
+// root - ОтелКонфигурацияСэмплера - корневой сэмплер для parent_based, обернутый сэмплер для always_record
 Перем Корневой Экспорт;
 
 // remote_parent_sampled - ОтелКонфигурацияСэмплера
