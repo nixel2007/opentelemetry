@@ -88,11 +88,16 @@ Development (`DEVELOPMENT_DEPENDENT_PATHS` в `extract_requirements.py`, по п
 > Для Prometheus анализируются две страницы: Prometheus Exporter и Prometheus Compatibility
 > (перевод OTLP → Prometheus, по которому работает `ОтелПрометеусЧитательМетрик`).
 
+> Декларативная конфигурация (Stable с v1.55.0) - три страницы: Configuration SDK
+> (Parse, Create, PluginComponentProvider), Configuration API (ConfigProperties) и
+> Configuration Data Model (формат YAML, подстановка переменных окружения). Домен
+> `configuration`, код - `src/Конфигурация/`. ConfigProvider - Development, в отчет не входит.
+
 ## Шаг 1: Извлечение секций из спецификации
 
 Запусти Python-скрипт для парсинга всех страниц спецификации OTel.
 
-> **ВАЖНО:** Скрипт загружает 14 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
+> **ВАЖНО:** Скрипт загружает 17 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
 > При повторных запусках скрипт использует кеш из `<output_dir>/*.txt`. Удали кеш-файлы для обновления.
 
 ```bash
@@ -100,7 +105,7 @@ python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-s
 ```
 
 Скрипт:
-1. Загружает 14 страниц спецификации (список - `SPEC_URLS` в скрипте)
+1. Загружает 17 страниц спецификации (список - `SPEC_URLS` в скрипте)
 2. Разбивает каждую страницу на секции по заголовкам (`##`/`###`)
 3. Для каждой секции сохраняет **полный текст**, URL-якорь, стабильность, scope
 4. Считает количество MUST/SHOULD ключевых слов в каждой секции

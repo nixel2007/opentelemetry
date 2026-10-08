@@ -90,6 +90,11 @@ DOMAIN_CONFIG = [
         "pages": ["Env Vars"],
         "code_dirs": ["src/Конфигурация/", "src/Экспорт/", "src/Ядро/"],
     },
+    {
+        "domain": "configuration",
+        "pages": ["Configuration Sdk", "Configuration Api", "Configuration Data Model"],
+        "code_dirs": ["src/Конфигурация/"],
+    },
 ]
 
 
