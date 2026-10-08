@@ -18,17 +18,27 @@
     <output_dir>/agents.json        - конфигурация агентов (имя → секции, launch_prompt)
     <output_dir>/prompts/<name>.md  - промпт для каждого агента
     <output_dir>/results/           - каталог для результатов агентов (создаётся пустым)
+    <output_dir>/packages/<name>/   - клоны отдельных пакетов из EXTERNAL_PACKAGES
 """
 
 import json
 import math
 import os
+import subprocess
 import sys
 
 # Максимум секций на одного агента
 MAX_SECTIONS_PER_AGENT = 8
 
-# Домены: какие страницы спецификации → какие каталоги кода
+# Отдельные пакеты библиотеки: требования, которые спецификация относит к ним,
+# проверяются по их коду. Пакет клонируется в <output_dir>/packages/<имя>
+EXTERNAL_PACKAGES = {
+    # Спецификация требует распространять B3 отдельным пакетом
+    "opentelemetry-propagator-b3": "https://github.com/nixel2007/opentelemetry-propagator-b3",
+}
+
+# Домены: какие страницы спецификации → какие каталоги кода.
+# packages - отдельные пакеты из EXTERNAL_PACKAGES, их src/ и tests/ добавляются к code_dirs
 DOMAIN_CONFIG = [
     {
         "domain": "core",
@@ -44,6 +54,7 @@ DOMAIN_CONFIG = [
         "domain": "propagators",
         "pages": ["Propagators"],
         "code_dirs": ["src/Пропагация/", "src/Ядро/"],
+        "packages": ["opentelemetry-propagator-b3"],
     },
     {
         "domain": "traces-api",
@@ -312,6 +323,9 @@ Development-пометка стоит только у элемента пере�
 ❌ Неправильно: `not_found` - "В основной библиотеке нет реализации B3"
 ✅ Правильно: `found` - "B3 распространяется отдельным пакетом opentelemetry-propagator-b3 (как требует спека); основной SDK подгружает его рефлексивно через ОтелКонфигурационнаяФабрика.РазрешитьПропагаторПоИмени() при наличии в окружении"
 > B3 в основной репе отсутствует **намеренно** — это требование спеки. Не путать с «отсутствует функциональность».
+> Код пакета opentelemetry-propagator-b3 (`ОтелB3Пропагатор`, `ОтелФорматB3`) и его тесты есть в списке каталогов
+> исходного кода агента. Требования B3 Extract, B3 Inject и Fields проверяй по нему: статус `n_a` с причиной
+> «B3 нет в репозитории» для них **неправильный**. В расположении кода указывай абсолютный путь к файлу пакета.
 
 ### Особенности платформы OneScript (ОБЯЗАТЕЛЬНО учитывай при верификации)
 
@@ -439,8 +453,37 @@ RESULT_JSON_SCHEMA = r"""
 """.strip()
 
 
-def group_sections_into_agents(sections):
+def clone_external_packages(output_dir):
+    """Клонирует пакеты из EXTERNAL_PACKAGES в <output_dir>/packages/<имя>.
+
+    Уже склонированный пакет не перекачивается. Ошибка клонирования завершает скрипт:
+    без кода пакета его требования проверить нельзя.
+
+    Возвращает словарь: имя пакета → абсолютный путь клона
+    """
+    packages_dir = os.path.join(os.path.abspath(output_dir), "packages")
+    os.makedirs(packages_dir, exist_ok=True)
+    paths = {}
+    for name, url in EXTERNAL_PACKAGES.items():
+        path = os.path.join(packages_dir, name)
+        if not os.path.isdir(path):
+            print(f"  Клонирование {name}: {url}")
+            result = subprocess.run(
+                ["git", "clone", "--quiet", "--depth", "1", url, path],
+                capture_output=True, text=True,
+            )
+            if result.returncode != 0:
+                print(f"Ошибка: не удалось клонировать {url}\n{result.stderr}")
+                sys.exit(1)
+        paths[name] = path
+    return paths
+
+
+def group_sections_into_agents(sections, package_paths):
     """Группирует секции в агентов по доменам с учётом лимита секций.
+
+    Параметры:
+        package_paths - имя пакета → путь клона (из clone_external_packages)
 
     Возвращает список: [{"name": str, "code_dirs": [str], "sections": [dict]}]
     """
@@ -449,7 +492,10 @@ def group_sections_into_agents(sections):
     for domain_cfg in DOMAIN_CONFIG:
         domain = domain_cfg["domain"]
         pages = domain_cfg["pages"]
-        code_dirs = domain_cfg["code_dirs"]
+        code_dirs = list(domain_cfg["code_dirs"])
+        for package in domain_cfg.get("packages", []):
+            code_dirs.append(os.path.join(package_paths[package], "src") + "/")
+            code_dirs.append(os.path.join(package_paths[package], "tests") + "/")
 
         # Собираем секции для домена, сохраняя порядок из sections.json
         domain_sections = [s for s in sections if s["page"] in pages]
@@ -652,8 +698,9 @@ def main():
     sections = [s for s in sections if s["stability"] == "Stable"]
     print(f"Stable-секций для верификации: {len(sections)}")
 
-    # Группируем секции в агентов
-    agents = group_sections_into_agents(sections)
+    # Отдельные пакеты библиотеки и группировка секций в агентов
+    package_paths = clone_external_packages(output_dir)
+    agents = group_sections_into_agents(sections, package_paths)
 
     # Создаём каталоги
     prompts_dir = os.path.join(output_dir, "prompts")

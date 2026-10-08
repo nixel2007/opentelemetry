@@ -85,6 +85,9 @@ Development (`DEVELOPMENT_DEPENDENT_PATHS` в `extract_requirements.py`, по п
 
 > B3 Propagator и Prometheus Exporter ранее были условными, но теперь реализованы
 > (ОтелB3Пропагатор, ОтелПрометеусЧитательМетрик) и считаются как universal.
+> B3 по спецификации распространяется отдельным пакетом opentelemetry-propagator-b3:
+> `generate_prompts.py` клонирует его (`EXTERNAL_PACKAGES`) в `<output_dir>/packages/` и добавляет
+> его `src/` и `tests/` к каталогам кода домена propagators, так что требования B3 проверяются по коду пакета.
 > Для Prometheus анализируются две страницы: Prometheus Exporter и Prometheus Compatibility
 > (перевод OTLP → Prometheus, по которому работает `ОтелПрометеусЧитательМетрик`).
 
@@ -125,14 +128,15 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 
 Скрипт:
 1. Читает `sections.json` и оставляет только секции со статусом Stable
-2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
-3. Разбивает крупные домены на группы по 5-8 секций
-4. Для каждого агента генерирует промпт с:
+2. Клонирует отдельные пакеты библиотеки (`EXTERNAL_PACKAGES`) в `<output_dir>/packages/`; нужен доступ к GitHub
+3. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
+4. Разбивает крупные домены на группы по 5-8 секций
+5. Для каждого агента генерирует промпт с:
    - Полным текстом секций
    - Строгими критериями статуса (found/partial/not_found/n_a)
    - JSON-схемой вывода
    - Инструкцией записать результат в `results/<agent>.json`
-5. Сохраняет `agents.json` (конфигурация с `launch_prompt`) и `prompts/<agent>.md` (промпты)
+6. Сохраняет `agents.json` (конфигурация с `launch_prompt`) и `prompts/<agent>.md` (промпты)
 
 > Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.
