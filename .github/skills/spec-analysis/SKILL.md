@@ -85,14 +85,22 @@ Development (`DEVELOPMENT_DEPENDENT_PATHS` в `extract_requirements.py`, по п
 
 > B3 Propagator и Prometheus Exporter ранее были условными, но теперь реализованы
 > (ОтелB3Пропагатор, ОтелПрометеусЧитательМетрик) и считаются как universal.
+> B3 по спецификации распространяется отдельным пакетом opentelemetry-propagator-b3:
+> `generate_prompts.py` клонирует его (`EXTERNAL_PACKAGES`) в `<output_dir>/packages/` и добавляет
+> его `src/` и `tests/` к каталогам кода домена propagators, так что требования B3 проверяются по коду пакета.
 > Для Prometheus анализируются две страницы: Prometheus Exporter и Prometheus Compatibility
 > (перевод OTLP → Prometheus, по которому работает `ОтелПрометеусЧитательМетрик`).
+
+> Декларативная конфигурация (Stable с v1.55.0) - три страницы: Configuration SDK
+> (Parse, Create, PluginComponentProvider), Configuration API (ConfigProperties) и
+> Configuration Data Model (формат YAML, подстановка переменных окружения). Домен
+> `configuration`, код - `src/Конфигурация/`. ConfigProvider - Development, в отчет не входит.
 
 ## Шаг 1: Извлечение секций из спецификации
 
 Запусти Python-скрипт для парсинга всех страниц спецификации OTel.
 
-> **ВАЖНО:** Скрипт загружает 14 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
+> **ВАЖНО:** Скрипт загружает 17 страниц с opentelemetry.io. Убедись, что есть доступ в интернет.
 > При повторных запусках скрипт использует кеш из `<output_dir>/*.txt`. Удали кеш-файлы для обновления.
 
 ```bash
@@ -100,7 +108,7 @@ python3 .github/skills/spec-analysis/scripts/extract_requirements.py /tmp/otel-s
 ```
 
 Скрипт:
-1. Загружает 14 страниц спецификации (список - `SPEC_URLS` в скрипте)
+1. Загружает 17 страниц спецификации (список - `SPEC_URLS` в скрипте)
 2. Разбивает каждую страницу на секции по заголовкам (`##`/`###`)
 3. Для каждой секции сохраняет **полный текст**, URL-якорь, стабильность, scope
 4. Считает количество MUST/SHOULD ключевых слов в каждой секции
@@ -120,14 +128,15 @@ python3 .github/skills/spec-analysis/scripts/generate_prompts.py /tmp/otel-specs
 
 Скрипт:
 1. Читает `sections.json` и оставляет только секции со статусом Stable
-2. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
-3. Разбивает крупные домены на группы по 5-8 секций
-4. Для каждого агента генерирует промпт с:
+2. Клонирует отдельные пакеты библиотеки (`EXTERNAL_PACKAGES`) в `<output_dir>/packages/`; нужен доступ к GitHub
+3. Группирует секции по доменам (Context, Traces, Logs, Metrics, Export, Prometheus и т.д.)
+4. Разбивает крупные домены на группы по 5-8 секций
+5. Для каждого агента генерирует промпт с:
    - Полным текстом секций
    - Строгими критериями статуса (found/partial/not_found/n_a)
    - JSON-схемой вывода
    - Инструкцией записать результат в `results/<agent>.json`
-5. Сохраняет `agents.json` (конфигурация с `launch_prompt`) и `prompts/<agent>.md` (промпты)
+6. Сохраняет `agents.json` (конфигурация с `launch_prompt`) и `prompts/<agent>.md` (промпты)
 
 > Все критерии верификации, примеры false positive и правила n_a определены в `scripts/generate_prompts.py` (константа `AGENT_INSTRUCTIONS`).
 > Для изменения критериев - редактируй эту константу.

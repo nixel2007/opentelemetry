@@ -61,20 +61,18 @@
 // Возвращает тип инструмента для селектора по виду инструмента метра.
 //
 // Параметры:
-//   Вид - Строка - вид инструмента: Counter, UpDownCounter, Histogram, ExponentialHistogram,
-//       Gauge, ObservableCounter, ObservableUpDownCounter, ObservableGauge
+//   Вид - Строка - вид инструмента: Counter, UpDownCounter, Histogram, Gauge, ObservableCounter,
+//       ObservableUpDownCounter, ObservableGauge
 //
 // Возвращаемое значение:
 //   Строка - "counter", "up_down_counter", "histogram", "gauge", "observable_counter",
 //       "observable_up_down_counter", "observable_gauge"
 //
 Функция ТипИнструментаДляВида(Вид) Экспорт
-    ТипГистограммы = "histogram";
     Типы = Новый Соответствие();
     Типы.Вставить("Counter", "counter");
     Типы.Вставить("UpDownCounter", "up_down_counter");
-    Типы.Вставить("Histogram", ТипГистограммы);
-    Типы.Вставить("ExponentialHistogram", ТипГистограммы);
+    Типы.Вставить("Histogram", "histogram");
     Типы.Вставить("Gauge", "gauge");
     Типы.Вставить("ObservableCounter", "observable_counter");
     Типы.Вставить("ObservableUpDownCounter", "observable_up_down_counter");

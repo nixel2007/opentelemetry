@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Извлечение секций спецификации OpenTelemetry для анализа соответствия.
 
-Загружает 14 страниц спецификации с opentelemetry.io, разбивает на секции
+Загружает 17 страниц спецификации с opentelemetry.io, разбивает на секции
 по заголовкам (#-######), сохраняет полный текст каждой секции с метаданными.
 
 Агенты верификации получают полные секции и сами идентифицируют
@@ -34,6 +34,9 @@ SPEC_URLS = {
     "Env Vars": "https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/",
     "Prometheus Compatibility": "https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/",
     "Prometheus Exporter": "https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/",
+    "Configuration Sdk": "https://opentelemetry.io/docs/specs/otel/configuration/sdk/",
+    "Configuration Api": "https://opentelemetry.io/docs/specs/otel/configuration/api/",
+    "Configuration Data Model": "https://opentelemetry.io/docs/specs/otel/configuration/data-model/",
 }
 
 # Условные подразделы - применяются только при реализации фичи

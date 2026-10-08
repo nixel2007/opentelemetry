@@ -844,7 +844,6 @@
     АгрегацииВидов.Вставить("Counter", АгрегацияСуммы);
     АгрегацииВидов.Вставить("UpDownCounter", АгрегацияСуммы);
     АгрегацииВидов.Вставить("Histogram", "explicit_bucket_histogram");
-    АгрегацииВидов.Вставить("ExponentialHistogram", "base2_exponential_bucket_histogram");
     АгрегацииВидов.Вставить("Gauge", АгрегацияПоследнегоЗначения);
     АгрегацииВидов.Вставить("ObservableCounter", АгрегацияСуммы);
     АгрегацииВидов.Вставить("ObservableUpDownCounter", АгрегацияСуммы);

@@ -23,8 +23,8 @@
 //
 // Параметры:
 //   ИмяИнструмента - Строка - имя инструмента
-//   ТипИнструмента - Строка - вид инструмента: Counter, UpDownCounter, Histogram,
-//     ExponentialHistogram, Gauge, ObservableCounter, ObservableUpDownCounter, ObservableGauge
+//   ТипИнструмента - Строка - вид инструмента: Counter, UpDownCounter, Histogram, Gauge,
+//     ObservableCounter, ObservableUpDownCounter, ObservableGauge
 //   НовоеИмяМетра - Строка - имя метра (библиотеки), создавшего инструмент
 //   ЕдиницаИнструмента - Строка - единица измерения инструмента
 //   НоваяВерсияМетра - Строка - версия метра (библиотеки)
@@ -153,8 +153,7 @@
 // Параметры:
 //   Имя - Строка - фильтр по имени инструмента ("*" для всех) (необязательный)
 //   ТипИнструмента - Строка - фильтр по виду инструмента: Counter, UpDownCounter,
-//     Histogram, ExponentialHistogram, Gauge, ObservableCounter, ObservableUpDownCounter,
-//     ObservableGauge (необязательный)
+//     Histogram, Gauge, ObservableCounter, ObservableUpDownCounter, ObservableGauge (необязательный)
 //   ИмяМетра - Строка - фильтр по имени метра (библиотеки) (необязательный)
 //   Единица - Строка - фильтр по единице измерения (необязательный)
 //   ВерсияМетра - Строка - фильтр по версии метра (необязательный)
