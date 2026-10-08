@@ -80,8 +80,9 @@ OpenTelemetry Logs API позволяет собирать структурир�
 
 :::
 
-`УстановитьИсключение` заполняет атрибуты `exception.message`, `exception.stacktrace` и
-`exception.type`. Тип — машинный код ошибки библиотеки
+`УстановитьИсключение` сохраняет информацию об ошибке, а атрибуты `exception.message`,
+`exception.stacktrace` и `exception.type` заполняет `Логгер.Записать()`: до этого вызова в
+`Запись.Атрибуты()` их нет. Тип — машинный код ошибки библиотеки
 [errors](https://github.com/Stivo182/oscript-errors) (`ФабрикаОшибок.Создать("config.invalid_port", ...)`
 даст `config.invalid_port`, код находится и через обертки `ФабрикаОшибок`). У ошибки без кода
 `exception.type` не заполняется; явно заданный атрибут записи главнее.
