@@ -131,7 +131,6 @@
 &ИсточникЗначение("Counter|counter")
 &ИсточникЗначение("UpDownCounter|up_down_counter")
 &ИсточникЗначение("Histogram|histogram")
-&ИсточникЗначение("ExponentialHistogram|histogram")
 &ИсточникЗначение("Gauge|gauge")
 &ИсточникЗначение("ObservableCounter|observable_counter")
 &ИсточникЗначение("ObservableUpDownCounter|observable_up_down_counter")

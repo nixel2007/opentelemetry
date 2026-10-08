@@ -198,7 +198,7 @@
 // Возвращает вид инструмента потока.
 //
 // Возвращаемое значение:
-//   Строка - Counter, UpDownCounter, Histogram, Gauge, ExponentialHistogram
+//   Строка - Counter, UpDownCounter, Histogram, Gauge
 //
 Функция Вид() Экспорт
     Возврат ВидИнструмента;
