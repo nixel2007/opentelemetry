@@ -13,12 +13,12 @@
 | Всего Stable-требований | 909 |
 | Stable + universal | 869 |
 | Stable + conditional | 40 |
-| Найдено требований (Stable universal) | 829 |
-| ✅ Реализовано (found) | 825 (99.5%) |
+| Найдено требований (Stable universal) | 837 |
+| ✅ Реализовано (found) | 833 (99.5%) |
 | ⚠️ Частично (partial) | 4 (0.5%) |
 | ❌ Не реализовано (not_found) | 0 (0.0%) |
-| ➖ Неприменимо (n_a) | 40 |
-| **MUST/MUST NOT found** | 501/502 (99.8%) |
+| ➖ Неприменимо (n_a) | 32 |
+| **MUST/MUST NOT found** | 509/510 (99.8%) |
 | **SHOULD/SHOULD NOT found** | 324/327 (99.1%) |
 
 ## Соответствие по разделам (Stable)
@@ -35,7 +35,7 @@
 | Metrics Api | 96 | 0 | 0 | 5 | 96 | 100.0% |
 | Metrics Sdk | 204 | 1 | 0 | 3 | 205 | 99.5% |
 | Otlp Exporter | 23 | 2 | 0 | 0 | 25 | 92.0% |
-| Propagators | 25 | 0 | 0 | 11 | 25 | 100.0% |
+| Propagators | 33 | 0 | 0 | 3 | 33 | 100.0% |
 | Env Vars | 24 | 0 | 0 | 0 | 24 | 100.0% |
 | Prometheus Compatibility | 54 | 0 | 0 | 0 | 54 | 100.0% |
 | Prometheus Exporter | 12 | 1 | 0 | 0 | 13 | 92.3% |
@@ -2341,8 +2341,8 @@
 |---|---|---|---|---|---|
 | 22 | MUST | ➖ n_a | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry Core packages: | - | Требование адресовано OpenTelemetry Organization (официальный реестр пропагаторов); данный пакет является независимой SDK-реализацией, не официальным дистрибутивом OTel |
 | 23 | MUST | ➖ n_a | The official list of propagators that MUST be maintained by the OpenTelemetry organization and MUST be distributed as OpenTelemetry Core packages: | - | Требование адресовано OpenTelemetry Organization (официальный реестр пропагаторов); данный пакет является независимой SDK-реализацией, не официальным дистрибутивом OTel |
-| 24 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | `src/Пропагация/Классы/` |  |
-| 25 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the OpenTelemetry Core packages. | `src/Пропагация/Классы/` |  |
+| 24 | MUST NOT | ✅ found | It MUST NOT use `OpenTracing` in the resulting propagator name as it is not widely adopted format in the OpenTracing ecosystem. | `/home/user/opentelemetry/src/Пропагация/Классы` | OT Trace пропагатор в пакете не реализован, имён с OpenTracing нет (в Пропагация/Классы только W3C, W3C Baggage, композитный, noop). |
+| 25 | MUST NOT | ✅ found | Additional `Propagator`s implementing vendor-specific protocols such as AWS X-Ray trace header protocol MUST NOT be maintained or distributed as part of the OpenTelemetry Core packages. | `/home/user/opentelemetry/src/Пропагация/Классы` |  |
 
 #### W3C Trace Context Requirements
 
@@ -2350,9 +2350,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 26 | MUST | ✅ found | A W3C Trace Context propagator MUST parse and validate the `traceparent` and `tracestate` HTTP headers as specified in W3C Trace Context Level 2. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:99` |  |
-| 27 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `traceparent` value using the same header. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:63` |  |
-| 28 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `tracestate` unless the value is empty, in which case the `tracestate` header may be omitted. | `src/Пропагация/Классы/ОтелW3CПропагатор.os:83` |  |
+| 26 | MUST | ✅ found | A W3C Trace Context propagator MUST parse and validate the `traceparent` and `tracestate` HTTP headers as specified in W3C Trace Context Level 2. | `/home/user/opentelemetry/src/Пропагация/Классы/ОтелW3CПропагатор.os:99` |  |
+| 27 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `traceparent` value using the same header. | `/home/user/opentelemetry/src/Пропагация/Классы/ОтелW3CПропагатор.os:63` |  |
+| 28 | MUST | ✅ found | A W3C Trace Context propagator MUST propagate a valid `tracestate` unless the value is empty, in which case the `tracestate` header may be omitted. | `/home/user/opentelemetry/src/Пропагация/Классы/ОтелW3CПропагатор.os:83` |  |
 
 #### B3 Extract
 
@@ -2360,10 +2360,10 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 29 | MUST | ➖ n_a | When extracting B3, propagators: * MUST attempt to extract B3 encoded using single and multi-header formats. | `src/Конфигурация/Модули/ОтелКонфигурационнаяФабрика.os:1608` | B3 пропагатор распространяется отдельным пакетом opentelemetry-propagator-b3 (намеренно, по спеке) и отсутствует в репозитории (grep B3 в src/Пропагация); основной SDK лишь подгружает ОтелB3Пропагатор рефлексивно. Поведение B3 Extract вне данного пакета. |
-| 30 | MUST | ➖ n_a | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | - | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); поведение B3 вне данного пакета. |
-| 31 | MUST | ➖ n_a | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | - | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); поведение B3 вне данного пакета. |
-| 32 | MUST NOT | ➖ n_a | MUST NOT reuse `X-B3-SpanId` as the ID for the server-side span. | - | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); поведение B3 вне данного пакета. |
+| 29 | MUST | ✅ found | MUST attempt to extract B3 encoded using single and multi-header formats. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:65` |  |
+| 30 | MUST | ✅ found | MUST preserve a debug trace flag, if received, and propagate it with subsequent requests. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:137` |  |
+| 31 | MUST | ✅ found | Additionally, an OpenTelemetry implementation MUST set the sampled trace flag when the debug flag is set. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:137` |  |
+| 32 | MUST NOT | ✅ found | MUST NOT reuse `X-B3-SpanId` as the ID for the server-side span. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:201` |  |
 
 #### B3 Inject
 
@@ -2371,9 +2371,9 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 33 | MUST | ➖ n_a | When injecting B3, propagators: * MUST default to injecting B3 using the single-header format | `src/Конфигурация/Модули/ОтелКонфигурационнаяФабрика.os:1608` | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); SDK лишь создаёт его с параметром single/multi (b3 -> single). Поведение B3 вне данного пакета. |
-| 34 | MUST | ➖ n_a | MUST provide configuration to change the default injection format to B3 multi-header | `src/Конфигурация/Модули/ОтелКонфигурационнаяФабрика.os:1608` | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); SDK передаёт режим multi через имя b3multi. Реализация конфигурации формата внутри B3-пакета. |
-| 35 | MUST NOT | ➖ n_a | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same ID for both sides of a request. | - | B3 пропагатор отсутствует в репозитории (отдельный пакет opentelemetry-propagator-b3); поведение B3 вне данного пакета. |
+| 33 | MUST | ✅ found | MUST default to injecting B3 using the single-header format | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:259` |  |
+| 34 | MUST | ✅ found | MUST provide configuration to change the default injection format to B3 multi-header | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:259` |  |
+| 35 | MUST NOT | ✅ found | MUST NOT propagate `X-B3-ParentSpanId` as OpenTelemetry does not support reusing the same ID for both sides of a request. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:113` |  |
 
 #### Fields
 
@@ -2381,7 +2381,7 @@
 
 | # | Уровень | Статус | Требование | Расположение в коде | Пояснение |
 |---|---|---|---|---|---|
-| 36 | MUST | ➖ n_a | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | - | B3 пропагатор отсутствует в репозитории (grep B3 в src/Пропагация пуст); поставляется отдельным пакетом opentelemetry-propagator-b3. |
+| 36 | MUST | ✅ found | Fields MUST return the header names that correspond to the configured format, i.e., the headers used for the inject operation. | `opentelemetry-propagator-b3/src/Классы/ОтелB3Пропагатор.os:86` |  |
 
 ### Env Vars
 

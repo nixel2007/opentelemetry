@@ -19,6 +19,7 @@
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -68,6 +69,16 @@ def reported_keywords(section, merged):
     return len(reported_requirements(result))
 
 
+# Абсолютный путь к клону отдельного пакета (generate_prompts.py, <output_dir>/packages/<имя>/)
+PACKAGE_PATH_RE = re.compile(r"/\S*?/packages/(?=[^/\s]+/)")
+
+
+def normalize_package_paths(text):
+    """Заменяет абсолютный путь к клону отдельного пакета на путь от имени пакета:
+    /tmp/.../packages/opentelemetry-propagator-b3/src/... -> opentelemetry-propagator-b3/src/..."""
+    return PACKAGE_PATH_RE.sub("", text)
+
+
 def load_results(results_dir):
     """Загружает все JSON-файлы результатов агентов.
 
@@ -99,6 +110,10 @@ def load_results(results_dir):
                     f"(агенты: {merged[key].get('_agent')}, {agent_name})"
                 )
             section["_agent"] = agent_name
+            for req in section.get("requirements", []):
+                for field in ("code_location", "explanation"):
+                    if isinstance(req.get(field), str):
+                        req[field] = normalize_package_paths(req[field])
             # Обеспечиваем наличие section_id для дальнейшей обработки
             section.setdefault("section_id", key)
             merged[key] = section
