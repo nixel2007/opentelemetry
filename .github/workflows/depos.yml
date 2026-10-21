@@ -15,5 +15,3 @@ jobs:
     steps:
       - name: Обновление зависимостей
         uses: Stivo182/depos-action@v2
-        with:
-          target: minor
