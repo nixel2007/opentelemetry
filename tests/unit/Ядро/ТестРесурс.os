@@ -62,7 +62,7 @@
 
     // Дано: env-переменные OTEL_RESOURCE_ATTRIBUTES и OTEL_SERVICE_NAME
     // Per spec (Resource SDK): MUST extract OTEL_RESOURCE_ATTRIBUTES и merge as secondary.
-    УстановитьПеременнуюСреды("OTEL_RESOURCE_ATTRIBUTES", "deployment.environment=prod,team=core");
+    УстановитьПеременнуюСреды("OTEL_RESOURCE_ATTRIBUTES", "deployment.environment.name=production,team=core");
     УстановитьПеременнуюСреды("OTEL_SERVICE_NAME", "my-service");
 
     // Когда: создание ресурса с дефолтами напрямую (без автоконфигурации)
@@ -70,7 +70,7 @@
         Ресурс = Новый ОтелРесурс();
 
         // Тогда
-        Ожидаем.Что(Ресурс.Атрибуты().Получить("deployment.environment")).Равно("prod");
+        Ожидаем.Что(Ресурс.Атрибуты().Получить("deployment.environment.name")).Равно("production");
         Ожидаем.Что(Ресурс.Атрибуты().Получить("team")).Равно("core");
         Ожидаем.Что(Ресурс.Атрибуты().Получить("service.name")).Равно("my-service");
     Исключение
