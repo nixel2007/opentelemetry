@@ -84,8 +84,12 @@ OpenTelemetry Logs API позволяет собирать структурир�
 `exception.stacktrace` и `exception.type` заполняет `Логгер.Записать()`: до этого вызова в
 `Запись.Атрибуты()` их нет. Тип — машинный код ошибки библиотеки
 [errors](https://github.com/Stivo182/oscript-errors) (`ФабрикаОшибок.Создать("config.invalid_port", ...)`
-даст `config.invalid_port`, код находится и через обертки `ФабрикаОшибок`). У ошибки без кода
-`exception.type` не заполняется; явно заданный атрибут записи главнее.
+даст `config.invalid_port`, код находится и через обертки `ФабрикаОшибок`). Нативная ошибка
+OneScript без кода получает код библиотеки
+[native-errors](https://github.com/Stivo182/oscript-native-errors): деление на ноль —
+`numeric.division_by_zero`, отказ в соединении — `network.connection.refused`. У нераспознанной
+ошибки без кода `exception.type` не заполняется; явно заданный атрибут записи главнее, и тогда
+ошибка не классифицируется.
 
 ## Уровни серьёзности
 

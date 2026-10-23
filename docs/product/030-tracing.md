@@ -137,7 +137,10 @@ title: Трассировка
 своего времени дают функции [ОтелУтилиты](/api/opentelemetry/Ядро/ОтелУтилиты.md).
 
 Исключение записывает `ЗаписатьИсключение`: событие `exception` с описанием ошибки, модулем и стеком
-вызовов. Статус спана метод не меняет:
+вызовов. Тип ошибки (`exception.type`) — код библиотеки
+[errors](https://github.com/Stivo182/oscript-errors), а у нативной ошибки OneScript без кода — код
+[native-errors](https://github.com/Stivo182/oscript-native-errors), например
+`filesystem.resource.not_found`. Статус спана метод не меняет:
 
 ```bsl
 Попытка
