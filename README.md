@@ -44,6 +44,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 
 - OneScript 2.2.1+
 - logos 1.7.1+, 1connector 2.3.3+, collectionos 0.9.0+, configor 0.11.1+, async 0.3.0+
+- errors 0.3.0+, native-errors 0.1.0+ (тип ошибки `exception.type`)
 - oint 2.3.0+ (для gRPC-транспорта)
 
 ## Документация
