@@ -46,7 +46,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 export OTEL_SERVICE_NAME=my-service
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
 export OTEL_EXPORTER_OTLP_PROTOCOL=http/json
-export OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,team=backend
+export OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production,team=backend
 ```
 
 ```bash [gRPC транспорт]

@@ -46,13 +46,13 @@
     Ресурс = Новый ОтелПостроительРесурса()
         .Установить("service.name", "my-service")
         .Установить("service.version", "1.0.0")
-        .Установить("deployment.environment", "production")
+        .Установить("deployment.environment.name", "production")
         .Построить();
 
     // Тогда
     Ожидаем.Что(Ресурс.Атрибуты().Получить("service.name")).Равно("my-service");
     Ожидаем.Что(Ресурс.Атрибуты().Получить("service.version")).Равно("1.0.0");
-    Ожидаем.Что(Ресурс.Атрибуты().Получить("deployment.environment")).Равно("production");
+    Ожидаем.Что(Ресурс.Атрибуты().Получить("deployment.environment.name")).Равно("production");
 
 КонецПроцедуры
 
