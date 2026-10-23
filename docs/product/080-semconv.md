@@ -6,7 +6,7 @@ title: Семантические соглашения
 
 Какие атрибуты [семантических соглашений OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/)
 заполняет SDK, а какие задаёт приложение или коллектор. В таблицах — stable-атрибуты semconv
-(версия 1.44.0); атрибуты в статусе development отмечены отдельно. Группы атрибутов названы так же,
+(версия 1.44.0); атрибуты в статусах development и release candidate отмечены отдельно. Группы атрибутов названы так же,
 как в semconv.
 
 ## Ресурс
@@ -71,7 +71,7 @@ title: Семантические соглашения
 | `deployment.environment.name` | не заполняется: окружение знает только приложение | `OTEL_RESOURCE_ATTRIBUTES`, `resource`, `ОтелПостроительРесурса` |
 
 Для стандартных окружений используйте значения semconv: `production`, `staging`, `test`,
-`development`. Прежнее имя `deployment.environment` в semconv устарело.
+`development`.
 
 ### Container
 
@@ -94,9 +94,10 @@ title: Семантические соглашения
 | `container.image.tags` | не заполняется | массив строк: `resource.attributes` файловой конфигурации с типом `string_array` |
 | `container.image.repo_digests` | не заполняется | массив строк: `resource.attributes` файловой конфигурации с типом `string_array` |
 
-### Атрибуты в статусе development
+### Атрибуты в статусах development и release candidate
 
-Атрибуты, которые заполняют детекторы ресурса по умолчанию.
+Атрибуты, которые заполняют детекторы ресурса по умолчанию. Атрибуты Process — в статусе
+release candidate, остальные — development.
 
 #### Host
 
@@ -144,9 +145,6 @@ title: Семантические соглашения
 | `exception.message` | описание ошибки |
 | `exception.type` | код ошибки библиотеки errors или код нативной ошибки OneScript (native-errors); у нераспознанной ошибки не заполняется |
 | `exception.stacktrace` | стек вызовов |
-
-В semconv запись исключения событием спана помечена устаревшей, stable-конвенция — исключения в
-логах. SDK пока записывает исключение событием спана.
 
 ## Error
 
