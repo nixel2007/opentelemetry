@@ -4,6 +4,8 @@
 // BSLLS:MissingParameterDescription-off
 // BSLLS:MissingReturnedValueDescription-off
 // BSLLS:DuplicateStringLiteral-off
+// Строки cgroup v2 вида "0::/" диагностика принимает за IPv6-адрес "::"
+// BSLLS:UsingHardcodeNetworkAddress-off
 #Использовать "../../.."
 #Использовать asserts
 
@@ -108,10 +110,13 @@
     // Дано - cgroup v2 с собственным пространством имен: в cgroup только корень
     Cgroup = ФайлВКаталоге("cgroup", "0::/");
     Mountinfo = ФайлВКаталоге("mountinfo",
-        "1046 1020 0:61 / / rw,relatime master:315 - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/A" + Символы.ПС
-        + "1052 1046 254:1 /var/lib/docker/containers/" + ИдКонтейнера + "/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/vda1 rw"
+        "1046 1020 0:61 / / rw,relatime master:315 - overlay overlay rw,lowerdir=/var/lib/docker/overlay2/l/A"
         + Символы.ПС
-        + "1053 1046 254:1 /var/lib/docker/containers/" + ИдКонтейнера + "/hostname /etc/hostname rw,relatime - ext4 /dev/vda1 rw");
+        + "1052 1046 254:1 /var/lib/docker/containers/" + ИдКонтейнера
+        + "/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/vda1 rw"
+        + Символы.ПС
+        + "1053 1046 254:1 /var/lib/docker/containers/" + ИдКонтейнера
+        + "/hostname /etc/hostname rw,relatime - ext4 /dev/vda1 rw");
 
     // Когда
     Ресурс = Детектор(Cgroup, Mountinfo).Обнаружить();
@@ -199,6 +204,22 @@
 
     // Тогда
     Ожидаем.Что(Ресурс.Атрибуты().Количество()).Равно(0);
+
+КонецПроцедуры
+
+&Тест
+Процедура ОшибкаЧтенияФайлаНеВыбрасываетИсключение() Экспорт
+
+    // Дано - вместо файла cgroup каталог: прочитать его как текст нельзя
+    КаталогВместоФайла = ОбъединитьПути(Каталог, "cgroup-каталог");
+    СоздатьКаталог(КаталогВместоФайла);
+
+    // Когда
+    Ресурс = Детектор(КаталогВместоФайла, НетФайла()).Обнаружить();
+
+    // Тогда - ошибка определения пишется в лог, ресурс пустой
+    Ожидаем.Что(Ресурс.Атрибуты().Количество()).Равно(0);
+    Ожидаем.Что(Ресурс.АдресСхемы()).Равно("");
 
 КонецПроцедуры
 
