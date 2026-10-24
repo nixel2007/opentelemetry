@@ -141,7 +141,7 @@ otel:
 | `OTEL_TRACES_EXPORTER` | `otel.traces.exporter` | `otlp` | Экспортер трассировки: `otlp`, `none` |
 | `OTEL_LOGS_EXPORTER` | `otel.logs.exporter` | `otlp` | Экспортер логов: `otlp`, `none` |
 | `OTEL_METRICS_EXPORTER` | `otel.metrics.exporter` | `otlp` | Экспортер метрик: `otlp`, `none` |
-| `OTEL_OSCRIPT_EVENT_TO_SPAN_EVENT_BRIDGE_DISABLED` | `otel.oscript.event.to.span.event.bridge.disabled` | `false` | `true` отключает [процессор событий в события спана](/api/opentelemetry/Логирование/ОтелПроцессорСобытийВСобытияСпана.md). Ключ языковой: стандартной переменной для процессора нет. Процессор включён и с экспортером логов `none` |
+| `OTEL_OSCRIPT_EVENT_TO_SPAN_EVENT_BRIDGE_ENABLED` | `otel.oscript.event.to.span.event.bridge.enabled` | `true` | Включает [процессор событий в события спана](/api/opentelemetry/Логирование/ОтелПроцессорСобытийВСобытияСпана.md). Включён только при `true` (без учёта регистра); пустое значение — как не заданное, другое значение выключает процессор. Ключ языковой: стандартной переменной для процессора нет. Процессор включён и с экспортером логов `none` |
 
 С экспортером `none` (или недоступным транспортом) сэмплер, лимиты и фильтр exemplars из переменных
 окружения всё равно применяются: решение сэмплера задаёт флаг sampled, который передаётся дальше, а
