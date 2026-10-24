@@ -64,6 +64,7 @@
 //   ТипОС - Строка - тип ОС в значениях os.type: linux, windows, darwin (необязательный);
 //       по умолчанию - ОС текущей машины
 //
+&Реализует("ИнтерфейсДетекторРесурса")
 Процедура ПриСозданииОбъекта(Cgroup = "/proc/self/cgroup", Mountinfo = "/proc/self/mountinfo", ТипОС = Неопределено)
     Лог = Логирование.ПолучитьЛог("oscript.lib.opentelemetry.resource.container");
     ПутьCgroup = Cgroup;
