@@ -22,6 +22,14 @@ development и release candidate отмечены отдельно. Группы
 |---|---|
 | `service.name` | `unknown_service:oscript`, если имя не задано через `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` или `resource` файловой конфигурации |
 
+### Service Instance
+
+[Service Instance](https://opentelemetry.io/docs/specs/semconv/registry/entities/service/#service-instance)
+
+| Атрибут | Значение |
+|---|---|
+| `service.instance.id` | детектор [ОтелДетекторРесурсаЭкземпляраСервиса](/api/opentelemetry/Ядро/ОтелДетекторРесурсаЭкземпляраСервиса.md): случайный UUID, один на процесс, если значение не задано через `OTEL_RESOURCE_ATTRIBUTES` или `resource` файловой конфигурации |
+
 ### Telemetry Sdk
 
 [Telemetry Sdk](https://opentelemetry.io/docs/specs/semconv/registry/entities/telemetry/#telemetry-sdk)
