@@ -37,7 +37,7 @@ development и release candidate отмечены отдельно. Группы
 | Атрибут | Значение |
 |---|---|
 | `telemetry.sdk.language` | `oscript` |
-| `telemetry.sdk.name` | `opentelemetry` |
+| `telemetry.sdk.name` | `oscript-opentelemetry`: значение `opentelemetry` по semconv зарезервировано за официальным SDK проекта OpenTelemetry |
 | `telemetry.sdk.version` | версия пакета |
 
 ### Container

@@ -17,7 +17,8 @@
 
     // Тогда
     Ожидаем.Что(Ресурс.Атрибуты().Получить("service.name")).Равно("unknown_service:oscript");
-    Ожидаем.Что(Ресурс.Атрибуты().Получить("telemetry.sdk.name")).Равно("opentelemetry");
+    // semconv: имя opentelemetry зарезервировано за официальным SDK проекта OpenTelemetry
+    Ожидаем.Что(Ресурс.Атрибуты().Получить("telemetry.sdk.name")).Равно("oscript-opentelemetry");
     Ожидаем.Что(Ресурс.Атрибуты().Получить("telemetry.sdk.version")).Равно(ОтелУтилиты.ВерсияSDK());
     Ожидаем.Что(Ресурс.Атрибуты().Получить("telemetry.sdk.language")).Равно("oscript");
 

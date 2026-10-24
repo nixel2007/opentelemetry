@@ -109,7 +109,8 @@
 
 Процедура ЗаполнитьАтрибутыПоУмолчанию(ЧитатьОкружение)
     Атрибуты.Установить("service.name", "unknown_service:oscript");
-    Атрибуты.Установить("telemetry.sdk.name", "opentelemetry");
+    // semconv: имя opentelemetry зарезервировано за официальным SDK проекта OpenTelemetry
+    Атрибуты.Установить("telemetry.sdk.name", "oscript-opentelemetry");
     Атрибуты.Установить("telemetry.sdk.version", ОтелУтилиты.ВерсияSDK());
     Атрибуты.Установить("telemetry.sdk.language", "oscript");
 
